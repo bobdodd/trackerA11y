@@ -52,6 +52,36 @@ Demonstrates the advanced event correlation engine that ties everything together
 npm run ts-node examples/correlation-demo.ts
 ```
 
+### 4. Interaction Monitoring Demo (`interaction-demo.ts`)
+Shows privacy-safe system-wide interaction monitoring.
+
+**Features:**
+- Keyboard and mouse interaction capture
+- Privacy controls and sensitive data filtering
+- Real-time correlation with focus events
+- Custom accessibility pattern detection
+- Cross-platform interaction abstraction
+
+**Usage:**
+```bash
+npm run ts-node examples/interaction-demo.ts
+```
+
+### 5. Timing Synchronization Demo (`timing-demo.ts`)
+Demonstrates microsecond-precision timing and synchronization.
+
+**Features:**
+- Microsecond-precision event timestamping
+- Clock drift detection and correction
+- NTP synchronization capabilities
+- Timing validation and analysis
+- Comprehensive timing statistics
+
+**Usage:**
+```bash
+npm run ts-node examples/timing-demo.ts
+```
+
 ## What to Expect
 
 ### Focus Tracking Demo

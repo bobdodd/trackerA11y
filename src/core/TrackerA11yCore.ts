@@ -8,6 +8,8 @@ import { FocusManager } from './FocusManager';
 import { AudioProcessorBridge } from '@/bridge/AudioProcessorBridge';
 import { EventCorrelator } from '@/correlation/EventCorrelator';
 import { InteractionManager } from '@/interaction/InteractionManager';
+import { TimeSync, TimeSyncConfig } from '@/sync/TimeSync';
+import { EventTimestamper } from '@/sync/EventTimestamper';
 import { 
   TrackerA11yConfig, 
   TimestampedEvent, 
@@ -50,6 +52,8 @@ export class TrackerA11yCore extends EventEmitter {
   private audioProcessor: AudioProcessorBridge | null = null;
   private interactionManager: InteractionManager | null = null;
   private eventCorrelator: EventCorrelator;
+  private timeSync: TimeSync;
+  private eventTimestamper: EventTimestamper;
   private isInitialized = false;
   private isActive = false;
   private startTime: number = 0;
@@ -86,6 +90,10 @@ export class TrackerA11yCore extends EventEmitter {
     super();
     this.config = config;
     
+    // Initialize time synchronization
+    this.timeSync = new TimeSync(this.getTimeSyncConfig());
+    this.eventTimestamper = new EventTimestamper(this.timeSync);
+    
     // Initialize core components
     this.focusManager = new FocusManager();
     this.eventCorrelator = new EventCorrelator(this.getCorrelationConfig());
@@ -115,6 +123,10 @@ export class TrackerA11yCore extends EventEmitter {
     this.startTime = Date.now();
 
     try {
+      // Initialize time synchronization first
+      await this.timeSync.initialize();
+      console.log('✅ Time synchronization initialized');
+
       // Initialize components in sequence
       await this.focusManager.initialize();
       console.log('✅ Focus tracking initialized');
@@ -269,6 +281,34 @@ export class TrackerA11yCore extends EventEmitter {
     return this.eventCorrelator.removeRule(ruleId);
   }
 
+  /**
+   * Get current synchronized timestamp
+   */
+  getSynchronizedTime(): number {
+    return this.timeSync.now();
+  }
+
+  /**
+   * Get time synchronization metrics
+   */
+  getTimeSyncMetrics() {
+    return this.timeSync.getMetrics();
+  }
+
+  /**
+   * Get timing information for recent events
+   */
+  getEventTimingStatistics() {
+    return this.eventTimestamper.getTimingStatistics(this.recentEvents);
+  }
+
+  /**
+   * Validate timing consistency of recent events
+   */
+  validateEventTiming() {
+    return this.eventTimestamper.validateEventTiming(this.recentEvents);
+  }
+
   private setupEventHandlers(): void {
     // Focus event handling
     this.focusManager.on('focusChanged', (event: FocusEvent) => {
@@ -323,24 +363,30 @@ export class TrackerA11yCore extends EventEmitter {
     const startTime = performance.now();
 
     try {
+      // Apply precise timestamping using synchronized time
+      const synchronizedEvent = this.eventTimestamper.timestampEvent(event, {
+        sourceTime: event.timestamp,
+        timeSource: 'system'
+      });
+
       // Update statistics
       this.stats.eventsProcessed.total++;
-      this.stats.eventsProcessed[event.source as keyof typeof this.stats.eventsProcessed]++;
+      this.stats.eventsProcessed[synchronizedEvent.source as keyof typeof this.stats.eventsProcessed]++;
 
       // Store recent events
-      this.recentEvents.push(event);
+      this.recentEvents.push(synchronizedEvent);
       if (this.recentEvents.length > 1000) {
         this.recentEvents.splice(0, this.recentEvents.length - 1000);
       }
 
       // Add to correlation engine
-      this.eventCorrelator.addEvent(event);
+      this.eventCorrelator.addEvent(synchronizedEvent);
 
       // Update performance metrics
       const processingTime = performance.now() - startTime;
       this.updateAvgProcessingTime(processingTime);
 
-      this.emit('eventProcessed', event);
+      this.emit('eventProcessed', synchronizedEvent);
 
     } catch (error) {
       console.error('Error handling event:', error);
@@ -400,6 +446,28 @@ export class TrackerA11yCore extends EventEmitter {
     };
   }
 
+  private getTimeSyncConfig(): TimeSyncConfig {
+    return {
+      precision: this.config.syncPrecision,
+      systemClockSync: true,
+      ntpSync: {
+        enabled: this.config.syncPrecision === 'microsecond' || this.config.syncPrecision === 'nanosecond',
+        servers: ['time.apple.com', 'time.cloudflare.com'],
+        syncInterval: 300000 // 5 minutes
+      },
+      audioSync: {
+        enabled: !!this.config.audioIntegration,
+        method: this.config.audioIntegration?.synchronizationMethod || 'bwf',
+        referenceDevice: undefined
+      },
+      calibration: {
+        autoCalibrate: true,
+        calibrationInterval: 60000, // 1 minute
+        driftThreshold: 10 // 10 microseconds per second
+      }
+    };
+  }
+
   private groupInsightsByType(): Record<string, number> {
     const byType: Record<string, number> = {};
     for (const insight of this.recentInsights) {
@@ -444,6 +512,7 @@ export class TrackerA11yCore extends EventEmitter {
       }
       
       await this.eventCorrelator.shutdown();
+      await this.timeSync.shutdown();
 
       this.isInitialized = false;
       this.emit('shutdown');

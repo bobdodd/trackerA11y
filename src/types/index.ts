@@ -139,6 +139,26 @@ export interface InteractionConfig {
   filterSensitive?: boolean;
 }
 
+export interface TimeSyncConfig {
+  precision: 'millisecond' | 'microsecond' | 'nanosecond';
+  systemClockSync: boolean;
+  ntpSync?: {
+    enabled: boolean;
+    servers: string[];
+    syncInterval: number; // milliseconds
+  };
+  audioSync?: {
+    enabled: boolean;
+    method: 'bwf' | 'smpte' | 'ptp';
+    referenceDevice?: string;
+  };
+  calibration: {
+    autoCalibrate: boolean;
+    calibrationInterval: number; // milliseconds
+    driftThreshold: number; // microseconds
+  };
+}
+
 export type Platform = 'web' | 'ios' | 'android' | 'windows' | 'macos' | 'linux';
 export type OutputFormat = 'json' | 'xml' | 'axe-core' | 'lighthouse' | 'wcag-em';
 
