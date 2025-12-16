@@ -47,16 +47,22 @@ export interface AccessibilityContext {
 export interface InteractionEvent extends TimestampedEvent {
   source: 'interaction';
   data: {
-    interactionType: 'click' | 'key' | 'scroll' | 'touch' | 'voice';
+    interactionType: 'click' | 'key' | 'scroll' | 'touch' | 'voice' | 'mouse_move' | 'drag' | 'hover';
     target?: {
       element?: string;
       selector?: string;
       coordinates?: { x: number; y: number };
+      applicationName?: string;
+      windowTitle?: string;
     };
     inputData?: {
       key?: string;
       modifiers?: string[];
       text?: string;
+      button?: 'left' | 'right' | 'middle';
+      clickCount?: number;
+      scrollDelta?: { x: number; y: number };
+      pressure?: number;
     };
   };
 }
@@ -90,7 +96,9 @@ export interface TrackerA11yConfig {
   platforms: Platform[];
   syncPrecision: 'millisecond' | 'microsecond' | 'nanosecond';
   realTimeMonitoring: boolean;
-  audioIntegration: AudioConfig;
+  audioIntegration?: AudioConfig;
+  interactionTracking?: boolean;
+  interactionConfig?: InteractionConfig;
   outputFormats: OutputFormat[];
   storage?: StorageConfig;
 }
@@ -103,6 +111,32 @@ export interface AudioConfig {
   synchronizationMethod?: 'bwf' | 'smpte' | 'ptp';
   realTimeProcessing?: boolean;
   pythonPipelinePath?: string;
+}
+
+export interface CorrelationConfig {
+  eventBuffer: {
+    maxEventsPerSource: number;
+    maxEventAge: number; // microseconds
+    cleanupInterval: number; // milliseconds
+  };
+  correlationRules: {
+    maxTimeWindow: number; // microseconds
+    minConfidence: number;
+  };
+  insights: {
+    enableAutoGeneration: boolean;
+    severityThreshold: 'low' | 'medium' | 'high' | 'critical';
+  };
+}
+
+export interface InteractionConfig {
+  enableMouse?: boolean;
+  enableKeyboard?: boolean;
+  enableTouch?: boolean;
+  enableAccessibility?: boolean;
+  privacyMode?: 'strict' | 'safe' | 'detailed';
+  captureLevel?: 'events' | 'detailed' | 'full';
+  filterSensitive?: boolean;
 }
 
 export type Platform = 'web' | 'ios' | 'android' | 'windows' | 'macos' | 'linux';
