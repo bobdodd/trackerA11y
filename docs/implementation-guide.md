@@ -34,8 +34,11 @@ interface TrackerA11yConfig {
   syncPrecision: 'millisecond' | 'microsecond' | 'nanosecond';
   realTimeMonitoring: boolean;
   audioIntegration: {
-    pythonAudioA11yCompatible: boolean;
+    recordingQuality: '48khz' | '96khz';
+    diarizationModel: 'pyannote/speaker-diarization-3.1';
+    transcriptionModel: 'whisper-large-v3';
     synchronizationMethod: 'bwf' | 'smpte' | 'ptp';
+    realTimeProcessing: boolean;
   };
   outputFormats: ('json' | 'xml' | 'axe-core' | 'lighthouse' | 'wcag-em')[];
 }
@@ -54,9 +57,10 @@ graph TB
     E --> G[Synchronized Timeline]
     G --> H[Report Generator]
     
-    H --> I[Accessibility Report]
-    H --> J[pythonAudioA11y Integration]
+    H --> I[Unified Accessibility Report]
+    H --> J[Diarized Audio Analysis]
     H --> K[Standard Compliance Reports]
+    H --> L[Live Experience Correlation]
 ```
 
 ## Core Components
@@ -1638,8 +1642,11 @@ describe('Full System Integration', () => {
       syncPrecision: 'microsecond',
       realTimeMonitoring: true,
       audioIntegration: {
-        pythonAudioA11yCompatible: true,
-        synchronizationMethod: 'bwf'
+        recordingQuality: '48khz',
+        diarizationModel: 'pyannote/speaker-diarization-3.1',
+        transcriptionModel: 'whisper-large-v3',
+        synchronizationMethod: 'bwf',
+        realTimeProcessing: true
       },
       outputFormats: ['json', 'axe-core']
     });
@@ -1811,8 +1818,11 @@ export class CloudConfig {
       syncPrecision: (process.env.SYNC_PRECISION as any) || 'microsecond',
       realTimeMonitoring: process.env.REAL_TIME_MONITORING === 'true',
       audioIntegration: {
-        pythonAudioA11yCompatible: true,
-        synchronizationMethod: (process.env.SYNC_METHOD as any) || 'bwf'
+        recordingQuality: (process.env.AUDIO_QUALITY as any) || '48khz',
+        diarizationModel: process.env.DIARIZATION_MODEL || 'pyannote/speaker-diarization-3.1',
+        transcriptionModel: process.env.TRANSCRIPTION_MODEL || 'whisper-large-v3',
+        synchronizationMethod: (process.env.SYNC_METHOD as any) || 'bwf',
+        realTimeProcessing: process.env.REAL_TIME_AUDIO === 'true'
       },
       outputFormats: this.getOutputFormatsFromEnv(),
       storage: {

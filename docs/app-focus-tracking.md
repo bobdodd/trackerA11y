@@ -685,7 +685,7 @@ class PlatformAbstraction:
 ### Integration Points
 
 1. **TrackerA11y Core**: Main accessibility testing orchestrator
-2. **Audio Analysis**: Correlation with pythonAudioA11y timestamps
+2. **Audio Analysis**: Correlation with integrated diarized audio processing
 3. **Screen Recording**: Synchronization with video capture
 4. **Interaction Tracking**: Combined focus and user interaction analysis
 

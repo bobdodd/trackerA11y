@@ -824,16 +824,17 @@ class RealTimeCorrelationEngine:
             raise ValueError(f"Unsupported export format: {format_type}")
 ```
 
-## Integration with pythonAudioA11y
+## Integrated Audio Processing Pipeline
 
-### Compatibility Layer
+### Unified Audio Analysis System
 
 ```python
-class AudioA11yIntegration:
-    """Integration layer for pythonAudioA11y compatibility"""
+class IntegratedAudioProcessor:
+    """Unified audio processing with diarization and transcription"""
     
-    def __init__(self, audio_analyzer):
-        self.audio_analyzer = audio_analyzer
+    def __init__(self):
+        self.diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1")
+        self.transcription_model = whisper.load_model("large-v3")
         self.sync_engine = RealTimeCorrelationEngine()
         
     def process_audio_with_sync(self, audio_file_path, sync_timestamp):
@@ -841,8 +842,11 @@ class AudioA11yIntegration:
         # Extract metadata from BWF if available
         sync_info = self._extract_sync_metadata(audio_file_path)
         
-        # Process with pythonAudioA11y
-        transcription_results = self.audio_analyzer.analyze(audio_file_path)
+        # Perform speaker diarization
+        diarization = self.diarization_pipeline(audio_file_path)
+        
+        # Process with role-aware transcription
+        transcription_results = self._transcribe_with_roles(audio_file_path, diarization)
         
         # Add timestamp correlation
         for result in transcription_results:
@@ -1040,7 +1044,7 @@ class HighPrecisionTimestampManager:
 
 ### Integration Points
 
-1. **pythonAudioA11y compatibility**: Shared timestamp format and synchronization protocol
+1. **Unified audio processing**: Integrated diarization and transcription with microsecond precision
 2. **Standard compliance**: Support for BWF, MXF, and SMPTE timecode standards
 3. **Export capabilities**: Multiple format support for analysis tools
 4. **Real-time correlation**: Live synchronization during testing sessions
