@@ -5,6 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
+# Note: node_modules was accidentally committed and needs to be removed
+
 # Build outputs
 dist/
 build/
