@@ -65,19 +65,24 @@ export interface InteractionEvent extends TimestampedEvent {
 export interface AudioEvent extends TimestampedEvent {
   source: 'audio';
   data: {
-    speaker: string;
     text: string;
+    language: string;
     confidence: number;
+    speakers: SpeakerInfo[];
+    totalSpeakers: number;
+    startTime: number;
+    endTime: number;
+    processingTime: number;
     sentiment?: 'positive' | 'negative' | 'neutral' | 'frustrated' | 'confused';
     intent?: string;
-    duration: number;
-    audioSegment: {
-      startTime: number;
-      endTime: number;
-      frequency?: number;
-      amplitude?: number;
-    };
   };
+}
+
+export interface SpeakerInfo {
+  speaker_id: string;
+  start_time: number;
+  end_time: number;
+  confidence: number;
 }
 
 // Configuration interfaces
@@ -91,11 +96,12 @@ export interface TrackerA11yConfig {
 }
 
 export interface AudioConfig {
+  sampleRate?: number;
   recordingQuality: '48khz' | '96khz';
-  diarizationModel: string;
-  transcriptionModel: string;
-  synchronizationMethod: 'bwf' | 'smpte' | 'ptp';
-  realTimeProcessing: boolean;
+  diarizationModel?: string;
+  transcriptionModel?: string;
+  synchronizationMethod?: 'bwf' | 'smpte' | 'ptp';
+  realTimeProcessing?: boolean;
   pythonPipelinePath?: string;
 }
 
@@ -139,14 +145,15 @@ export interface AccessibilityInsight {
 
 // Inter-Process Communication types for Python bridge
 export interface IPCMessage {
-  type: 'audio_data' | 'audio_result' | 'control' | 'error' | 'heartbeat';
-  payload: any;
-  requestId?: string;
+  type: 'init' | 'shutdown' | 'ping' | 'pong' | 'process_audio' | 'audio_event' | 'processing_status' | 'update_config' | 'get_status' | 'error';
+  id: string;
   timestamp: number;
+  session_id?: string;
+  payload: any;
 }
 
 export interface AudioProcessingRequest extends IPCMessage {
-  type: 'audio_data';
+  type: 'process_audio';
   payload: {
     audioBuffer: Buffer;
     sessionId: string;
@@ -156,7 +163,7 @@ export interface AudioProcessingRequest extends IPCMessage {
 }
 
 export interface AudioProcessingResult extends IPCMessage {
-  type: 'audio_result';
+  type: 'audio_event';
   payload: {
     sessionId: string;
     events: AudioEvent[];

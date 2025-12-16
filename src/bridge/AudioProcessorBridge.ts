@@ -49,13 +49,16 @@ export class AudioProcessorBridge extends EventEmitter {
 
   private async startPythonPipeline(): Promise<void> {
     const pythonPath = this.config.pythonPipelinePath || 'python';
+    const pipelinePath = 'audio_pipeline/src/audio_pipeline/main.py';
+    
     const args = [
-      '-m', 'audio_pipeline.main',
+      pipelinePath,
       '--mode', 'ipc',
-      '--diarization-model', this.config.diarizationModel,
-      '--transcription-model', this.config.transcriptionModel,
-      '--quality', this.config.recordingQuality,
-      '--real-time', this.config.realTimeProcessing.toString()
+      '--diarization-model', this.config.diarizationModel || 'pyannote/speaker-diarization-3.1',
+      '--transcription-model', this.config.transcriptionModel || 'large-v3',
+      '--quality', this.config.recordingQuality || '48khz',
+      '--real-time', (this.config.realTimeProcessing !== false).toString(),
+      '--log-level', 'INFO'
     ];
 
     this.pythonProcess = spawn(pythonPath, args, {
@@ -87,10 +90,13 @@ export class AudioProcessorBridge extends EventEmitter {
 
   private processIPCMessage(message: IPCMessage): void {
     switch (message.type) {
-      case 'audio_result':
-        this.handleAudioResult(message as AudioProcessingResult);
+      case 'audio_event':
+        this.handleAudioEvent(message);
         break;
-      case 'heartbeat':
+      case 'processing_status':
+        this.handleProcessingStatus(message);
+        break;
+      case 'pong':
         this.emit('heartbeat', message.timestamp);
         break;
       case 'error':
@@ -101,17 +107,40 @@ export class AudioProcessorBridge extends EventEmitter {
     }
   }
 
-  private handleAudioResult(result: AudioProcessingResult): void {
-    const { sessionId, events } = result.payload;
-    const pendingRequest = this.pendingRequests.get(sessionId);
+  private handleAudioEvent(message: IPCMessage): void {
+    const payload = message.payload;
+    
+    // Convert Python response to TypeScript AudioEvent format
+    const audioEvent: AudioEvent = {
+      id: message.id,
+      timestamp: message.timestamp,
+      type: 'audio',
+      source: 'audio',
+      data: {
+        text: payload.text || '',
+        language: payload.language || 'en',
+        confidence: payload.confidence || 0.0,
+        speakers: payload.speakers || [],
+        totalSpeakers: payload.total_speakers || 0,
+        startTime: payload.start_time || 0.0,
+        endTime: payload.end_time || 0.0,
+        processingTime: payload.processing_time || 0.0
+      }
+    };
 
+    // Check for pending request
+    const pendingRequest = this.pendingRequests.get(message.session_id || '');
     if (pendingRequest) {
-      pendingRequest.resolve(events);
-      this.pendingRequests.delete(sessionId);
+      pendingRequest.resolve([audioEvent]);
+      this.pendingRequests.delete(message.session_id || '');
     }
 
     // Emit for real-time listeners
-    this.emit('audioEvents', events);
+    this.emit('audioEvents', [audioEvent]);
+  }
+
+  private handleProcessingStatus(message: IPCMessage): void {
+    this.emit('status', message.payload);
   }
 
   private handlePythonIPCError(message: IPCMessage): void {
@@ -173,15 +202,18 @@ export class AudioProcessorBridge extends EventEmitter {
         timestamp: Date.now()
       });
 
-      const request: AudioProcessingRequest = {
-        type: 'audio_data',
-        requestId,
+      const request: IPCMessage = {
+        type: 'process_audio',
+        id: requestId,
         timestamp: Date.now() * 1000, // Convert to microseconds
+        session_id: sessionId,
         payload: {
-          audioBuffer,
-          sessionId,
-          timestamp: Date.now() * 1000,
-          metadata
+          audio_data: audioBuffer.toString('base64'),
+          sample_rate: this.config.sampleRate || 48000,
+          channels: 1,
+          format: 'int16',
+          duration: audioBuffer.length / (2 * (this.config.sampleRate || 48000)), // bytes to seconds
+          real_time: this.config.realTimeProcessing !== false
         }
       };
 
@@ -208,7 +240,23 @@ export class AudioProcessorBridge extends EventEmitter {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Timeout waiting for Python pipeline to initialize'));
-      }, 10000);
+      }, 15000); // Increased timeout for model loading
+
+      // Send initialization message
+      const initMessage: IPCMessage = {
+        type: 'init',
+        id: `init_${Date.now()}`,
+        timestamp: Date.now() * 1000,
+        session_id: 'main',
+        payload: {
+          config: {
+            sample_rate: this.config.sampleRate || 48000,
+            diarization_model: this.config.diarizationModel || 'pyannote/speaker-diarization-3.1',
+            transcription_model: this.config.transcriptionModel || 'large-v3',
+            real_time: this.config.realTimeProcessing !== false
+          }
+        }
+      };
 
       const onReady = () => {
         clearTimeout(timeout);
@@ -218,12 +266,14 @@ export class AudioProcessorBridge extends EventEmitter {
 
       const onError = (error: Error) => {
         clearTimeout(timeout);
-        this.off('heartbeat', onReady);
+        this.off('status', onReady);
         reject(error);
       };
 
-      this.once('heartbeat', onReady);
+      this.once('status', onReady);
       this.once('error', onError);
+      
+      this.sendToPython(initMessage);
     });
   }
 
@@ -234,9 +284,11 @@ export class AudioProcessorBridge extends EventEmitter {
       }
 
       const heartbeat: IPCMessage = {
-        type: 'heartbeat',
+        type: 'ping',
+        id: `ping_${Date.now()}`,
         timestamp: Date.now() * 1000,
-        payload: { from: 'typescript' }
+        session_id: 'main',
+        payload: {}
       };
 
       try {
@@ -253,9 +305,11 @@ export class AudioProcessorBridge extends EventEmitter {
     if (this.pythonProcess) {
       // Send graceful shutdown signal
       const shutdownMessage: IPCMessage = {
-        type: 'control',
+        type: 'shutdown',
+        id: `shutdown_${Date.now()}`,
         timestamp: Date.now() * 1000,
-        payload: { command: 'shutdown' }
+        session_id: 'main',
+        payload: {}
       };
 
       try {
