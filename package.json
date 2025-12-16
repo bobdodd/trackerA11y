@@ -1,0 +1,55 @@
+{
+  "name": "trackera11y",
+  "version": "0.1.0",
+  "description": "Comprehensive accessibility testing platform with integrated audio analysis",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:focus": "jest tests/unit/FocusManager.test.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "typecheck": "tsc --noEmit",
+    "demo:focus": "ts-node -r tsconfig-paths/register examples/focus-tracking-demo.ts"
+  },
+  "keywords": [
+    "accessibility",
+    "testing",
+    "a11y",
+    "audio-analysis",
+    "user-experience",
+    "diarization",
+    "transcription"
+  ],
+  "author": "TrackerA11y Team",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eventemitter3": "^5.0.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.0.0",
+    "node-addon-api": "^7.0.0",
+    "msgpack-lite": "^0.1.26"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/uuid": "^9.0.0",
+    "@types/ws": "^8.0.0",
+    "@types/msgpack-lite": "^0.1.8",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "ts-node-dev": "^2.0.0",
+    "ts-node": "^10.9.0",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

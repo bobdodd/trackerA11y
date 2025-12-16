@@ -2,115 +2,194 @@
 
 ## Project Overview
 
-TrackerA11y is a unified accessibility testing platform that combines real-time interaction tracking, screen structure analysis, and integrated diarized audio processing to provide the most comprehensive view of user experience during accessibility testing. By unifying audio analysis capabilities (previously separate in pythonAudioA11y) with visual and interaction tracking, TrackerA11y becomes the definitive tool for understanding both what users do and what they think during accessibility testing sessions.
+TrackerA11y is a unified accessibility testing platform that combines real-time interaction tracking, screen structure analysis, and integrated diarized audio processing to provide the most comprehensive view of user experience during accessibility testing. By implementing a hybrid TypeScript-Python architecture, TrackerA11y becomes the definitive tool for understanding both what users do and what they think during accessibility testing sessions.
 
 ## Project Vision
 
 TrackerA11y represents a paradigm shift from fragmented accessibility testing tools to a unified platform that provides unprecedented insight into user experience. Unlike existing solutions that require complex tool integration and post-hoc correlation, TrackerA11y captures and correlates all aspects of user interaction in real-time with microsecond precision.
 
-## Unified Architecture Benefits
+## Hybrid Architecture Benefits
 
-By integrating audio recording and analysis directly into TrackerA11y, we achieve:
-- **Elimination of synchronization complexity**: No separate tools to coordinate
+### TypeScript Core + Python Audio Pipeline
+
+**Why This Approach?**
+- **TypeScript Core**: Optimal for real-time system integration, cross-platform APIs, and web technology integration
+- **Python Audio Pipeline**: Leverages ML/AI ecosystem for state-of-the-art audio processing
+- **Best of Both Worlds**: Each language used for its optimal strengths
+
+**Key Benefits:**
+- **Elimination of synchronization complexity**: Native integration prevents data loss and timing errors
 - **Real-time correlation**: Immediate insights as testing progresses  
-- **Higher accuracy**: Native integration prevents data loss and timing errors
-- **Simplified workflow**: Single tool, single installation, unified reporting
-- **Enhanced analysis**: Capabilities impossible with separate tools
+- **Higher accuracy**: Purpose-built components optimized for their specific tasks
+- **Simplified workflow**: Single installation, unified reporting, seamless operation
+- **Enhanced analysis**: Capabilities impossible with fragmented tools
+- **Scalable performance**: Independent scaling of audio processing and system monitoring
 
 ### Comprehensive Capabilities
 
-#### Visual & Interaction Tracking
-1. **Application Focus Tracking**: Monitor which application has focus (typically browsers on desktop, native apps on mobile)
-2. **User Interaction Monitoring**: Capture and timestamp all user interactions with the focused application
-3. **Page/Screen Structure Analysis**: Deep inspection of the current page or screen structure with accessibility tree analysis
-4. **Lifecycle Tracking**: Monitor all changes and user interactions throughout the testing session
-5. **Screen Recording Integration**: Synchronized visual capture with interaction overlay
+#### Visual & Interaction Tracking (TypeScript Core)
+1. **Application Focus Tracking**: Monitor which application has focus across all platforms
+2. **User Interaction Monitoring**: Capture and timestamp all user interactions with microsecond precision
+3. **Page/Screen Structure Analysis**: Deep inspection of accessibility trees and DOM structures
+4. **Lifecycle Tracking**: Monitor all changes and user interactions throughout testing sessions
+5. **Screen Recording Integration**: Synchronized visual capture with interaction overlays
 
-#### Integrated Audio Analysis
-6. **High-Quality Audio Recording**: Professional-grade audio capture with lossless quality
-7. **Speaker Diarization**: Advanced AI-powered separation of user, tester, and moderator speech
-8. **Role-Aware Transcription**: Specialized transcription models optimized for each speaker role
+#### Integrated Audio Analysis (Python Pipeline)
+6. **High-Quality Audio Recording**: Professional-grade 48kHz/96kHz lossless audio capture
+7. **Speaker Diarization**: Advanced AI-powered separation using pyannote/speaker-diarization-3.1
+8. **Role-Aware Transcription**: Specialized transcription with Whisper Large v3 optimized for each speaker
 9. **Think-Aloud Analysis**: Deep analysis of user cognitive processes and mental models
 10. **Sentiment & Emotion Tracking**: Real-time detection of user frustration, confusion, and satisfaction
 
-#### Intelligence & Correlation
-11. **Real-Time Correlation**: Immediate linking of user speech with their actions
-12. **Accessibility Issue Detection**: Automated identification of barriers through speech-action correlation
-13. **Intent Analysis**: Understanding user goals and expectations from speech patterns
-14. **Comprehensive Reporting**: Multi-format reports with audio-visual-interaction insights
+#### Intelligence & Correlation (Hybrid System)
+11. **Real-Time Correlation**: Immediate linking of user speech with their actions via IPC bridge
+12. **Accessibility Issue Detection**: Automated identification of barriers through audio-visual correlation
+13. **Intent Analysis**: Understanding user goals and expectations from speech-action patterns
+14. **Comprehensive Reporting**: Multi-format reports with unified audio-visual-interaction insights
 
 ### Technical Excellence
 
 #### Performance & Scale
 - **Cross-platform support**: Desktop (Windows, macOS, Linux) and mobile (iOS, Android)
-- **Real-time processing**: Low-latency capture with microsecond precision timestamping
+- **Microsecond precision**: High-performance timestamping and event correlation
 - **Non-intrusive operation**: Minimal impact on testing experience with optimized resource usage
-- **Professional audio quality**: 48kHz lossless recording with advanced noise reduction
+- **Professional audio quality**: Configurable 48kHz/96kHz recording with advanced noise reduction
 
 #### AI & Machine Learning
 - **State-of-the-art diarization**: pyannote/speaker-diarization-3.1 for accurate speaker separation
-- **Advanced transcription**: Whisper Large v3 with role-specific optimization
+- **Advanced transcription**: Whisper Large v3 with role-specific optimization and confidence scoring
 - **Intelligent correlation**: ML-powered linking of speech patterns to interaction events
 - **Accessibility expertise**: Domain-specific models trained on accessibility testing scenarios
 
-## Unified Architecture
+## Project Structure
 
-### Multi-Modal Data Collection
-- **Visual Tracking**: Application focus detection, screen structure analysis, interaction monitoring
-- **Audio Processing**: High-quality recording, speaker diarization, advanced transcription
-- **Correlation Engine**: Real-time linking of user speech with visual actions and system events
-- **Intelligence Layer**: ML-powered analysis for accessibility insights and automated reporting
+```
+trackerA11y/
+├── src/                          # TypeScript Core
+│   ├── core/                     # Core system orchestration
+│   ├── platforms/                # Platform-specific implementations
+│   ├── bridge/                   # Python IPC communication
+│   ├── types/                    # TypeScript type definitions
+│   └── utils/                    # Utility functions
+├── audio_pipeline/               # Python Audio Processing
+│   ├── src/audio_pipeline/       # Python source code
+│   │   ├── processors/           # Audio analysis engines
+│   │   ├── models/               # Data models
+│   │   └── communication/        # IPC handling
+│   └── tests/                    # Python tests
+├── docs/                         # Comprehensive documentation
+└── tests/                        # TypeScript tests
+```
 
-### Application Focus Detection
-- **Desktop**: OS-level APIs to detect active windows and applications with microsecond precision
-- **Mobile**: Platform-specific methods to identify foreground applications and screen changes
-- **Browser Detection**: Specialized handling for web content with DOM tree monitoring
-- **Cross-Platform**: Unified abstraction layer for consistent behavior across all platforms
+## Getting Started
 
-### Interaction & Audio Tracking
-- **User Interactions**: Mouse/touch events, keyboard input, voice commands, assistive technology
-- **Audio Capture**: Professional-grade recording with BWF timestamping for precise synchronization
-- **Speaker Diarization**: AI-powered separation of user, tester, and moderator speech using pyannote
-- **Real-Time Transcription**: Chunked processing with Whisper Large v3 for high-quality results
+### Prerequisites
 
-### Screen Structure Analysis
-- **Web Content**: DOM accessibility tree analysis with semantic markup inspection
-- **Native Applications**: Platform accessibility APIs (UI Automation, NSAccessibility, AccessibilityService)
-- **Visual Context**: OCR and computer vision for comprehensive screen understanding
-- **Dynamic Monitoring**: Real-time detection of structure modifications and accessibility tree changes
+**TypeScript Core:**
+- Node.js 18+
+- npm or yarn
+- Platform-specific development tools (Xcode, Visual Studio, etc.)
 
-### Integrated Data Processing
-- **Unified Timestamping**: Microsecond-precision correlation across all data sources
-- **Structured Output**: Comprehensive JSON/XML logs with correlation IDs and metadata
-- **Multi-Format Export**: Integration with existing analysis tools and research platforms
-- **Real-Time Analytics**: Live correlation of speech patterns with user actions and accessibility barriers
+**Python Audio Pipeline:**
+- Python 3.9+
+- pip or poetry
+- PyTorch (for ML models)
+- Audio system access
 
-## Implementation Roadmap
+### Installation
 
-### Phase 1: Foundation (Months 1-3)
-1. **Cross-Platform Tracking Core**: Implement application focus and interaction monitoring
-2. **Audio Infrastructure**: Integrate professional recording with diarization pipeline
-3. **Correlation Engine**: Build real-time event linking and timestamping system
-4. **Data Models**: Design unified data structures for multi-modal analysis
+1. **Install TypeScript dependencies:**
+```bash
+npm install
+```
+
+2. **Install Python audio pipeline:**
+```bash
+cd audio_pipeline
+pip install -r requirements.txt
+# or with poetry
+poetry install
+```
+
+3. **Build TypeScript core:**
+```bash
+npm run build
+```
+
+4. **Run tests:**
+```bash
+# TypeScript tests
+npm test
+
+# Python tests  
+cd audio_pipeline
+pytest
+```
+
+### Development
+
+**Start development mode:**
+```bash
+# Terminal 1: TypeScript development server
+npm run dev
+
+# Terminal 2: Python pipeline in development mode
+cd audio_pipeline
+python -m audio_pipeline.main --mode standalone --log-level DEBUG
+```
+
+## Architecture Deep Dive
+
+For detailed information about our architecture decisions and implementation:
+
+- **[Architecture Decisions](./docs/architecture-decisions.md)** - Comprehensive ADR for hybrid TypeScript-Python approach
+- **[Application Focus Tracking](./docs/app-focus-tracking.md)** - Platform-specific APIs and implementation patterns
+- **[User Interaction Tracking](./docs/user-interaction-tracking.md)** - Cross-platform interaction monitoring
+- **[Screen Structure Analysis](./docs/screen-structure-analysis.md)** - Accessibility tree analysis and DOM inspection
+- **[Audio Synchronization](./docs/audio-synchronization.md)** - High-precision timestamping and correlation
+- **[Implementation Guide](./docs/implementation-guide.md)** - Production-ready architecture and code examples
+
+## Development Roadmap
+
+### Phase 1: Foundation (Months 1-3) 🚧 *In Progress*
+- [x] **Project Structure**: Hybrid TypeScript-Python architecture setup
+- [x] **Documentation**: Architecture decisions and technical foundations  
+- [ ] **Cross-Platform Tracking Core**: Application focus and interaction monitoring
+- [ ] **Audio Infrastructure**: Recording and diarization pipeline with IPC bridge
+- [ ] **Correlation Engine**: Real-time event linking and timestamping system
+- [ ] **Data Models**: Unified data structures for multi-modal analysis
 
 ### Phase 2: Intelligence (Months 4-6)
-5. **Advanced Transcription**: Implement role-aware speech processing with Whisper Large v3
-6. **Accessibility Analysis**: Build AI-powered barrier detection from audio-visual correlation
-7. **Screen Structure Analysis**: Complete accessibility tree monitoring and change detection
-8. **Performance Optimization**: Implement efficient data processing and storage systems
+- [ ] **Advanced Transcription**: Role-aware speech processing with Whisper Large v3
+- [ ] **Accessibility Analysis**: AI-powered barrier detection from audio-visual correlation
+- [ ] **Screen Structure Analysis**: Complete accessibility tree monitoring and change detection
+- [ ] **Performance Optimization**: Efficient data processing and storage systems
 
 ### Phase 3: Platform (Months 7-12)
-9. **API Development**: Create comprehensive developer APIs and SDKs
-10. **Integration Ecosystem**: Build connectors for CI/CD, testing frameworks, and research tools
-11. **Advanced Analytics**: Implement ML-powered insights and automated reporting
-12. **Enterprise Features**: Add real-time monitoring, compliance reporting, and team collaboration
+- [ ] **API Development**: Comprehensive developer APIs and SDKs
+- [ ] **Integration Ecosystem**: Connectors for CI/CD, testing frameworks, and research tools
+- [ ] **Advanced Analytics**: ML-powered insights and automated reporting
+- [ ] **Enterprise Features**: Real-time monitoring, compliance reporting, and team collaboration
 
-## Technical Research
+## Contributing
 
-Detailed implementation research and code examples are available in:
-- [Application Focus Tracking](./docs/app-focus-tracking.md) - Platform-specific APIs and implementation patterns
-- [User Interaction Tracking](./docs/user-interaction-tracking.md) - Cross-platform interaction monitoring
-- [Screen Structure Analysis](./docs/screen-structure-analysis.md) - Accessibility tree analysis and DOM inspection
-- [Audio Synchronization](./docs/audio-synchronization.md) - High-precision timestamping and correlation
-- [Accessibility Tools Landscape](./docs/accessibility-tools-landscape.md) - Market analysis and competitive positioning
-- [Implementation Guide](./docs/implementation-guide.md) - Production-ready architecture and code examples
+We welcome contributions to TrackerA11y! Please see our contributing guidelines and:
+
+1. Check existing issues and pull requests
+2. Follow our code style (ESLint for TypeScript, Black for Python)
+3. Add tests for new functionality
+4. Update documentation as needed
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Acknowledgments
+
+- **pyannote.audio team** for state-of-the-art speaker diarization
+- **OpenAI Whisper team** for advanced speech recognition
+- **Accessibility community** for inspiration and domain expertise
+
+---
+
+**TrackerA11y**: Where accessibility testing meets artificial intelligence. 🤖♿
