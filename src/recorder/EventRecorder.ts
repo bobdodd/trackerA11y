@@ -133,11 +133,15 @@ export class EventRecorder extends EventEmitter {
     console.log('\n🛑 Stopping event recording...');
 
     try {
-      // Stop monitoring
+      // Stop monitoring first
       await this.interactionManager.stopMonitoring();
 
-      // Take final screenshot
-      await this.captureFinalState();
+      // Take final screenshot (but don't fail if it doesn't work)
+      try {
+        await this.captureFinalState();
+      } catch (error) {
+        console.warn('⚠️  Could not capture final state:', error.message);
+      }
 
       // Finalize event log
       this.eventLog.endTime = this.timeSync.now();
@@ -410,10 +414,15 @@ For audio analysis correlation:
       await this.stopRecording();
     }
 
-    await this.timeSync.shutdown();
-    await this.focusManager.shutdown();
-    await this.interactionManager.shutdown();
-    await this.screenshotCapture.shutdown();
-    await this.domCapture.shutdown();
+    // Shutdown all components with error handling
+    const shutdownPromises = [
+      this.timeSync.shutdown(),
+      this.screenshotCapture.shutdown(),
+      this.domCapture.shutdown(),
+      this.focusManager.shutdown().catch(err => console.warn('Focus manager shutdown warning:', err.message)),
+      this.interactionManager.shutdown().catch(err => console.warn('Interaction manager shutdown warning:', err.message))
+    ];
+
+    await Promise.allSettled(shutdownPromises);
   }
 }

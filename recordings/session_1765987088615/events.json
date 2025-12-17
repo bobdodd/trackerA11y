@@ -1,0 +1,780 @@
+{
+  "sessionId": "session_1765987088615",
+  "startTime": 1765987089068970,
+  "endTime": 1765987144138573,
+  "events": [
+    {
+      "id": "system_1765987089481910_q130cmdm9",
+      "timestamp": 1765987089481910,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 80×24",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987089482000,
+        "timingInfo": {
+          "originalTimestamp": 1765987089482000,
+          "synchronizedTimestamp": 1765987089481956,
+          "latency": -1764717756853950,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987089482000,
+            "syncedTime": 1765987089481956,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987089_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987089602355_iczopkmrt",
+      "timestamp": 1765987089602355,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 80×24",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987089602000,
+        "timingInfo": {
+          "originalTimestamp": 1765987089602000,
+          "synchronizedTimestamp": 1765987089602368,
+          "latency": -1764717756853538,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987089602000,
+            "syncedTime": 1765987089602368,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987089_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987090997000_zd1e349p6",
+      "timestamp": 1765987090997000,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Space",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987090997000,
+        "timingInfo": {
+          "originalTimestamp": 1765987090997000,
+          "synchronizedTimestamp": 1765987090997014,
+          "latency": -1764717756853892,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987090997000,
+            "syncedTime": 1765987090997014,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987090_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987105004082_2ul1x3ak0",
+      "timestamp": 1765987105004082,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "ArrowDown",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987105004000,
+        "timingInfo": {
+          "originalTimestamp": 1765987105004000,
+          "synchronizedTimestamp": 1765987105004095,
+          "latency": -1764717756853811,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987105004000,
+            "syncedTime": 1765987105004095,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987105_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987103757361_eu2s0lcir",
+      "timestamp": 1765987103757361,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Google Chrome",
+        "windowTitle": "Claude Developer Platform - Google Chrome",
+        "processId": 559,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987103757000,
+        "timingInfo": {
+          "originalTimestamp": 1765987103757000,
+          "synchronizedTimestamp": 1765987103757383,
+          "latency": -1764717756853523,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987103757000,
+            "syncedTime": 1765987103757383,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987103_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987110434216_p79fwjkqn",
+      "timestamp": 1765987110434216,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "bobdodd/trackerA11y: Comprehensive accessibility testing platform with integrated audio analysis and real-time user experience correlation",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987110434000,
+        "timingInfo": {
+          "originalTimestamp": 1765987110434000,
+          "synchronizedTimestamp": 1765987110434246,
+          "latency": -1764717756853660,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987110434000,
+            "syncedTime": 1765987110434246,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987110_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987113428486_fcp0az89j",
+      "timestamp": 1765987113428486,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Non-functional help icon provides no assistance to users ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987113428000,
+        "timingInfo": {
+          "originalTimestamp": 1765987113428000,
+          "synchronizedTimestamp": 1765987113428520,
+          "latency": -1764717756853386,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987113428000,
+            "syncedTime": 1765987113428520,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987113_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987115008010_3qa6vzajc",
+      "timestamp": 1765987115008010,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 1576,
+            "y": 571
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 1576,
+          "y": 571
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987115007000,
+        "timingInfo": {
+          "originalTimestamp": 1765987115007000,
+          "synchronizedTimestamp": 1765987115008025,
+          "latency": -1764717756852881,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987115007000,
+            "syncedTime": 1765987115008025,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987115_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987116011419_5b3k2mmrj",
+      "timestamp": 1765987116011419,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Enter",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987116011000,
+        "timingInfo": {
+          "originalTimestamp": 1765987116011000,
+          "synchronizedTimestamp": 1765987116011430,
+          "latency": -1764717756853476,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987116011000,
+            "syncedTime": 1765987116011430,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987116_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987121919798_8sdnpo8do",
+      "timestamp": 1765987121919798,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "CNIB Frontier Accessibility ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987121919000,
+        "timingInfo": {
+          "originalTimestamp": 1765987121919000,
+          "synchronizedTimestamp": 1765987121919841,
+          "latency": -1764717756853065,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987121919000,
+            "syncedTime": 1765987121919841,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987121_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987127455755_m1avwiq45",
+      "timestamp": 1765987127455755,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "https://audits.frontier-cnib.ca/audit/glendon-college/glendon-college",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987127455000,
+        "timingInfo": {
+          "originalTimestamp": 1765987127455000,
+          "synchronizedTimestamp": 1765987127455780,
+          "latency": -1764717756853126,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987127455000,
+            "syncedTime": 1765987127455780,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987127_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987127873233_1tnjqa1l1",
+      "timestamp": 1765987127873233,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Glendon College ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987127873000,
+        "timingInfo": {
+          "originalTimestamp": 1765987127873000,
+          "synchronizedTimestamp": 1765987127873245,
+          "latency": -1764717756853661,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987127873000,
+            "syncedTime": 1765987127873245,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987127_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987130024873_i94f98zqw",
+      "timestamp": 1765987130024873,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Space",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987130024000,
+        "timingInfo": {
+          "originalTimestamp": 1765987130024000,
+          "synchronizedTimestamp": 1765987130024882,
+          "latency": -1764717756853024,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987130024000,
+            "syncedTime": 1765987130024882,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987130_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987134454373_r23xet595",
+      "timestamp": 1765987134454373,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987134454000,
+        "timingInfo": {
+          "originalTimestamp": 1765987134454000,
+          "synchronizedTimestamp": 1765987134454388,
+          "latency": -1764717756853518,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987134454000,
+            "syncedTime": 1765987134454388,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987134_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987134879341_czp6taznf",
+      "timestamp": 1765987134879341,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "2025 Annual Pitch Event Photos - Glendon College ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987134879000,
+        "timingInfo": {
+          "originalTimestamp": 1765987134879000,
+          "synchronizedTimestamp": 1765987134879354,
+          "latency": -1764717756853552,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987134879000,
+            "syncedTime": 1765987134879354,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987134_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765987135030626_riqe9lrd2",
+      "timestamp": 1765987135030626,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Enter",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987135030000,
+        "timingInfo": {
+          "originalTimestamp": 1765987135030000,
+          "synchronizedTimestamp": 1765987135030631,
+          "latency": -1764717756853275,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987135030000,
+            "syncedTime": 1765987135030631,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987135_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765987138266489_kgdmf9jsa",
+      "timestamp": 1765987138266489,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 80×24",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987138266000,
+        "timingInfo": {
+          "originalTimestamp": 1765987138266000,
+          "synchronizedTimestamp": 1765987138266503,
+          "latency": -1764717756853403,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987138266000,
+            "syncedTime": 1765987138266503,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987138_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "system_1765987144137280_a61c6gbtj",
+      "timestamp": 1765987144137280,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 55068298,
+        "totalEvents": 17
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987144136000,
+        "timingInfo": {
+          "originalTimestamp": 1765987144136000,
+          "synchronizedTimestamp": 1765987144137286,
+          "latency": -1764717756852620,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987144136000,
+            "syncedTime": 1765987144137286,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987144_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "system_1765987144138342_wv2mreo42",
+      "timestamp": 1765987144138342,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 55069369,
+        "totalEvents": 18
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987144138000,
+        "timingInfo": {
+          "originalTimestamp": 1765987144138000,
+          "synchronizedTimestamp": 1765987144138346,
+          "latency": -1764717756853560,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987144138000,
+            "syncedTime": 1765987144138346,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987144_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "system_1765987144138550_ocji2qg8b",
+      "timestamp": 1765987144138550,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 55069578,
+        "totalEvents": 19
+      },
+      "metadata": {
+        "sessionId": "session_1765987088615",
+        "capturedAt": 1765987144138000,
+        "timingInfo": {
+          "originalTimestamp": 1765987144138000,
+          "synchronizedTimestamp": 1765987144138552,
+          "latency": -1764717756853354,
+          "accuracy": 3665.151201974256,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765987144138000,
+            "syncedTime": 1765987144138552,
+            "uncertainty": 3665.151201974256,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765987144_1000000us"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "/Users/bob3/Desktop/trackerA11y/recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "medium",
+        "format": "png",
+        "minInterval": 2000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": false
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": true,
+        "captureStyles": false,
+        "captureResources": false,
+        "minInterval": 5000,
+        "browsers": [
+          "Safari",
+          "Chrome",
+          "Firefox",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": false,
+        "captureTouchEvents": true,
+        "captureCoordinates": true,
+        "captureTimings": true
+      },
+      "flushInterval": 10000
+    },
+    "version": "1.0.0"
+  }
+}

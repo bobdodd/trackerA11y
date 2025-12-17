@@ -63,9 +63,13 @@ program
     };
 
     const recorder = new EventRecorder(config);
+    let isShuttingDown = false;
 
-    // Handle shutdown
-    process.on('SIGINT', async () => {
+    // Handle shutdown gracefully
+    const gracefulShutdown = async () => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      
       console.log('\n🛑 Stopping recording...');
       try {
         await recorder.stopRecording();
@@ -75,13 +79,20 @@ program
         console.error('Error stopping recording:', error);
         process.exit(1);
       }
-    });
+    };
+
+    process.on('SIGINT', gracefulShutdown);
+    process.on('SIGTERM', gracefulShutdown);
 
     try {
       await recorder.startRecording();
       
-      // Keep running
-      await new Promise(() => {}); // Run forever until SIGINT
+      // Keep running until interrupted
+      await new Promise<void>((resolve) => {
+        // Resolve on shutdown signal
+        process.once('SIGINT', resolve);
+        process.once('SIGTERM', resolve);
+      });
       
     } catch (error) {
       console.error('Failed to start recording:', error);

@@ -212,18 +212,34 @@ export class ScreenshotCapture extends EventEmitter {
     const testPath = path.join(this.screenshotOutputDir, 'test_screenshot.png');
     
     try {
+      console.log('🔍 Testing screenshot permissions...');
       const success = await this.captureFullScreen(testPath);
       
       if (success) {
-        // Clean up test file
-        await fs.unlink(testPath);
-        console.log('✅ Screenshot capability verified');
-      } else {
-        console.warn('⚠️  Screenshot capability test failed - screenshots may not work');
-        console.warn('   Make sure Terminal has Screen Recording permissions in System Preferences');
+        // Check if file was actually created and has content
+        try {
+          const stats = await fs.stat(testPath);
+          if (stats.size > 1000) { // At least 1KB for a valid screenshot
+            await fs.unlink(testPath);
+            console.log('✅ Screenshot capability verified');
+            return;
+          }
+        } catch {
+          // File not created or empty
+        }
       }
+      
+      // Screenshot failed
+      console.log('❌ Screenshot capability test failed');
+      console.log('📋 To fix this:');
+      console.log('   1. Open System Preferences → Security & Privacy → Privacy');
+      console.log('   2. Click "Screen Recording" on the left');
+      console.log('   3. Check the box next to "Terminal" (or your IDE)'); 
+      console.log('   4. Restart this application');
+      console.log('   ℹ️  Recording will continue without screenshots');
+      
     } catch (error) {
-      console.warn('⚠️  Could not test screenshot capability:', error);
+      console.warn('⚠️  Could not test screenshot capability - will continue without screenshots');
     }
   }
 
