@@ -140,7 +140,7 @@ export class EventRecorder extends EventEmitter {
       try {
         await this.captureFinalState();
       } catch (error) {
-        console.warn('⚠️  Could not capture final state:', error.message);
+        console.warn('⚠️  Could not capture final state:', error instanceof Error ? error.message : 'Unknown error');
       }
 
       // Finalize event log
