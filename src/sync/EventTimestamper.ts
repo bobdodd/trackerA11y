@@ -10,7 +10,7 @@ export interface TimestampMetadata {
   sourceTime: number; // Original timestamp from source
   syncedTime: number; // Time-synchronized timestamp
   uncertainty: number; // Timing uncertainty in microseconds
-  source: 'system' | 'audio' | 'performance' | 'external';
+  source: 'system' | 'audio' | 'performance';
   correlationWindow: string; // Time window ID for event correlation
   clockDrift?: number; // Clock drift at time of capture
   ntpOffset?: number; // NTP offset at time of capture
@@ -42,7 +42,7 @@ export class EventTimestamper {
     event: Omit<T, 'timestamp' | 'id'>,
     options: {
       sourceTime?: number;
-      timeSource?: 'system' | 'audio' | 'performance' | 'external';
+      timeSource?: 'system' | 'audio' | 'performance';
       correlationWindowSize?: number;
     } = {}
   ): T {
@@ -75,7 +75,7 @@ export class EventTimestamper {
     };
 
     // Build the complete event
-    const timestampedEvent: T = {
+    const timestampedEvent = {
       ...event,
       id: eventId,
       timestamp: synchronizedTime,
@@ -85,7 +85,7 @@ export class EventTimestamper {
         capturedAt: captureTime,
         timing: timestampMetadata
       }
-    } as T;
+    } as unknown as T;
 
     return timestampedEvent;
   }
@@ -122,7 +122,7 @@ export class EventTimestamper {
     events: T[],
     options: {
       preserveRelativeTiming?: boolean;
-      timeSource?: 'system' | 'audio' | 'performance' | 'external';
+      timeSource?: 'system' | 'audio' | 'performance';
     } = {}
   ): T[] {
     if (events.length === 0) return events;
@@ -219,7 +219,6 @@ export class EventTimestamper {
     const groups = new Map<string, T[]>();
     
     for (const event of events) {
-      const windowId = this.timeSync.createCorrelationWindow(windowSize);
       const eventWindowId = Math.floor(event.timestamp / windowSize);
       const key = `timewindow_${eventWindowId}_${windowSize}us`;
       
@@ -294,7 +293,7 @@ export class EventTimestamper {
   validateEventTiming<T extends TimestampedEvent>(events: T[]): {
     isValid: boolean;
     issues: string[];
-    statistics: ReturnType<typeof this.getTimingStatistics>;
+    statistics: ReturnType<EventTimestamper['getTimingStatistics']>;
   } {
     const issues: string[] = [];
     const stats = this.getTimingStatistics(events);
