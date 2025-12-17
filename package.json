@@ -13,7 +13,11 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "typecheck": "tsc --noEmit",
-    "demo:focus": "ts-node -r tsconfig-paths/register examples/focus-tracking-demo.ts"
+    "demo:focus": "ts-node -r tsconfig-paths/register examples/focus-tracking-demo.ts",
+    "demo:recorder": "ts-node -r tsconfig-paths/register examples/event-recorder-demo.ts",
+    "cli": "ts-node -r tsconfig-paths/register cli.ts",
+    "record": "npm run cli record",
+    "analyze": "npm run cli analyze"
   },
   "keywords": [
     "accessibility",
@@ -28,25 +32,26 @@
   "license": "MIT",
   "dependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
+    "commander": "^14.0.2",
     "eventemitter3": "^5.0.0",
-    "uuid": "^9.0.0",
-    "ws": "^8.0.0",
+    "msgpack-lite": "^0.1.26",
     "node-addon-api": "^7.0.0",
-    "msgpack-lite": "^0.1.26"
+    "typescript": "^5.0.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",
+    "@types/msgpack-lite": "^0.1.8",
     "@types/uuid": "^9.0.0",
     "@types/ws": "^8.0.0",
-    "@types/msgpack-lite": "^0.1.8",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
-    "ts-node-dev": "^2.0.0",
     "ts-node": "^10.9.0",
+    "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0"
   },
   "engines": {
