@@ -249,11 +249,17 @@ export class EventRecorder extends EventEmitter {
 
     // Error handling
     this.focusManager.on('error', (error) => {
-      this.recordCustomEvent('system_error', { component: 'focusManager', error: error.message });
+      this.recordCustomEvent('system_error', { 
+        component: 'focusManager', 
+        error: error instanceof Error ? error.message : String(error)
+      });
     });
 
     this.interactionManager.on('error', (error) => {
-      this.recordCustomEvent('system_error', { component: 'interactionManager', error: error.message });
+      this.recordCustomEvent('system_error', { 
+        component: 'interactionManager', 
+        error: error instanceof Error ? error.message : String(error)
+      });
     });
   }
 

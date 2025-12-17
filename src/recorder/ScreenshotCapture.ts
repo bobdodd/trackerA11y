@@ -364,7 +364,7 @@ export class ScreenshotCapture extends EventEmitter {
         });
 
         process.on('error', (error) => {
-          console.log('❌ Time-lapse creation failed:', error.message);
+          console.log('❌ Time-lapse creation failed:', error instanceof Error ? error.message : String(error));
           resolve(false);
         });
       });
