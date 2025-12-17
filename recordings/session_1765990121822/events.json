@@ -1,0 +1,625 @@
+{
+  "sessionId": "session_1765990121822",
+  "startTime": 1765990122253128,
+  "endTime": 1765990163083750,
+  "events": [
+    {
+      "id": "system_1765990122599649_6mlrjlph0",
+      "timestamp": 1765990122599649,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record --no-screenshots --no-dom __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 LaunchInstanceID=D3331C97-7BA0-4996-A5B0-044762845F5B TERM=xterm-256color SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.0Nd9PIZWe7/Listeners — 80×12",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990122600000,
+        "timingInfo": {
+          "originalTimestamp": 1765990122600000,
+          "synchronizedTimestamp": 1765990122599691,
+          "latency": -1764717756825838,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990122600000,
+            "syncedTime": 1765990122599691,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990122_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990122786777_fuxe8gvjo",
+      "timestamp": 1765990122786777,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record --no-screenshots --no-dom __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 LaunchInstanceID=D3331C97-7BA0-4996-A5B0-044762845F5B TERM=xterm-256color SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.0Nd9PIZWe7/Listeners — 80×12",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990122787000,
+        "timingInfo": {
+          "originalTimestamp": 1765990122787000,
+          "synchronizedTimestamp": 1765990122786789,
+          "latency": -1764717756825740,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990122787000,
+            "syncedTime": 1765990122786789,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990122_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990129087046_ym837esi0",
+      "timestamp": 1765990129087046,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "(9+) Inside Niagara - Live in Niagara - TechSmith Screencast",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990129087000,
+        "timingInfo": {
+          "originalTimestamp": 1765990129087000,
+          "synchronizedTimestamp": 1765990129087062,
+          "latency": -1764717756825467,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990129087000,
+            "syncedTime": 1765990129087062,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990129_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990130492538_03h39h4sc",
+      "timestamp": 1765990130492538,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Julie - Magnifier - Android - Recordings",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990130493000,
+        "timingInfo": {
+          "originalTimestamp": 1765990130493000,
+          "synchronizedTimestamp": 1765990130492566,
+          "latency": -1764717756825963,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990130493000,
+            "syncedTime": 1765990130492566,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990130_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990134034807_4wkftmjlh",
+      "timestamp": 1765990134034807,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990134035000,
+        "timingInfo": {
+          "originalTimestamp": 1765990134035000,
+          "synchronizedTimestamp": 1765990134034836,
+          "latency": -1764717756825693,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990134035000,
+            "syncedTime": 1765990134034836,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990134_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990134470695_cqc2ui01y",
+      "timestamp": 1765990134470695,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Recordings - Auto A11y",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990134471000,
+        "timingInfo": {
+          "originalTimestamp": 1765990134471000,
+          "synchronizedTimestamp": 1765990134470717,
+          "latency": -1764717756825812,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990134471000,
+            "syncedTime": 1765990134470717,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990134_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990136544284_zp6xqoljx",
+      "timestamp": 1765990136544284,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Julie - Magnifier - Android - Recordings",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990136544000,
+        "timingInfo": {
+          "originalTimestamp": 1765990136544000,
+          "synchronizedTimestamp": 1765990136544314,
+          "latency": -1764717756825215,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990136544000,
+            "syncedTime": 1765990136544314,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990136_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765990138185957_kgec5mz1i",
+      "timestamp": 1765990138185957,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Tab",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990138186000,
+        "timingInfo": {
+          "originalTimestamp": 1765990138186000,
+          "synchronizedTimestamp": 1765990138185970,
+          "latency": -1764717756825559,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990138186000,
+            "syncedTime": 1765990138185970,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990138_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990146064133_d7x9yzes1",
+      "timestamp": 1765990146064133,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990146064000,
+        "timingInfo": {
+          "originalTimestamp": 1765990146064000,
+          "synchronizedTimestamp": 1765990146064165,
+          "latency": -1764717756825364,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990146064000,
+            "syncedTime": 1765990146064165,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990146_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990146501524_qiatfdlnj",
+      "timestamp": 1765990146501524,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Julie - Magnifier - Android - Recordings",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990146502000,
+        "timingInfo": {
+          "originalTimestamp": 1765990146502000,
+          "synchronizedTimestamp": 1765990146501558,
+          "latency": -1764717756825971,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990146502000,
+            "syncedTime": 1765990146501558,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990146_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990150060839_hzsz5craw",
+      "timestamp": 1765990150060839,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "(9+) Inside Niagara - Live in Niagara - TechSmith Screencast",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990150061000,
+        "timingInfo": {
+          "originalTimestamp": 1765990150061000,
+          "synchronizedTimestamp": 1765990150060870,
+          "latency": -1764717756825659,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990150061000,
+            "syncedTime": 1765990150060870,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990150_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765990150189406_d5mwwtu6l",
+      "timestamp": 1765990150189406,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 487,
+            "y": 685
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 487,
+          "y": 685
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990150189000,
+        "timingInfo": {
+          "originalTimestamp": 1765990150189000,
+          "synchronizedTimestamp": 1765990150189413,
+          "latency": -1764717756825116,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990150189000,
+            "syncedTime": 1765990150189413,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990150_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1765990158872257_tji7hh2rn",
+      "timestamp": 1765990158872257,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run record --no-screenshots --no-dom __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 LaunchInstanceID=D3331C97-7BA0-4996-A5B0-044762845F5B TERM=xterm-256color SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.0Nd9PIZWe7/Listeners — 80×12",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990158872000,
+        "timingInfo": {
+          "originalTimestamp": 1765990158872000,
+          "synchronizedTimestamp": 1765990158872265,
+          "latency": -1764717756825264,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990158872000,
+            "syncedTime": 1765990158872265,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990158_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1765990160195781_xye6g51ye",
+      "timestamp": 1765990160195781,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Space",
+          "modifiers": [],
+          "text": ""
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990160196000,
+        "timingInfo": {
+          "originalTimestamp": 1765990160196000,
+          "synchronizedTimestamp": 1765990160195787,
+          "latency": -1764717756825742,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990160196000,
+            "syncedTime": 1765990160195787,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990160_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "system_1765990163083645_91ibd2ocb",
+      "timestamp": 1765990163083645,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 40830492,
+        "totalEvents": 14
+      },
+      "metadata": {
+        "sessionId": "session_1765990121822",
+        "capturedAt": 1765990163083000,
+        "timingInfo": {
+          "originalTimestamp": 1765990163083000,
+          "synchronizedTimestamp": 1765990163083654,
+          "latency": -1764717756824875,
+          "accuracy": 3772.7090178455765,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1765990163083000,
+            "syncedTime": 1765990163083654,
+            "uncertainty": 3772.7090178455765,
+            "source": "performance",
+            "correlationWindow": "timewindow_1765990163_1000000us"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "/Users/bob3/Desktop/trackerA11y/recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "medium",
+        "format": "png",
+        "minInterval": 2000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": false
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": true,
+        "captureStyles": false,
+        "captureResources": false,
+        "minInterval": 5000,
+        "browsers": [
+          "Safari",
+          "Chrome",
+          "Firefox",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": false,
+        "captureTouchEvents": true,
+        "captureCoordinates": true,
+        "captureTimings": true
+      },
+      "flushInterval": 10000
+    },
+    "version": "1.0.0"
+  }
+}
