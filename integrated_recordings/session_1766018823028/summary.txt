@@ -1,0 +1,28 @@
+
+Event Recording Summary
+======================
+Session ID: session_1766018823028
+Duration: 109.67 seconds
+Total Events: 224
+Platform: darwin
+
+Event Breakdown:
+  mouse_move: 177
+  scroll: 24
+  application_focus_changed: 11
+  click: 9
+  initial_focus: 1
+  key: 1
+  recording_ended: 1
+
+Output Files:
+- events.json: Complete event log with timestamps
+- screenshots/: Screenshots captured during session
+- dom_states/: DOM snapshots for web interactions
+- summary.txt: This summary file
+
+For audio analysis correlation:
+- All events have microsecond-precise timestamps
+- Screenshots show visual state at moment of interaction
+- DOM states capture web page structure when relevant
+- Complete interaction history with coordinates and keys

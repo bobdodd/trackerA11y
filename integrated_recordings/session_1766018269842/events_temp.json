@@ -1,0 +1,3851 @@
+{
+  "sessionId": "session_1766018269842",
+  "startTime": 1766018270177705,
+  "endTime": 0,
+  "events": [
+    {
+      "id": "system_1766018270520282_dy3x554mp",
+      "timestamp": 1766018270520282,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run demo:integrated __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 129×32",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018270520000,
+        "timingInfo": {
+          "originalTimestamp": 1766018270520000,
+          "synchronizedTimestamp": 1766018270520336,
+          "latency": -1764717756850198,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018270520000,
+            "syncedTime": 1766018270520336,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018270_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018270838528_96gf8h878",
+      "timestamp": 1766018270838528,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run demo:integrated __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 129×32",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018270838000,
+        "timingInfo": {
+          "originalTimestamp": 1766018270838000,
+          "synchronizedTimestamp": 1766018270838541,
+          "latency": -1764717756849993,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018270838000,
+            "syncedTime": 1766018270838541,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018270_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018273323367_zcgppkizp",
+      "timestamp": 1766018273323367,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 866.57421875,
+            "y": 695
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 866.57421875,
+          "y": 695
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018273323000,
+        "timingInfo": {
+          "originalTimestamp": 1766018273323000,
+          "synchronizedTimestamp": 1766018273323381,
+          "latency": -1764717756850153,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018273323000,
+            "syncedTime": 1766018273323381,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018273_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018273426585_79zf6f7z3",
+      "timestamp": 1766018273426585,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 786.41015625,
+            "y": 779.89453125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 786.41015625,
+          "y": 779.89453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018273426000,
+        "timingInfo": {
+          "originalTimestamp": 1766018273426000,
+          "synchronizedTimestamp": 1766018273426598,
+          "latency": -1764717756849936,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018273426000,
+            "syncedTime": 1766018273426598,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018273_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018273533767_s5urvm0r6",
+      "timestamp": 1766018273533767,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 566.46484375,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 566.46484375,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018273533000,
+        "timingInfo": {
+          "originalTimestamp": 1766018273533000,
+          "synchronizedTimestamp": 1766018273533779,
+          "latency": -1764717756849755,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018273533000,
+            "syncedTime": 1766018273533779,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018273_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018273821974_lb6dbrypy",
+      "timestamp": 1766018273821974,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 470.05859375,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 470.05859375,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018273822000,
+        "timingInfo": {
+          "originalTimestamp": 1766018273822000,
+          "synchronizedTimestamp": 1766018273821987,
+          "latency": -1764717756850547,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018273822000,
+            "syncedTime": 1766018273821987,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018273_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018273927799_zyxsn6d74",
+      "timestamp": 1766018273927799,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 373.6171875,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 373.6171875,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018273927000,
+        "timingInfo": {
+          "originalTimestamp": 1766018273927000,
+          "synchronizedTimestamp": 1766018273927813,
+          "latency": -1764717756849721,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018273927000,
+            "syncedTime": 1766018273927813,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018273_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018274256843_6fs37r7qf",
+      "timestamp": 1766018274256843,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 314.57421875,
+            "y": 948.8046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 314.57421875,
+          "y": 948.8046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018274257000,
+        "timingInfo": {
+          "originalTimestamp": 1766018274257000,
+          "synchronizedTimestamp": 1766018274256854,
+          "latency": -1764717756850680,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018274257000,
+            "syncedTime": 1766018274256854,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018274_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018274150403_ybu03uzxv",
+      "timestamp": 1766018274150403,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 362.703125,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 362.703125,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018274150000,
+        "timingInfo": {
+          "originalTimestamp": 1766018274150000,
+          "synchronizedTimestamp": 1766018274150415,
+          "latency": -1764717756850119,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018274150000,
+            "syncedTime": 1766018274150415,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018274_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018274791712_c7wglbil7",
+      "timestamp": 1766018274791712,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 297.34765625,
+            "y": 947.92578125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 297.34765625,
+          "y": 947.92578125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018274791000,
+        "timingInfo": {
+          "originalTimestamp": 1766018274791000,
+          "synchronizedTimestamp": 1766018274791728,
+          "latency": -1764717756849806,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018274791000,
+            "syncedTime": 1766018274791728,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018274_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018274897919_dtbqeis1y",
+      "timestamp": 1766018274897919,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 291.4453125,
+            "y": 947.11328125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 291.4453125,
+          "y": 947.11328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018274898000,
+        "timingInfo": {
+          "originalTimestamp": 1766018274898000,
+          "synchronizedTimestamp": 1766018274897940,
+          "latency": -1764717756850594,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018274898000,
+            "syncedTime": 1766018274897940,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018274_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275004369_cjg2w0hid",
+      "timestamp": 1766018275004369,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 281.77734375,
+            "y": 946.796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 281.77734375,
+          "y": 946.796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275004000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275004000,
+          "synchronizedTimestamp": 1766018275004376,
+          "latency": -1764717756850158,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275004000,
+            "syncedTime": 1766018275004376,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275111297_zvgid4kg8",
+      "timestamp": 1766018275111297,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 277.40625,
+            "y": 946.796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 277.40625,
+          "y": 946.796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275111000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275111000,
+          "synchronizedTimestamp": 1766018275111306,
+          "latency": -1764717756850228,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275111000,
+            "syncedTime": 1766018275111306,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275629365_78hy4mi48",
+      "timestamp": 1766018275629365,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 276.91015625,
+            "y": 946.796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 276.91015625,
+          "y": 946.796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275629000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275629000,
+          "synchronizedTimestamp": 1766018275629372,
+          "latency": -1764717756850162,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275629000,
+            "syncedTime": 1766018275629372,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275736572_9d1zd11fe",
+      "timestamp": 1766018275736572,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 268.6015625,
+            "y": 941.37890625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 268.6015625,
+          "y": 941.37890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275736000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275736000,
+          "synchronizedTimestamp": 1766018275736584,
+          "latency": -1764717756849950,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275736000,
+            "syncedTime": 1766018275736584,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275842337_hte5ecnlo",
+      "timestamp": 1766018275842337,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 265.37109375,
+            "y": 934.4296875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 265.37109375,
+          "y": 934.4296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275842000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275842000,
+          "synchronizedTimestamp": 1766018275842343,
+          "latency": -1764717756850191,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275842000,
+            "syncedTime": 1766018275842343,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276055753_rz06i56ee",
+      "timestamp": 1766018276055753,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 255.5625,
+            "y": 930.87890625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 255.5625,
+          "y": 930.87890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276055000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276055000,
+          "synchronizedTimestamp": 1766018276055765,
+          "latency": -1764717756849769,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276055000,
+            "syncedTime": 1766018276055765,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276162781_2857me4vq",
+      "timestamp": 1766018276162781,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 251.484375,
+            "y": 929.25390625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 251.484375,
+          "y": 929.25390625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276162000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276162000,
+          "synchronizedTimestamp": 1766018276162788,
+          "latency": -1764717756849746,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276162000,
+            "syncedTime": 1766018276162788,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018275949508_eiwioh6zb",
+      "timestamp": 1766018275949508,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 262.51171875,
+            "y": 932.61328125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 262.51171875,
+          "y": 932.61328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018275949000,
+        "timingInfo": {
+          "originalTimestamp": 1766018275949000,
+          "synchronizedTimestamp": 1766018275949516,
+          "latency": -1764717756850018,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018275949000,
+            "syncedTime": 1766018275949516,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018275_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276270138_5rvbnl27g",
+      "timestamp": 1766018276270138,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 249.37109375,
+            "y": 928.20703125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 249.37109375,
+          "y": 928.20703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276270000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276270000,
+          "synchronizedTimestamp": 1766018276270146,
+          "latency": -1764717756850388,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276270000,
+            "syncedTime": 1766018276270146,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276379711_e7oyfwil7",
+      "timestamp": 1766018276379711,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 223.19140625,
+            "y": 928.96875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 223.19140625,
+          "y": 928.96875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276379000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276379000,
+          "synchronizedTimestamp": 1766018276379732,
+          "latency": -1764717756849802,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276379000,
+            "syncedTime": 1766018276379732,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276499382_a63e4q154",
+      "timestamp": 1766018276499382,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 215.15234375,
+            "y": 929.9609375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 215.15234375,
+          "y": 929.9609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276499000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276499000,
+          "synchronizedTimestamp": 1766018276499391,
+          "latency": -1764717756850143,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276499000,
+            "syncedTime": 1766018276499391,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018279211133_esa4vydbs",
+      "timestamp": 1766018279211133,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "Unknown Window",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018279211000,
+        "timingInfo": {
+          "originalTimestamp": 1766018279211000,
+          "synchronizedTimestamp": 1766018279211142,
+          "latency": -1764717756850392,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018279211000,
+            "syncedTime": 1766018279211142,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018279_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276603271_grq615135",
+      "timestamp": 1766018276603271,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 212.1484375,
+            "y": 929.9609375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 212.1484375,
+          "y": 929.9609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276603000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276603000,
+          "synchronizedTimestamp": 1766018276603281,
+          "latency": -1764717756850253,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276603000,
+            "syncedTime": 1766018276603281,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276738596_rlp1y9pm4",
+      "timestamp": 1766018276738596,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 212.40625,
+            "y": 931.984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 212.40625,
+          "y": 931.984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276738000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276738000,
+          "synchronizedTimestamp": 1766018276738603,
+          "latency": -1764717756849931,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276738000,
+            "syncedTime": 1766018276738603,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276844640_rr9jqp9w7",
+      "timestamp": 1766018276844640,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 236.14453125,
+            "y": 927.41796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 236.14453125,
+          "y": 927.41796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276844000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276844000,
+          "synchronizedTimestamp": 1766018276844650,
+          "latency": -1764717756849884,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276844000,
+            "syncedTime": 1766018276844650,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018276945809_d8an8x6qw",
+      "timestamp": 1766018276945809,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 242.953125,
+            "y": 924.3984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 242.953125,
+          "y": 924.3984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018276945000,
+        "timingInfo": {
+          "originalTimestamp": 1766018276945000,
+          "synchronizedTimestamp": 1766018276945830,
+          "latency": -1764717756849704,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018276945000,
+            "syncedTime": 1766018276945830,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018276_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018277050220_yykd14u6q",
+      "timestamp": 1766018277050220,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 244.42578125,
+            "y": 924.3984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 244.42578125,
+          "y": 924.3984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018277050000,
+        "timingInfo": {
+          "originalTimestamp": 1766018277050000,
+          "synchronizedTimestamp": 1766018277050228,
+          "latency": -1764717756850306,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018277050000,
+            "syncedTime": 1766018277050228,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018277_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018282906616_rj0yu7vh4",
+      "timestamp": 1766018282906616,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "trackerA11y — osascript ◂ npm run demo:integrated __CFBundleIdentifier=com.apple.Terminal TMPDIR=/var/folders/fq/8gr8pf4j6nvccr9n4m2fhfhh0000gp/T/ XPC_FLAGS=0x0 — 129×32",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282906000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282906000,
+          "synchronizedTimestamp": 1766018282906623,
+          "latency": -1764717756849911,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282906000,
+            "syncedTime": 1766018282906623,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018277157226_jk0mfzeku",
+      "timestamp": 1766018277157226,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 247.24609375,
+            "y": 924.3984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 247.24609375,
+          "y": 924.3984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018277157000,
+        "timingInfo": {
+          "originalTimestamp": 1766018277157000,
+          "synchronizedTimestamp": 1766018277157234,
+          "latency": -1764717756850300,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018277157000,
+            "syncedTime": 1766018277157234,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018277_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018277279574_0w4wlm20i",
+      "timestamp": 1766018277279574,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 248.01953125,
+            "y": 925.34765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 248.01953125,
+          "y": 925.34765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018277279000,
+        "timingInfo": {
+          "originalTimestamp": 1766018277279000,
+          "synchronizedTimestamp": 1766018277279583,
+          "latency": -1764717756849951,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018277279000,
+            "syncedTime": 1766018277279583,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018277_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018277321867_2rj89p6q6",
+      "timestamp": 1766018277321867,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 248.01953125,
+            "y": 925.34765625
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 248.01953125,
+          "y": 925.34765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018277322000,
+        "timingInfo": {
+          "originalTimestamp": 1766018277322000,
+          "synchronizedTimestamp": 1766018277321892,
+          "latency": -1764717756850642,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018277322000,
+            "syncedTime": 1766018277321892,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018277_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018277342371_yugxsl3p9",
+      "timestamp": 1766018277342371,
+      "source": "interaction",
+      "type": "drag",
+      "data": {
+        "interactionType": "drag",
+        "target": {
+          "coordinates": {
+            "x": 248.01953125,
+            "y": 925.46484375
+          }
+        },
+        "inputData": {
+          "button": "left"
+        },
+        "coordinates": {
+          "x": 248.01953125,
+          "y": 925.46484375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018277342000,
+        "timingInfo": {
+          "originalTimestamp": 1766018277342000,
+          "synchronizedTimestamp": 1766018277342378,
+          "latency": -1764717756850156,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018277342000,
+            "syncedTime": 1766018277342378,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018277_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278388864_o5s78s0t0",
+      "timestamp": 1766018278388864,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 380.98046875,
+            "y": 580.00390625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 380.98046875,
+          "y": 580.00390625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278388000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278388000,
+          "synchronizedTimestamp": 1766018278388872,
+          "latency": -1764717756849662,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278388000,
+            "syncedTime": 1766018278388872,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278142283_qx4jozphp",
+      "timestamp": 1766018278142283,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 331.140625,
+            "y": 659.65625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 331.140625,
+          "y": 659.65625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278142000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278142000,
+          "synchronizedTimestamp": 1766018278142294,
+          "latency": -1764717756850240,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278142000,
+            "syncedTime": 1766018278142294,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278491130_jdwgmuqlh",
+      "timestamp": 1766018278491130,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 344.1875,
+            "y": 562.46875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 344.1875,
+          "y": 562.46875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278491000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278491000,
+          "synchronizedTimestamp": 1766018278491137,
+          "latency": -1764717756850397,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278491000,
+            "syncedTime": 1766018278491137,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018284993119_cmlj43mvh",
+      "timestamp": 1766018284993119,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Search ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018284993000,
+        "timingInfo": {
+          "originalTimestamp": 1766018284993000,
+          "synchronizedTimestamp": 1766018284993130,
+          "latency": -1764717756850404,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018284993000,
+            "syncedTime": 1766018284993130,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018284_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278594486_yebevf2vl",
+      "timestamp": 1766018278594486,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 328.4375,
+            "y": 460.44921875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 328.4375,
+          "y": 460.44921875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278594000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278594000,
+          "synchronizedTimestamp": 1766018278594495,
+          "latency": -1764717756850039,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278594000,
+            "syncedTime": 1766018278594495,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278973356_zzs8p3ftb",
+      "timestamp": 1766018278973356,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 335.76953125,
+            "y": 430.68359375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 335.76953125,
+          "y": 430.68359375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278973000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278973000,
+          "synchronizedTimestamp": 1766018278973369,
+          "latency": -1764717756850165,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278973000,
+            "syncedTime": 1766018278973369,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018279079071_fg4v95ucf",
+      "timestamp": 1766018279079071,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 315.83203125,
+            "y": 415.83203125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 315.83203125,
+          "y": 415.83203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018279079000,
+        "timingInfo": {
+          "originalTimestamp": 1766018279079000,
+          "synchronizedTimestamp": 1766018279079081,
+          "latency": -1764717756850453,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018279079000,
+            "syncedTime": 1766018279079081,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018279_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018278040269_cisvq2i43",
+      "timestamp": 1766018278040269,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 248.01953125,
+            "y": 923.59765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 248.01953125,
+          "y": 923.59765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018278040000,
+        "timingInfo": {
+          "originalTimestamp": 1766018278040000,
+          "synchronizedTimestamp": 1766018278040277,
+          "latency": -1764717756850257,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018278040000,
+            "syncedTime": 1766018278040277,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018278_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018279555159_ow7djz469",
+      "timestamp": 1766018279555159,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 298.7890625,
+            "y": 366.66796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 298.7890625,
+          "y": 366.66796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018279555000,
+        "timingInfo": {
+          "originalTimestamp": 1766018279555000,
+          "synchronizedTimestamp": 1766018279555165,
+          "latency": -1764717756850369,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018279555000,
+            "syncedTime": 1766018279555165,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018279_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280064984_nkv5jj4n3",
+      "timestamp": 1766018280064984,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 311.4765625,
+            "y": 303.890625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 311.4765625,
+          "y": 303.890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280065000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280065000,
+          "synchronizedTimestamp": 1766018280064999,
+          "latency": -1764717756850535,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280065000,
+            "syncedTime": 1766018280064999,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018289178694_ns1m38vw6",
+      "timestamp": 1766018289178694,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018289178000,
+        "timingInfo": {
+          "originalTimestamp": 1766018289178000,
+          "synchronizedTimestamp": 1766018289178703,
+          "latency": -1764717756849831,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018289178000,
+            "syncedTime": 1766018289178703,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018289_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280171550_mxnid529t",
+      "timestamp": 1766018280171550,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 290.046875,
+            "y": 275.640625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 290.046875,
+          "y": 275.640625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280171000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280171000,
+          "synchronizedTimestamp": 1766018280171561,
+          "latency": -1764717756849973,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280171000,
+            "syncedTime": 1766018280171561,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018279662162_nyftal7ay",
+      "timestamp": 1766018279662162,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 302.3046875,
+            "y": 323.4453125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 302.3046875,
+          "y": 323.4453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018279662000,
+        "timingInfo": {
+          "originalTimestamp": 1766018279662000,
+          "synchronizedTimestamp": 1766018279662170,
+          "latency": -1764717756850364,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018279662000,
+            "syncedTime": 1766018279662170,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018279_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280278428_nvdat2wwg",
+      "timestamp": 1766018280278428,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 268.01171875,
+            "y": 254.18359375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 268.01171875,
+          "y": 254.18359375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280278000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280278000,
+          "synchronizedTimestamp": 1766018280278436,
+          "latency": -1764717756850098,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280278000,
+            "syncedTime": 1766018280278436,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018279450761_025zqpmoa",
+      "timestamp": 1766018279450761,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 302.359375,
+            "y": 406.99609375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 302.359375,
+          "y": 406.99609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018279450000,
+        "timingInfo": {
+          "originalTimestamp": 1766018279450000,
+          "synchronizedTimestamp": 1766018279450775,
+          "latency": -1764717756849759,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018279450000,
+            "syncedTime": 1766018279450775,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018279_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281140572_v383goqog",
+      "timestamp": 1766018281140572,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 176.2265625,
+            "y": 535.76171875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 176.2265625,
+          "y": 535.76171875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281140000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281140000,
+          "synchronizedTimestamp": 1766018281140583,
+          "latency": -1764717756849951,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281140000,
+            "syncedTime": 1766018281140583,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282072012_alyvo7b11",
+      "timestamp": 1766018282072012,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 59.46875,
+            "y": 166.09765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 59.46875,
+          "y": 166.09765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282072000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282072000,
+          "synchronizedTimestamp": 1766018282072019,
+          "latency": -1764717756850515,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282072000,
+            "syncedTime": 1766018282072019,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018295068424_vp12u6uuz",
+      "timestamp": 1766018295068424,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "CNIB Frontier Accessibility ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018295068000,
+        "timingInfo": {
+          "originalTimestamp": 1766018295068000,
+          "synchronizedTimestamp": 1766018295068431,
+          "latency": -1764717756850103,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018295068000,
+            "syncedTime": 1766018295068431,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018295_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282175575_07lb88bsg",
+      "timestamp": 1766018282175575,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 49.078125,
+            "y": 189.44921875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 49.078125,
+          "y": 189.44921875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282175000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282175000,
+          "synchronizedTimestamp": 1766018282175590,
+          "latency": -1764717756849944,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282175000,
+            "syncedTime": 1766018282175590,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280599461_1x7swmkod",
+      "timestamp": 1766018280599461,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 266.6796875,
+            "y": 253.0859375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 266.6796875,
+          "y": 253.0859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280599000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280599000,
+          "synchronizedTimestamp": 1766018280599468,
+          "latency": -1764717756850066,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280599000,
+            "syncedTime": 1766018280599468,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282282530_o4tcmliiq",
+      "timestamp": 1766018282282530,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 42.23828125,
+            "y": 190.3046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 42.23828125,
+          "y": 190.3046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282282000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282282000,
+          "synchronizedTimestamp": 1766018282282537,
+          "latency": -1764717756849997,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282282000,
+            "syncedTime": 1766018282282537,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281413539_ecpuispel",
+      "timestamp": 1766018281413539,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 159.4140625,
+            "y": 587.53515625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 159.4140625,
+          "y": 587.53515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281413000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281413000,
+          "synchronizedTimestamp": 1766018281413551,
+          "latency": -1764717756849983,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281413000,
+            "syncedTime": 1766018281413551,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280705355_2nt6e64y2",
+      "timestamp": 1766018280705355,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 245.796875,
+            "y": 276.796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 245.796875,
+          "y": 276.796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280705000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280705000,
+          "synchronizedTimestamp": 1766018280705363,
+          "latency": -1764717756850171,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280705000,
+            "syncedTime": 1766018280705363,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282389130_9sj37vkuj",
+      "timestamp": 1766018282389130,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 38.80078125,
+            "y": 190.3046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 38.80078125,
+          "y": 190.3046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282389000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282389000,
+          "synchronizedTimestamp": 1766018282389136,
+          "latency": -1764717756850398,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282389000,
+            "syncedTime": 1766018282389136,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281521581_zk4iktjn3",
+      "timestamp": 1766018281521581,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 101.44140625,
+            "y": 246.71484375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 101.44140625,
+          "y": 246.71484375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281521000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281521000,
+          "synchronizedTimestamp": 1766018281521589,
+          "latency": -1764717756849945,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281521000,
+            "syncedTime": 1766018281521589,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282496108_7yu2aw7g0",
+      "timestamp": 1766018282496108,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 34.43359375,
+            "y": 187.87109375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 34.43359375,
+          "y": 187.87109375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282496000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282496000,
+          "synchronizedTimestamp": 1766018282496116,
+          "latency": -1764717756850418,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282496000,
+            "syncedTime": 1766018282496116,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018295718066_vqc9f7o1f",
+      "timestamp": 1766018295718066,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018295718000,
+        "timingInfo": {
+          "originalTimestamp": 1766018295718000,
+          "synchronizedTimestamp": 1766018295718076,
+          "latency": -1764717756850458,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018295718000,
+            "syncedTime": 1766018295718076,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018295_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018280812349_dbmwsm6vy",
+      "timestamp": 1766018280812349,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 221.45703125,
+            "y": 374.734375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 221.45703125,
+          "y": 374.734375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018280812000,
+        "timingInfo": {
+          "originalTimestamp": 1766018280812000,
+          "synchronizedTimestamp": 1766018280812356,
+          "latency": -1764717756850178,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018280812000,
+            "syncedTime": 1766018280812356,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018280_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282605257_zwfuhquis",
+      "timestamp": 1766018282605257,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 33.125,
+            "y": 185.515625
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 33.125,
+          "y": 185.515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282605000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282605000,
+          "synchronizedTimestamp": 1766018282605263,
+          "latency": -1764717756850271,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282605000,
+            "syncedTime": 1766018282605263,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018282621823_v1vvxgzwc",
+      "timestamp": 1766018282621823,
+      "source": "interaction",
+      "type": "drag",
+      "data": {
+        "interactionType": "drag",
+        "target": {
+          "coordinates": {
+            "x": 33.125,
+            "y": 185.39453125
+          }
+        },
+        "inputData": {
+          "button": "left"
+        },
+        "coordinates": {
+          "x": 33.125,
+          "y": 185.39453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018282621000,
+        "timingInfo": {
+          "originalTimestamp": 1766018282621000,
+          "synchronizedTimestamp": 1766018282621860,
+          "latency": -1764717756849674,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018282621000,
+            "syncedTime": 1766018282621860,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018282_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281765044_fnn6ccmp2",
+      "timestamp": 1766018281765044,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 113.26953125,
+            "y": 150.6875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 113.26953125,
+          "y": 150.6875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281765000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281765000,
+          "synchronizedTimestamp": 1766018281765051,
+          "latency": -1764717756850483,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281765000,
+            "syncedTime": 1766018281765051,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281871841_zmi81l1ww",
+      "timestamp": 1766018281871841,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 80.58203125,
+            "y": 120.5234375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 80.58203125,
+          "y": 120.5234375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281871000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281871000,
+          "synchronizedTimestamp": 1766018281871853,
+          "latency": -1764717756849681,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281871000,
+            "syncedTime": 1766018281871853,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281034537_zwqakxk59",
+      "timestamp": 1766018281034537,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 218.2734375,
+            "y": 379.22265625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 218.2734375,
+          "y": 379.22265625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281034000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281034000,
+          "synchronizedTimestamp": 1766018281034543,
+          "latency": -1764717756849991,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281034000,
+            "syncedTime": 1766018281034543,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018281971900_hzjxpf1oi",
+      "timestamp": 1766018281971900,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 75.93359375,
+            "y": 112.5078125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 75.93359375,
+          "y": 112.5078125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018281971000,
+        "timingInfo": {
+          "originalTimestamp": 1766018281972000,
+          "synchronizedTimestamp": 1766018281971908,
+          "latency": -1764717756850626,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018281972000,
+            "syncedTime": 1766018281971908,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018281_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "focus_1766018296704914_udnxntagn",
+      "timestamp": 1766018296704914,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "CNIB Frontier Accessibility ",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [
+            "disabled",
+            "focused"
+          ],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari",
+            "enabled": false,
+            "focused": true
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018296704000,
+        "timingInfo": {
+          "originalTimestamp": 1766018296704000,
+          "synchronizedTimestamp": 1766018296704923,
+          "latency": -1764717756849611,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018296704000,
+            "syncedTime": 1766018296704923,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018296_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018290253048_n92q7g44a",
+      "timestamp": 1766018290253048,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1086.12109375,
+            "y": 388.12890625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1086.12109375,
+          "y": 388.12890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018290253000,
+        "timingInfo": {
+          "originalTimestamp": 1766018290253000,
+          "synchronizedTimestamp": 1766018290253055,
+          "latency": -1764717756850479,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018290253000,
+            "syncedTime": 1766018290253055,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018290_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018290555958_y7oa3pagv",
+      "timestamp": 1766018290555958,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1087.75,
+            "y": 383.80859375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1087.75,
+          "y": 383.80859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018290555000,
+        "timingInfo": {
+          "originalTimestamp": 1766018290555000,
+          "synchronizedTimestamp": 1766018290555966,
+          "latency": -1764717756849568,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018290555000,
+            "syncedTime": 1766018290555966,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018290_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018290359046_lqugxv5i0",
+      "timestamp": 1766018290359046,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1087.75,
+            "y": 384.76953125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1087.75,
+          "y": 384.76953125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018290359000,
+        "timingInfo": {
+          "originalTimestamp": 1766018290359000,
+          "synchronizedTimestamp": 1766018290359052,
+          "latency": -1764717756850482,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018290359000,
+            "syncedTime": 1766018290359052,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018290_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018291166542_9ju3mkxnj",
+      "timestamp": 1766018291166542,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "E",
+          "keyCode": 4,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018291166000,
+        "timingInfo": {
+          "originalTimestamp": 1766018291166000,
+          "synchronizedTimestamp": 1766018291166549,
+          "latency": -1764717756849985,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018291166000,
+            "syncedTime": 1766018291166549,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018291_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018291859214_92iypt4tc",
+      "timestamp": 1766018291859214,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Key37",
+          "keyCode": 37,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018291859000,
+        "timingInfo": {
+          "originalTimestamp": 1766018291859000,
+          "synchronizedTimestamp": 1766018291859220,
+          "latency": -1764717756850314,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018291859000,
+            "syncedTime": 1766018291859220,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018291_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018290422091_p01vhvqaq",
+      "timestamp": 1766018290422091,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 1087.75,
+            "y": 384.27734375
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 1087.75,
+          "y": 384.27734375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018290422000,
+        "timingInfo": {
+          "originalTimestamp": 1766018290422000,
+          "synchronizedTimestamp": 1766018290422098,
+          "latency": -1764717756850436,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018290422000,
+            "syncedTime": 1766018290422098,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018290_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018291551006_6jihkud6b",
+      "timestamp": 1766018291551006,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Key14",
+          "keyCode": 14,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018291551000,
+        "timingInfo": {
+          "originalTimestamp": 1766018291551000,
+          "synchronizedTimestamp": 1766018291551023,
+          "latency": -1764717756850511,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018291551000,
+            "syncedTime": 1766018291551023,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018291_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018291998508_be1paz1nl",
+      "timestamp": 1766018291998508,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Key37",
+          "keyCode": 37,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018291998000,
+        "timingInfo": {
+          "originalTimestamp": 1766018291998000,
+          "synchronizedTimestamp": 1766018291998515,
+          "latency": -1764717756850019,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018291998000,
+            "syncedTime": 1766018291998515,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018291_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018292200486_8fjq9z41p",
+      "timestamp": 1766018292200486,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Key31",
+          "keyCode": 31,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018292200000,
+        "timingInfo": {
+          "originalTimestamp": 1766018292200000,
+          "synchronizedTimestamp": 1766018292200494,
+          "latency": -1764717756850040,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018292200000,
+            "syncedTime": 1766018292200494,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018292_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018292547170_hn3ewfc34",
+      "timestamp": 1766018292547170,
+      "source": "interaction",
+      "type": "key",
+      "data": {
+        "interactionType": "key",
+        "target": {},
+        "inputData": {
+          "key": "Return",
+          "keyCode": 36,
+          "modifiers": []
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018292547000,
+        "timingInfo": {
+          "originalTimestamp": 1766018292547000,
+          "synchronizedTimestamp": 1766018292547184,
+          "latency": -1764717756850350,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018292547000,
+            "syncedTime": 1766018292547184,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018292_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018296188753_f00wavnqk",
+      "timestamp": 1766018296188753,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1087.75,
+            "y": 384.26953125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1087.75,
+          "y": 384.26953125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018296188000,
+        "timingInfo": {
+          "originalTimestamp": 1766018296188000,
+          "synchronizedTimestamp": 1766018296188760,
+          "latency": -1764717756849774,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018296188000,
+            "syncedTime": 1766018296188760,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018296_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018296291729_4yqn9j2ia",
+      "timestamp": 1766018296291729,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1075.4453125,
+            "y": 445.3828125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1075.4453125,
+          "y": 445.3828125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018296291000,
+        "timingInfo": {
+          "originalTimestamp": 1766018296291000,
+          "synchronizedTimestamp": 1766018296291739,
+          "latency": -1764717756849795,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018296291000,
+            "syncedTime": 1766018296291739,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018296_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018296679178_7klj3chc9",
+      "timestamp": 1766018296679178,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1007.28125,
+            "y": 675.86328125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1007.28125,
+          "y": 675.86328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018296679000,
+        "timingInfo": {
+          "originalTimestamp": 1766018296679000,
+          "synchronizedTimestamp": 1766018296679184,
+          "latency": -1764717756850350,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018296679000,
+            "syncedTime": 1766018296679184,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018296_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018296784366_yldr5y5xd",
+      "timestamp": 1766018296784366,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 998.53125,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 998.53125,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018296784000,
+        "timingInfo": {
+          "originalTimestamp": 1766018296784000,
+          "synchronizedTimestamp": 1766018296784374,
+          "latency": -1764717756850160,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018296784000,
+            "syncedTime": 1766018296784374,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018296_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018297254809_wp7jt5114",
+      "timestamp": 1766018297254809,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 915.62890625,
+            "y": 941.4296875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 915.62890625,
+          "y": 941.4296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018297254000,
+        "timingInfo": {
+          "originalTimestamp": 1766018297254000,
+          "synchronizedTimestamp": 1766018297254816,
+          "latency": -1764717756849718,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018297254000,
+            "syncedTime": 1766018297254816,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018297_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018297154463_lyrmihuhf",
+      "timestamp": 1766018297154463,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1000.1328125,
+            "y": 955.98046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 1000.1328125,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018297154000,
+        "timingInfo": {
+          "originalTimestamp": 1766018297154000,
+          "synchronizedTimestamp": 1766018297154472,
+          "latency": -1764717756850062,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018297154000,
+            "syncedTime": 1766018297154472,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018297_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018297549162_nrjndnfxu",
+      "timestamp": 1766018297549162,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 867.52734375,
+            "y": 936.421875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 867.52734375,
+          "y": 936.421875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018297549000,
+        "timingInfo": {
+          "originalTimestamp": 1766018297549000,
+          "synchronizedTimestamp": 1766018297549170,
+          "latency": -1764717756850364,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018297549000,
+            "syncedTime": 1766018297549170,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018297_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018297655378_wwbec28t8",
+      "timestamp": 1766018297655378,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 818.75,
+            "y": 938.4765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 818.75,
+          "y": 938.4765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018297655000,
+        "timingInfo": {
+          "originalTimestamp": 1766018297655000,
+          "synchronizedTimestamp": 1766018297655393,
+          "latency": -1764717756850141,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018297655000,
+            "syncedTime": 1766018297655393,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018297_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018297762627_n041z6if6",
+      "timestamp": 1766018297762627,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 759.34375,
+            "y": 937.9921875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 759.34375,
+          "y": 937.9921875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018297762000,
+        "timingInfo": {
+          "originalTimestamp": 1766018297762000,
+          "synchronizedTimestamp": 1766018297762635,
+          "latency": -1764717756849899,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018297762000,
+            "syncedTime": 1766018297762635,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018297_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298060755_lwy7rl20l",
+      "timestamp": 1766018298060755,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 726.2421875,
+            "y": 940.19140625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 726.2421875,
+          "y": 940.19140625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298060000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298060000,
+          "synchronizedTimestamp": 1766018298060776,
+          "latency": -1764717756849758,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298060000,
+            "syncedTime": 1766018298060776,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298486398_cq6y0budx",
+      "timestamp": 1766018298486398,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 593.75390625,
+            "y": 938.24609375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 593.75390625,
+          "y": 938.24609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298486000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298486000,
+          "synchronizedTimestamp": 1766018298486405,
+          "latency": -1764717756850129,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298486000,
+            "syncedTime": 1766018298486405,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298165082_hriodqdqg",
+      "timestamp": 1766018298165082,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 638.078125,
+            "y": 941.90625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 638.078125,
+          "y": 941.90625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298165000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298165000,
+          "synchronizedTimestamp": 1766018298165107,
+          "latency": -1764717756850427,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298165000,
+            "syncedTime": 1766018298165107,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298271765_gq95y9o6e",
+      "timestamp": 1766018298271765,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 611.81640625,
+            "y": 944.4140625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 611.81640625,
+          "y": 944.4140625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298271000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298271000,
+          "synchronizedTimestamp": 1766018298271772,
+          "latency": -1764717756849762,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298271000,
+            "syncedTime": 1766018298271772,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298378735_xd1mi8zix",
+      "timestamp": 1766018298378735,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 601.72265625,
+            "y": 944.4140625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 601.72265625,
+          "y": 944.4140625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298378000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298378000,
+          "synchronizedTimestamp": 1766018298378742,
+          "latency": -1764717756849792,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298378000,
+            "syncedTime": 1766018298378742,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298591984_91ut8j61n",
+      "timestamp": 1766018298591984,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 583.71875,
+            "y": 931.93359375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 583.71875,
+          "y": 931.93359375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298591000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298591000,
+          "synchronizedTimestamp": 1766018298591990,
+          "latency": -1764717756849544,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298591000,
+            "syncedTime": 1766018298591990,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299388539_wfkovsftu",
+      "timestamp": 1766018299388539,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 731.5625,
+            "y": 920.83203125
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1
+        },
+        "coordinates": {
+          "x": 731.5625,
+          "y": 920.83203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299388000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299388000,
+          "synchronizedTimestamp": 1766018299388546,
+          "latency": -1764717756849988,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299388000,
+            "syncedTime": 1766018299388546,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018298913729_gluqh43il",
+      "timestamp": 1766018298913729,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 583.53125,
+            "y": 930.59765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 583.53125,
+          "y": 930.59765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018298913000,
+        "timingInfo": {
+          "originalTimestamp": 1766018298913000,
+          "synchronizedTimestamp": 1766018298913745,
+          "latency": -1764717756849789,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018298913000,
+            "syncedTime": 1766018298913745,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018298_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299020218_os5docq87",
+      "timestamp": 1766018299020218,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 666.33984375,
+            "y": 929.94921875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 666.33984375,
+          "y": 929.94921875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299020000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299020000,
+          "synchronizedTimestamp": 1766018299020227,
+          "latency": -1764717756850307,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299020000,
+            "syncedTime": 1766018299020227,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299125671_1x2wqrq7x",
+      "timestamp": 1766018299125671,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 729.63671875,
+            "y": 923.70703125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 729.63671875,
+          "y": 923.70703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299125000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299125000,
+          "synchronizedTimestamp": 1766018299125681,
+          "latency": -1764717756849853,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299125000,
+            "syncedTime": 1766018299125681,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299249495_xkyam5v9x",
+      "timestamp": 1766018299249495,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 731.80859375,
+            "y": 921.3203125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 731.80859375,
+          "y": 921.3203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299249000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299249000,
+          "synchronizedTimestamp": 1766018299249502,
+          "latency": -1764717756850032,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299249000,
+            "syncedTime": 1766018299249502,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299692594_2yfijpflj",
+      "timestamp": 1766018299692594,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 730.62890625,
+            "y": 920.36328125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 730.62890625,
+          "y": 920.36328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299692000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299692000,
+          "synchronizedTimestamp": 1766018299692603,
+          "latency": -1764717756849931,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299692000,
+            "syncedTime": 1766018299692603,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    },
+    {
+      "id": "interaction_1766018299793899_qoaqry67b",
+      "timestamp": 1766018299793899,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 697.39453125,
+            "y": 814.375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 697.39453125,
+          "y": 814.375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766018269842",
+        "capturedAt": 1766018299793000,
+        "timingInfo": {
+          "originalTimestamp": 1766018299793000,
+          "synchronizedTimestamp": 1766018299793912,
+          "latency": -1764717756849622,
+          "accuracy": 3348.2997343593825,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766018299793000,
+            "syncedTime": 1766018299793912,
+            "uncertainty": 3348.2997343593825,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766018299_1000000us"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "./integrated_recordings",
+      "screenshot": {
+        "enabled": false,
+        "quality": "medium",
+        "format": "png",
+        "minInterval": 3000,
+        "triggers": [
+          "click",
+          "focus_change"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": false
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": false,
+        "captureStyles": false,
+        "captureResources": false,
+        "minInterval": 8000,
+        "browsers": [
+          "Safari",
+          "Chrome"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": true,
+        "captureTouchEvents": false,
+        "captureCoordinates": true,
+        "captureTimings": true
+      },
+      "flushInterval": 3000
+    },
+    "version": "1.0.0"
+  }
+}
