@@ -298,6 +298,10 @@ export class EventRecorder extends EventEmitter {
   private formatEventData(data: any): string {
     if (data.applicationName) return `App: ${data.applicationName}`;
     if (data.interactionType) {
+      // Handle dock clicks specially
+      if (data.interactionType === 'click' && data.target?.element?.role === 'button' && data.target?.element?.label === 'Dock icon') {
+        return `🖱️ DOCK CLICK: ${data.target.element.title} icon`;
+      }
       if (data.inputData?.key) return `Key: ${data.inputData.key}`;
       if (data.coordinates) return `Click: (${data.coordinates.x},${data.coordinates.y})`;
       return `${data.interactionType}`;

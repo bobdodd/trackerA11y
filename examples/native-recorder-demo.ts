@@ -37,44 +37,30 @@ async function runNativeRecorderDemo() {
     },
     
     interactions: {
-      captureClicks: true,
-      captureKeystrokes: true,
-      captureScrolls: true,
-      captureMouseMovements: false, // Can enable if you want (very verbose)
-      captureTouchEvents: true,
-      captureCoordinates: true,
-      captureTimings: true
+      enableMouse: true,
+      enableKeyboard: true,
+      enableTouch: false,
+      enableAccessibility: true,
+      privacyMode: 'detailed',
+      captureLevel: 'full',
+      filterSensitive: false
     },
     
     flushInterval: 5000 // Flush every 5 seconds
   };
 
-  // Create a custom event recorder that uses the native interaction tracker
-  class NativeEventRecorder extends EventRecorder {
-    protected initializeInteractionManager() {
-      // Override to use native tracker instead of simulated one
-      const nativeTracker = new NativeInteractionTracker({
-        enableMouse: true,
-        enableKeyboard: true,
-        enableTouch: false,
-        enableAccessibility: true,
-        privacyMode: 'detailed',
-        captureLevel: 'full',
-        filterSensitive: false,
-        captureClicks: true,
-        captureKeystrokes: true,
-        captureScrolls: true,
-        captureMouseMovements: false,
-        captureTouchEvents: true,
-        captureCoordinates: true,
-        captureTimings: true
-      });
-      
-      return new InteractionManager(this.config.interactions || {}, nativeTracker);
-    }
-  }
+  // For now, let's just test the native tracker directly
+  const nativeTracker = new NativeInteractionTracker({
+    enableMouse: true,
+    enableKeyboard: true,
+    enableTouch: false,
+    enableAccessibility: true,
+    privacyMode: 'detailed',
+    captureLevel: 'full',
+    filterSensitive: false
+  });
 
-  const recorder = new (NativeEventRecorder as any)(config);
+  const recorder = new EventRecorder(config);
   let isShuttingDown = false;
 
   // Set up event listeners

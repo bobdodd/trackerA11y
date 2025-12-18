@@ -158,8 +158,9 @@ export class InteractionManager extends EventEmitter {
   private async createPlatformTracker(): Promise<BaseInteractionTracker | null> {
     switch (this.currentPlatform) {
       case 'macos':
-        const { MacOSInteractionTracker } = await import('./macos/MacOSInteractionTracker');
-        return new MacOSInteractionTracker(this.config);
+        // Use native helper for real system-wide event capture
+        const { NativeInteractionTracker } = await import('./macos/NativeInteractionTracker');
+        return new NativeInteractionTracker(this.config);
       
       case 'windows':
         // Future implementation

@@ -77,16 +77,43 @@ NSArray* getModifierFlags(CGEventFlags flags) {
 
 // Output JSON event to stdout for Node.js to consume
 void outputEvent(NSString* eventType, NSDictionary* eventData) {
-    NSError* error;
-    NSData* jsonData = [NSJSONSerialization dataWithJSONObject:@{
-        @"type": eventType,
-        @"timestamp": @((uint64_t)([[NSDate date] timeIntervalSince1970] * 1000000)), // microseconds
-        @"data": eventData
-    } options:0 error:&error];
-    
-    if (!error && jsonData) {
+    @autoreleasepool {
+        NSError* error = nil;
+        
+        NSDictionary* eventDict = @{
+            @"type": eventType,
+            @"timestamp": @((uint64_t)([[NSDate date] timeIntervalSince1970] * 1000000)), // microseconds
+            @"data": eventData ?: @{}
+        };
+        
+        NSData* jsonData = [NSJSONSerialization dataWithJSONObject:eventDict 
+                                                           options:NSJSONWritingPrettyPrinted 
+                                                             error:&error];
+        
+        if (error) {
+            fprintf(stderr, "JSON serialization error: %s\n", [[error localizedDescription] UTF8String]);
+            fflush(stderr);
+            return;
+        }
+        
+        if (!jsonData) {
+            fprintf(stderr, "No JSON data created\n");
+            fflush(stderr);
+            return;
+        }
+        
         NSString* jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-        printf("%s\n", [jsonString UTF8String]);
+        if (!jsonString) {
+            fprintf(stderr, "Failed to create JSON string\n");
+            fflush(stderr);
+            return;
+        }
+        
+        // Remove pretty printing newlines for single line output
+        NSString* compactJson = [jsonString stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+        compactJson = [compactJson stringByReplacingOccurrencesOfString:@"  " withString:@""];
+        
+        printf("%s\n", [compactJson UTF8String]);
         fflush(stdout);
     }
 }
@@ -94,8 +121,30 @@ void outputEvent(NSString* eventType, NSDictionary* eventData) {
 // Main event callback  
 CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEventRef event, void *userInfo __unused) {
     @autoreleasepool {
+        // Filter out system-generated events - only capture real user interactions
+        CGEventFlags flags = CGEventGetFlags(event);
+        CGEventSourceRef source = CGEventCreateSourceFromEvent(event);
+        CGEventSourceStateID sourceState = CGEventSourceGetSourceStateID(source);
+        
+        // Skip events that are not from hardware (programmatic/system events)
+        if (sourceState != kCGEventSourceStateHIDSystemState && sourceState != kCGEventSourceStateCombinedSessionState) {
+            if (source) CFRelease(source);
+            return event;  // Pass through but don't capture
+        }
+        
+        // Also check if this is a synthetic event (programmatically generated)
+        if (flags & kCGEventFlagMaskSecondaryFn) {
+            if (source) CFRelease(source);
+            return event;  // Skip synthetic events
+        }
+        
+        if (source) CFRelease(source);
+        
         CGPoint location = CGEventGetLocation(event);
         CGEventTimestamp timestamp = CGEventGetTimestamp(event);
+        
+        // Add debug info about the event source
+        bool isUserEvent = (sourceState == kCGEventSourceStateHIDSystemState || sourceState == kCGEventSourceStateCombinedSessionState);
         
         switch (type) {
             case kCGEventLeftMouseDown: {
@@ -105,7 +154,10 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
-                    @"systemTimestamp": @(timestamp)
+                    @"systemTimestamp": @(timestamp),
+                    @"sourceState": @(sourceState),
+                    @"isUserEvent": @(isUserEvent),
+                    @"flags": @(flags)
                 });
                 break;
             }

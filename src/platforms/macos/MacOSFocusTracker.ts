@@ -80,7 +80,10 @@ export class MacOSFocusTracker extends BaseFocusTracker {
         accessibilityContext
       );
     } catch (error) {
-      console.error('Error getting current focus:', error);
+      // Only log unexpected errors, not interruption/timeout errors
+      if (error instanceof Error && !error.message.includes('Command failed') && !error.message.includes('SIGINT')) {
+        console.error('Error getting current focus:', error.message);
+      }
       return null;
     }
   }
@@ -103,7 +106,10 @@ export class MacOSFocusTracker extends BaseFocusTracker {
         }
       };
     } catch (error) {
-      console.warn(`Failed to get accessibility context for PID ${processId}:`, error);
+      // Only log significant errors, not common process-not-found issues
+      if (error instanceof Error && !error.message.includes('Command failed')) {
+        console.warn(`Failed to get accessibility context for PID ${processId}:`, error.message);
+      }
       return {};
     }
   }
@@ -179,7 +185,9 @@ export class MacOSFocusTracker extends BaseFocusTracker {
     `;
 
     try {
-      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script]);
+      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script], {
+        timeout: 1500 // Shorter timeout for frontmost app check
+      });
       const result = stdout.trim();
       
       if (!result) return null;
@@ -195,14 +203,32 @@ export class MacOSFocusTracker extends BaseFocusTracker {
         windowTitle: windowTitle || undefined
       };
     } catch (error) {
-      console.error('Error getting frontmost application:', error);
+      // Handle common interruption cases silently
+      if (error instanceof Error && (
+        error.message.includes('SIGINT') || 
+        error.message.includes('timeout') ||
+        error.message.includes('Command failed')
+      )) {
+        return null;
+      }
+      console.error('Error getting frontmost application:', error instanceof Error ? error.message : 'Unknown error');
       return null;
     }
   }
 
   private async getAccessibilityInfo(processId: number): Promise<MacOSAccessibilityInfo> {
-    // This would ideally use a native addon for better performance and access
-    // For now, we'll use AppleScript with some limitations
+    // First check if the process still exists
+    try {
+      const { stdout: checkProcess } = await execFileAsync('/bin/ps', ['-p', processId.toString(), '-o', 'pid=']);
+      if (!checkProcess.trim()) {
+        // Process doesn't exist anymore
+        return {};
+      }
+    } catch (error) {
+      // Process doesn't exist
+      return {};
+    }
+
     const script = `
       tell application "System Events"
         try
@@ -235,8 +261,15 @@ export class MacOSFocusTracker extends BaseFocusTracker {
     `;
 
     try {
-      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script]);
+      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script], {
+        timeout: 2000 // 2 second timeout to prevent hanging
+      });
       const result = stdout.trim();
+      
+      if (!result || result === 'unknown|||') {
+        return {};
+      }
+      
       const [role, title, enabledStr, boundsStr] = result.split('|');
       
       let bounds: MacOSAccessibilityInfo['bounds'] | undefined;
@@ -255,7 +288,16 @@ export class MacOSFocusTracker extends BaseFocusTracker {
         bounds
       };
     } catch (error) {
-      console.warn('Error getting accessibility info:', error);
+      // Don't log full error details for common cases like process not found
+      if (error instanceof Error && (
+        error.message.includes('SIGINT') || 
+        error.message.includes('timeout') ||
+        error.message.includes('Command failed')
+      )) {
+        // Process likely disappeared or doesn't have accessible windows
+        return {};
+      }
+      console.warn(`Error getting accessibility info for PID ${processId}:`, error instanceof Error ? error.message : 'Unknown error');
       return {};
     }
   }

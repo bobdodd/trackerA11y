@@ -6,17 +6,21 @@
 import { spawn, ChildProcess } from 'child_process';
 import { BaseInteractionTracker } from '../BaseInteractionTracker';
 import { InteractionEvent, InteractionConfig } from '@/types';
+import { AccessibilityInspector, AccessibilityHitTest } from '@/accessibility/AccessibilityInspector';
 import * as path from 'path';
 
 export class NativeInteractionTracker extends BaseInteractionTracker {
   private nativeProcess: ChildProcess | null = null;
   private sessionId: string = '';
   private nativeHelperPath: string;
+  private accessibilityInspector: AccessibilityInspector;
+  private lastClickTime: number = 0;
 
   constructor(config: InteractionConfig) {
     super(config);
     this.sessionId = `native_session_${Date.now()}`;
-    this.nativeHelperPath = path.resolve(__dirname, '../../../native_helpers/mouse_capture');
+    this.nativeHelperPath = path.resolve(__dirname, '../../../native_helpers/native_helpers/mouse_capture');
+    this.accessibilityInspector = new AccessibilityInspector();
   }
 
   async initialize(): Promise<void> {
@@ -147,11 +151,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
       
       try {
         const event = JSON.parse(line);
-        const interactionEvent = this.convertNativeEvent(event);
-        
-        if (interactionEvent) {
-          this.emit('interaction', interactionEvent);
-        }
+        this.processNativeEvent(event);
         
       } catch (error) {
         // Skip malformed JSON (probably debug output)
@@ -160,7 +160,15 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
     }
   }
 
-  private convertNativeEvent(nativeEvent: any): InteractionEvent | null {
+  private async processNativeEvent(nativeEvent: any): Promise<void> {
+    const interactionEvent = await this.convertNativeEvent(nativeEvent);
+    
+    if (interactionEvent) {
+      this.emit('interaction', interactionEvent);
+    }
+  }
+
+  private async convertNativeEvent(nativeEvent: any): Promise<InteractionEvent | null> {
     try {
       // Skip system messages
       if (nativeEvent.type === 'system') {
@@ -175,15 +183,42 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
       switch (nativeEvent.type) {
         case 'mouse_click':
           interactionType = 'click';
+          
+          // Debug: Log what the native helper is sending with more context (only for non-dock clicks)
+          // console.debug(`🖱️  Native click detected: (${nativeEvent.data.x}, ${nativeEvent.data.y}) button=${nativeEvent.data.button} clickCount=${nativeEvent.data.clickCount} timestamp=${nativeEvent.data.systemTimestamp}`);
+          
+          // Get accessibility information for the clicked element
+          let accessibilityInfo: AccessibilityHitTest | null = null;
+          try {
+            accessibilityInfo = await this.accessibilityInspector.hitTest(
+              nativeEvent.data.x, 
+              nativeEvent.data.y
+            );
+          } catch (error) {
+            console.debug('Could not get accessibility info for click:', error instanceof Error ? error.message : 'Unknown error');
+          }
+          
           target = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
-            }
+            },
+            // Include accessibility information if available
+            ...(accessibilityInfo && {
+              element: accessibilityInfo.element,
+              applicationContext: accessibilityInfo.context
+            })
           };
           inputData = {
             button: nativeEvent.data.button,
-            clickCount: nativeEvent.data.clickCount || 1
+            clickCount: nativeEvent.data.clickCount || 1,
+            // Add semantic context from accessibility tree
+            ...(accessibilityInfo?.element && {
+              elementRole: accessibilityInfo.element.role,
+              elementTitle: accessibilityInfo.element.title,
+              elementLabel: accessibilityInfo.element.label,
+              elementValue: accessibilityInfo.element.value
+            })
           };
           break;
 
@@ -266,15 +301,15 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
   private shouldCaptureInteraction(interactionType: string): boolean {
     switch (interactionType) {
       case 'click':
-        return this.config.captureClicks !== false;
+        return this.config.enableMouse !== false;
       case 'key':
-        return this.config.captureKeystrokes !== false;
+        return this.config.enableKeyboard !== false;
       case 'scroll':
-        return this.config.captureScrolls !== false;
+        return this.config.enableMouse !== false;
       case 'mouse_move':
-        return this.config.captureMouseMovements === true; // Off by default (noisy)
+        return this.config.enableMouse === true && this.config.captureLevel === 'full';
       case 'drag':
-        return this.config.captureClicks !== false; // Same as clicks
+        return this.config.enableMouse !== false;
       default:
         return true;
     }
