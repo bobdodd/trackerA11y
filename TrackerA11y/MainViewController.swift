@@ -14,6 +14,7 @@ class MainViewController: NSViewController {
     // Tracker bridge
     private var trackerBridge: TrackerBridge?
     private var isTracking = false
+    private var isPaused = false
     private var currentSession: String?
     private var eventCount = 0
     
@@ -253,6 +254,7 @@ class MainViewController: NSViewController {
         guard let tracker = trackerBridge else { return }
         
         isTracking = true
+        isPaused = false
         currentSession = "session_\(Date().timeIntervalSince1970)"
         eventCount = 0
         
@@ -261,6 +263,11 @@ class MainViewController: NSViewController {
         updateUI()
         progressIndicator.startAnimation(nil)
         
+        // Update app delegate status
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.updateRecordingState(.recording)
+        }
+        
         print("🚀 Started tracking session: \(currentSession!)")
     }
     
@@ -268,12 +275,50 @@ class MainViewController: NSViewController {
         guard let tracker = trackerBridge else { return }
         
         isTracking = false
+        isPaused = false
         tracker.stopTracking()
         
         updateUI()
         progressIndicator.stopAnimation(nil)
         
+        // Update app delegate status
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.updateRecordingState(.stopped)
+        }
+        
         print("⏹️ Stopped tracking session: \(currentSession ?? "unknown")")
+    }
+    
+    @objc func pauseRecording() {
+        guard let tracker = trackerBridge, isTracking else { return }
+        
+        isPaused = true
+        tracker.pauseTracking()
+        
+        updateUI()
+        
+        // Update app delegate status
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.updateRecordingState(.paused)
+        }
+        
+        print("⏸ Paused tracking session: \(currentSession ?? "unknown")")
+    }
+    
+    @objc func resumeRecording() {
+        guard let tracker = trackerBridge, isTracking, isPaused else { return }
+        
+        isPaused = false
+        tracker.resumeTracking()
+        
+        updateUI()
+        
+        // Update app delegate status
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.updateRecordingState(.recording)
+        }
+        
+        print("▶️ Resumed tracking session: \(currentSession ?? "unknown")")
     }
     
     func newSession() {
@@ -356,10 +401,17 @@ class MainViewController: NSViewController {
     
     private func updateUI() {
         DispatchQueue.main.async {
-            if self.isTracking {
+            if self.isTracking && !self.isPaused {
                 self.statusLabel.stringValue = "Recording Active"
                 self.statusLabel.textColor = NSColor.systemRed
                 self.sessionLabel.stringValue = "Session: \(self.currentSession ?? "Unknown")"
+                self.eventCountLabel.stringValue = "Events captured: \(self.eventCount)"
+                self.startButton.isEnabled = false
+                self.stopButton.isEnabled = true
+            } else if self.isTracking && self.isPaused {
+                self.statusLabel.stringValue = "Recording Paused"
+                self.statusLabel.textColor = NSColor.systemOrange
+                self.sessionLabel.stringValue = "Session: \(self.currentSession ?? "Unknown") (Paused)"
                 self.eventCountLabel.stringValue = "Events captured: \(self.eventCount)"
                 self.startButton.isEnabled = false
                 self.stopButton.isEnabled = true

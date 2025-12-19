@@ -11,6 +11,7 @@ class TrackerBridge: NSObject {
     weak var delegate: TrackerBridgeDelegate?
     private var isInitialized = false
     private var isTracking = false
+    private var isPaused = false
     private var currentSessionId: String?
     private var eventTimer: Timer?
     
@@ -47,18 +48,26 @@ class TrackerBridge: NSObject {
     }
     
     func startTracking(sessionId: String) {
+        print("🔧 DEBUG: startTracking() called with sessionId: \(sessionId)")
+        print("🔍 DEBUG: isInitialized: \(isInitialized)")
+        print("🔍 DEBUG: isTracking: \(isTracking)")
+        
         guard isInitialized else {
+            print("❌ DEBUG: Tracker not initialized")
             delegate?.trackerDidEncounterError("Tracker not initialized")
             return
         }
         
         guard !isTracking else {
+            print("❌ DEBUG: Tracking already in progress")
             delegate?.trackerDidEncounterError("Tracking already in progress")
             return
         }
         
         currentSessionId = sessionId
         isTracking = true
+        
+        print("✅ DEBUG: Starting tracker core...")
         
         // Start the actual TrackerA11y Core
         startTrackerCore()
@@ -70,10 +79,22 @@ class TrackerBridge: NSObject {
     }
     
     func stopTracking() {
-        guard isTracking else { return }
+        print("🔧 DEBUG: stopTracking() called")
+        print("🔍 DEBUG: isTracking: \(isTracking)")
+        
+        guard isTracking else { 
+            print("❌ DEBUG: Not tracking, returning early")
+            return 
+        }
+        
+        print("✅ DEBUG: Stopping tracking...")
         
         isTracking = false
+        isPaused = false
+        let stoppedSessionId = currentSessionId
         currentSessionId = nil
+        
+        print("🔍 DEBUG: Stopped session: \(stoppedSessionId ?? "nil")")
         
         // Stop event simulation
         stopEventSimulation()
@@ -84,64 +105,188 @@ class TrackerBridge: NSObject {
         print("⏹️ TrackerA11y Core stopped")
     }
     
+    func pauseTracking() {
+        guard isTracking && !isPaused else { return }
+        
+        isPaused = true
+        
+        // Pause event simulation
+        pauseEventSimulation()
+        
+        // TODO: Send pause signal to TrackerA11y Core
+        print("⏸ TrackerA11y Core paused")
+    }
+    
+    func resumeTracking() {
+        guard isTracking && isPaused else { return }
+        
+        isPaused = false
+        
+        // Resume event simulation
+        resumeEventSimulation()
+        
+        // TODO: Send resume signal to TrackerA11y Core
+        print("▶️ TrackerA11y Core resumed")
+    }
+    
     private func startTrackerCore() {
-        // Start the Node.js TrackerA11y Core process
+        print("🔧 DEBUG: startTrackerCore() called")
+        
+        // Use the existing TrackerA11y recording system
         guard let projectPath = findProjectPath() else {
+            print("❌ DEBUG: Could not find project path")
             delegate?.trackerDidEncounterError("Could not find TrackerA11y project path")
             return
         }
         
+        print("✅ DEBUG: Found project path: \(projectPath)")
+        
+        // Stop any existing process first
+        stopTrackerCore()
+        
+        print("🚀 Starting TrackerA11y recording process...")
+        print("📁 Project path: \(projectPath)")
+        print("🔍 DEBUG: Current working directory: \(FileManager.default.currentDirectoryPath)")
+        print("💻 DEBUG: About to start npm process...")
+        
         DispatchQueue.global(qos: .background).async {
+            print("📋 DEBUG: In background queue, setting up process...")
+            
+            // Use the existing npm recording script
             self.nodeProcess = Process()
-            self.nodeProcess?.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/node")
-            self.nodeProcess?.arguments = [
-                "\(projectPath)/dist/cli.js",
-                "--session-id", self.currentSessionId ?? "unknown"
-            ]
+            self.nodeProcess?.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/npm")
+            self.nodeProcess?.arguments = ["run", "demo:recorder"]
             self.nodeProcess?.currentDirectoryURL = URL(fileURLWithPath: projectPath)
             
-            do {
-                try self.nodeProcess?.run()
-                print("✅ Started TrackerA11y Core Node.js process")
-            } catch {
+            print("🔍 DEBUG: Process setup complete")
+            print("🔍 DEBUG: Executable: /opt/homebrew/bin/npm")
+            print("🔍 DEBUG: Arguments: ['run', 'demo:recorder']")
+            print("🔍 DEBUG: Working directory: \(projectPath)")
+            
+            // Set up termination handler
+            self.nodeProcess?.terminationHandler = { process in
                 DispatchQueue.main.async {
-                    self.delegate?.trackerDidEncounterError("Failed to start TrackerA11y Core: \(error.localizedDescription)")
+                    print("📊 DEBUG: Recording process terminated with status: \(process.terminationStatus)")
+                    if process.terminationStatus == 0 {
+                        print("✅ DEBUG: Recording completed successfully")
+                    } else {
+                        print("⚠️ DEBUG: Recording process ended with error code: \(process.terminationStatus)")
+                    }
+                }
+            }
+            
+            do {
+                print("🚀 DEBUG: About to call process.run()...")
+                try self.nodeProcess?.run()
+                print("✅ DEBUG: process.run() succeeded - recording should be starting")
+                print("🔍 DEBUG: Process PID: \(self.nodeProcess?.processIdentifier ?? 0)")
+                print("🔍 DEBUG: Process is running: \(self.nodeProcess?.isRunning ?? false)")
+                
+                // Keep the process alive in background
+                DispatchQueue.main.async {
+                    print("🔴 DEBUG: Recording is now active. Use Stop Recording to end session.")
+                }
+                
+            } catch {
+                print("❌ DEBUG: process.run() failed with error: \(error)")
+                DispatchQueue.main.async {
+                    self.delegate?.trackerDidEncounterError("Failed to start TrackerA11y recording: \(error.localizedDescription)")
+                    print("❌ Failed to start recording: \(error.localizedDescription)")
                 }
             }
         }
     }
     
     private func stopTrackerCore() {
-        nodeProcess?.terminate()
-        nodeProcess = nil
-        print("🛑 Stopped TrackerA11y Core Node.js process")
-    }
-    
-    private func findProjectPath() -> String? {
-        // Find the TrackerA11y project directory
-        let currentPath = FileManager.default.currentDirectoryPath
-        let possiblePaths = [
-            currentPath,
-            "\(currentPath)/..",
-            "/Users/bob3/Desktop/trackerA11y"
-        ]
+        print("🔧 DEBUG: stopTrackerCore() called")
         
-        for path in possiblePaths {
-            if FileManager.default.fileExists(atPath: "\(path)/dist/cli.js") {
-                return path
+        guard let process = nodeProcess else {
+            print("⚠️ DEBUG: No recording process to stop")
+            return
+        }
+        
+        print("🛑 DEBUG: Stopping TrackerA11y recording process (PID: \(process.processIdentifier))...")
+        print("🔍 DEBUG: Process is running: \(process.isRunning)")
+        
+        // Send SIGINT (Ctrl+C) to allow graceful shutdown
+        print("📤 DEBUG: Sending SIGINT for graceful shutdown...")
+        process.interrupt()
+        print("✅ DEBUG: SIGINT sent successfully")
+        
+        // Wait a moment for graceful shutdown
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            // Check if it's still running after 3 seconds
+            if process.isRunning {
+                print("⚠️ Process still running, force terminating...")
+                process.terminate()
+                
+                // Wait a bit more for force termination
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    if process.isRunning {
+                        print("❌ Failed to terminate recording process")
+                    } else {
+                        print("✅ Recording process terminated")
+                    }
+                    self.nodeProcess = nil
+                }
+            } else {
+                print("✅ Recording process stopped gracefully")
+                self.nodeProcess = nil
             }
         }
         
+        // Notify about session creation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            print("✅ Recording stopped - new session should be created in recordings/ directory")
+            print("💡 Tip: Click 'View Sessions' to see the new recording session")
+        }
+    }
+    
+    private func findProjectPath() -> String? {
+        // Find the TrackerA11y project directory by looking for package.json
+        let possiblePaths = [
+            "/Users/bob3/Desktop/trackerA11y",  // Most likely location
+            FileManager.default.currentDirectoryPath,
+            "\(FileManager.default.currentDirectoryPath)/..",
+            Bundle.main.bundleURL.deletingLastPathComponent().path,
+            Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent().path
+        ]
+        
+        for path in possiblePaths {
+            // Look for package.json to identify TrackerA11y project
+            if FileManager.default.fileExists(atPath: "\(path)/package.json") {
+                // Verify it's the TrackerA11y project by checking for recordings directory
+                if FileManager.default.fileExists(atPath: "\(path)/recordings") {
+                    print("🔍 Found TrackerA11y project at: \(path)")
+                    return path
+                }
+            }
+        }
+        
+        print("❌ TrackerA11y project not found in any of these paths:")
+        for path in possiblePaths {
+            print("   - \(path)")
+        }
         return nil
     }
     
     // MARK: - Event Simulation (for demo purposes)
     private func startEventSimulation() {
         eventTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-            if self.isTracking {
+            if self.isTracking && !self.isPaused {
                 self.delegate?.trackerDidCaptureEvent()
             }
         }
+    }
+    
+    private func pauseEventSimulation() {
+        // Timer keeps running but events are not triggered due to isPaused check
+        print("⏸ Event simulation paused")
+    }
+    
+    private func resumeEventSimulation() {
+        // Events will resume automatically as isPaused is now false
+        print("▶️ Event simulation resumed")
     }
     
     private func stopEventSimulation() {

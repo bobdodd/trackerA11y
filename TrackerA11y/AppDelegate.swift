@@ -1,9 +1,24 @@
 import Cocoa
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     var window: NSWindow!
     var mainViewController: MainViewController?
+    
+    // Menu bar status item
+    var statusItem: NSStatusItem?
+    var statusMenu: NSMenu?
+    var recordingState: RecordingState = .stopped {
+        didSet {
+            updateStatusBarIcon()
+        }
+    }
+    
+    enum RecordingState {
+        case stopped
+        case recording
+        case paused
+    }
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         print("🚀 TrackerA11y launching...")
@@ -27,22 +42,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         mainViewController = MainViewController()
         window.contentViewController = mainViewController
         
+        // Set window delegate to handle close events
+        window.delegate = self
+        
         window.makeKeyAndOrderFront(nil)
         
         // Set up application menu
         setupMenuBar()
+        
+        // Set up menu bar status item
+        setupStatusBarItem()
         
         print("✅ TrackerA11y native macOS app launched")
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
         mainViewController?.cleanup()
+        
+        // Clean up status bar item
+        if let statusItem = statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+        }
+        
         print("🧹 TrackerA11y app terminated")
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        // Only terminate if the main window is closed, not auxiliary windows
+        // Let individual window close handling decide app termination
         return false
+    }
+    
+    // MARK: - NSWindowDelegate
+    
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // If this is the main window, quit the entire app
+        if sender == window {
+            print("🚪 Main window closing - quitting application")
+            NSApplication.shared.terminate(nil)
+            return false // We handle the termination ourselves
+        }
+        
+        // For other windows, allow normal closing
+        return true
     }
     
     private func setupMenuBar() {
@@ -87,6 +128,88 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.mainMenu = mainMenu
     }
     
+    private func setupStatusBarItem() {
+        // Create status bar item
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        
+        guard let statusItem = statusItem else {
+            print("❌ Failed to create status bar item")
+            return
+        }
+        
+        // Create status menu
+        statusMenu = NSMenu()
+        statusItem.menu = statusMenu
+        
+        // Initial setup
+        updateStatusBarIcon()
+        updateStatusMenu()
+        
+        print("✅ Menu bar status item created")
+    }
+    
+    private func updateStatusBarIcon() {
+        guard let statusItem = statusItem else { return }
+        
+        let button = statusItem.button
+        
+        switch recordingState {
+        case .stopped:
+            // Use a circle for stopped state
+            button?.title = "●"
+            button?.toolTip = "TrackerA11y - Ready to Record"
+            
+        case .recording:
+            // Use a red circle for recording state
+            button?.title = "🔴"
+            button?.toolTip = "TrackerA11y - Recording Active"
+            
+        case .paused:
+            // Use pause symbol for paused state
+            button?.title = "⏸"
+            button?.toolTip = "TrackerA11y - Recording Paused"
+        }
+        
+        // Style the button
+        button?.font = NSFont.systemFont(ofSize: 16)
+    }
+    
+    private func updateStatusMenu() {
+        guard let statusMenu = statusMenu else { return }
+        
+        // Clear existing items
+        statusMenu.removeAllItems()
+        
+        // Add title
+        let titleItem = NSMenuItem(title: "TrackerA11y", action: nil, keyEquivalent: "")
+        titleItem.isEnabled = false
+        statusMenu.addItem(titleItem)
+        statusMenu.addItem(NSMenuItem.separator())
+        
+        // Recording controls based on current state
+        switch recordingState {
+        case .stopped:
+            statusMenu.addItem(withTitle: "▶️ Start Recording", action: #selector(statusBarStartRecording), keyEquivalent: "r")
+            
+        case .recording:
+            statusMenu.addItem(withTitle: "⏸ Pause Recording", action: #selector(statusBarPauseRecording), keyEquivalent: "p")
+            statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
+            
+        case .paused:
+            statusMenu.addItem(withTitle: "▶️ Resume Recording", action: #selector(statusBarResumeRecording), keyEquivalent: "r")
+            statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
+        }
+        
+        statusMenu.addItem(NSMenuItem.separator())
+        
+        // Additional options
+        statusMenu.addItem(withTitle: "📊 View Sessions", action: #selector(statusBarViewSessions), keyEquivalent: "")
+        statusMenu.addItem(withTitle: "🏠 Show Main Window", action: #selector(statusBarShowMainWindow), keyEquivalent: "")
+        
+        statusMenu.addItem(NSMenuItem.separator())
+        statusMenu.addItem(withTitle: "Quit TrackerA11y", action: #selector(statusBarQuit), keyEquivalent: "q")
+    }
+    
     @objc private func showAbout() {
         let alert = NSAlert()
         alert.messageText = "TrackerA11y"
@@ -118,5 +241,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func quitApplication() {
         // Properly quit the application
         NSApplication.shared.terminate(nil)
+    }
+    
+    // MARK: - Status Bar Actions
+    
+    @objc private func statusBarStartRecording() {
+        print("🎬 Status bar: Start recording requested")
+        recordingState = .recording
+        updateStatusMenu()
+        mainViewController?.startRecording()
+    }
+    
+    @objc private func statusBarPauseRecording() {
+        print("⏸ Status bar: Pause recording requested")
+        recordingState = .paused
+        updateStatusMenu()
+        mainViewController?.pauseRecording()
+    }
+    
+    @objc private func statusBarResumeRecording() {
+        print("▶️ Status bar: Resume recording requested")
+        recordingState = .recording
+        updateStatusMenu()
+        mainViewController?.resumeRecording()
+    }
+    
+    @objc private func statusBarStopRecording() {
+        print("⏹ Status bar: Stop recording requested")
+        recordingState = .stopped
+        updateStatusMenu()
+        mainViewController?.stopRecording()
+        
+        // Show main window so user can see their session
+        print("🏠 Automatically showing main window after recording stopped")
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    @objc private func statusBarViewSessions() {
+        print("📊 Status bar: View sessions requested")
+        mainViewController?.viewSessions()
+    }
+    
+    @objc private func statusBarShowMainWindow() {
+        print("🏠 Status bar: Show main window requested")
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    @objc private func statusBarQuit() {
+        print("🚪 Status bar: Quit requested")
+        quitApplication()
+    }
+    
+    // MARK: - Public Methods for MainViewController
+    
+    func updateRecordingState(_ state: RecordingState) {
+        recordingState = state
+        updateStatusMenu()
     }
 }

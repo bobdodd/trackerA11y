@@ -78,35 +78,106 @@ class SessionListViewController: NSViewController {
     }
     
     @objc private func loadSessions() {
-        print("🔄 Starting to load sessions from MongoDB...")
+        print("🔄 Loading sessions from recordings directory...")
         
-        // TEMPORARY: Use hardcoded test data to verify UI works
-        let testSessions = """
-[
-  {
-    "sessionId": "session_1766121152140",
-    "startTime": 1766121152373,
-    "eventCount": 3,
-    "status": "completed",
-    "createdAt": "2025-12-19T05:12:32.373Z",
-    "endTime": 1766121157524
-  },
-  {
-    "sessionId": "session_1766120932280",
-    "startTime": 1766120933150,
-    "eventCount": 93,
-    "status": "completed",
-    "createdAt": "2025-12-19T05:08:53.150Z",
-    "endTime": 1766120947183
-  }
-]
-"""
-        
-        // Simulate loading delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            print("📝 Using test session data for UI verification")
-            self.parseSessions(testSessions)
+        // Find the TrackerA11y project directory
+        guard let projectPath = findProjectPath() else {
+            print("❌ Could not find TrackerA11y project path")
+            sessions = []
+            tableView.reloadData()
+            return
         }
+        
+        let recordingsPath = "\(projectPath)/recordings"
+        print("📁 Looking for sessions in: \(recordingsPath)")
+        
+        DispatchQueue.global(qos: .background).async {
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: recordingsPath)
+                let sessionFolders = contents.filter { $0.hasPrefix("session_") }
+                print("📊 Found \(sessionFolders.count) session folders")
+                
+                var loadedSessions: [[String: Any]] = []
+                
+                for sessionFolder in sessionFolders {
+                    let sessionPath = "\(recordingsPath)/\(sessionFolder)"
+                    let summaryPath = "\(sessionPath)/summary.txt"
+                    let eventsPath = "\(sessionPath)/events.json"
+                    
+                    // Extract timestamp from folder name
+                    let timestampStr = String(sessionFolder.dropFirst(8)) // Remove "session_"
+                    guard let timestamp = Double(timestampStr) else { continue }
+                    
+                    let date = Date(timeIntervalSince1970: timestamp / 1000)
+                    
+                    // Try to read event count from events.json
+                    var eventCount = 0
+                    if FileManager.default.fileExists(atPath: eventsPath) {
+                        do {
+                            let eventsData = try Data(contentsOf: URL(fileURLWithPath: eventsPath))
+                            if let eventsJson = try JSONSerialization.jsonObject(with: eventsData) as? [String: Any],
+                               let events = eventsJson["events"] as? [[String: Any]] {
+                                eventCount = events.count
+                            }
+                        } catch {
+                            print("⚠️ Failed to read events.json for \(sessionFolder): \(error)")
+                        }
+                    }
+                    
+                    // Check if session has summary.txt (indicates completion)
+                    let status = FileManager.default.fileExists(atPath: summaryPath) ? "completed" : "partial"
+                    
+                    let sessionData: [String: Any] = [
+                        "sessionId": sessionFolder,
+                        "startTime": timestamp,
+                        "eventCount": eventCount,
+                        "status": status,
+                        "createdAt": ISO8601DateFormatter().string(from: date),
+                        "endTime": timestamp + 30000 // Approximate end time
+                    ]
+                    
+                    loadedSessions.append(sessionData)
+                }
+                
+                // Sort by timestamp (newest first)
+                loadedSessions.sort { session1, session2 in
+                    let time1 = session1["startTime"] as? Double ?? 0
+                    let time2 = session2["startTime"] as? Double ?? 0
+                    return time1 > time2
+                }
+                
+                DispatchQueue.main.async {
+                    self.sessions = loadedSessions
+                    self.tableView.reloadData()
+                    print("✅ Loaded \(loadedSessions.count) sessions from recordings directory")
+                }
+                
+            } catch {
+                print("❌ Failed to read recordings directory: \(error)")
+                DispatchQueue.main.async {
+                    self.sessions = []
+                    self.tableView.reloadData()
+                }
+            }
+        }
+    }
+    
+    private func findProjectPath() -> String? {
+        let possiblePaths = [
+            "/Users/bob3/Desktop/trackerA11y",  // Most likely location
+            FileManager.default.currentDirectoryPath,
+            "\(FileManager.default.currentDirectoryPath)/..",
+            Bundle.main.bundleURL.deletingLastPathComponent().path,
+            Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent().path
+        ]
+        
+        for path in possiblePaths {
+            if FileManager.default.fileExists(atPath: "\(path)/package.json") &&
+               FileManager.default.fileExists(atPath: "\(path)/recordings") {
+                return path
+            }
+        }
+        return nil
     }
     
     private func parseSessions(_ output: String) {
