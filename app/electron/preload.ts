@@ -4,7 +4,15 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { TimestampedEvent } from '../../src/types';
+
+// Define TimestampedEvent interface locally since we can't import from dist during build
+interface TimestampedEvent {
+  id: string;
+  timestamp: number;
+  type: string;
+  source: string;
+  data: any;
+}
 
 // Define the API that will be exposed to the renderer
 export interface ElectronAPI {
@@ -120,18 +128,18 @@ const electronAPI: ElectronAPI = {
 
   // Remove event listeners
   off: {
-    trackerEvent: (callback) => ipcRenderer.removeListener('tracker:event', callback),
-    trackerStarted: (callback) => ipcRenderer.removeListener('tracker:started', callback),
-    trackerStopped: (callback) => ipcRenderer.removeListener('tracker:stopped', callback),
-    trackerError: (callback) => ipcRenderer.removeListener('tracker:error', callback),
-    databaseConnected: (callback) => ipcRenderer.removeListener('database:connected', callback),
-    databaseDisconnected: (callback) => ipcRenderer.removeListener('database:disconnected', callback),
-    databaseError: (callback) => ipcRenderer.removeListener('database:error', callback),
-    sessionCreated: (callback) => ipcRenderer.removeListener('session:created', callback),
-    sessionExported: (callback) => ipcRenderer.removeListener('session:exported', callback),
-    servicesInitialized: (callback) => ipcRenderer.removeListener('services:initialized', callback),
-    correlationFound: (callback) => ipcRenderer.removeListener('tracker:correlation', callback),
-    insightGenerated: (callback) => ipcRenderer.removeListener('tracker:insight', callback)
+    trackerEvent: (callback) => ipcRenderer.removeListener('tracker:event', (_, data) => callback(data)),
+    trackerStarted: (callback) => ipcRenderer.removeListener('tracker:started', (_, data) => callback(data)),
+    trackerStopped: (callback) => ipcRenderer.removeListener('tracker:stopped', (_, data) => callback(data)),
+    trackerError: (callback) => ipcRenderer.removeListener('tracker:error', (_, error) => callback(error)),
+    databaseConnected: (callback) => ipcRenderer.removeListener('database:connected', () => callback()),
+    databaseDisconnected: (callback) => ipcRenderer.removeListener('database:disconnected', () => callback()),
+    databaseError: (callback) => ipcRenderer.removeListener('database:error', (_, error) => callback(error)),
+    sessionCreated: (callback) => ipcRenderer.removeListener('session:created', (_, data) => callback(data)),
+    sessionExported: (callback) => ipcRenderer.removeListener('session:exported', (_, data) => callback(data)),
+    servicesInitialized: (callback) => ipcRenderer.removeListener('services:initialized', (_, data) => callback(data)),
+    correlationFound: (callback) => ipcRenderer.removeListener('tracker:correlation', (_, data) => callback(data)),
+    insightGenerated: (callback) => ipcRenderer.removeListener('tracker:insight', (_, insight) => callback(insight))
   },
 
   // App info

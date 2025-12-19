@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/electron",
     "target": "ES2020",
@@ -11,19 +10,17 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "rootDir": ".",
     "baseUrl": "../../",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["dist/*"]
     }
   },
   "include": [
-    "**/*.ts",
-    "../../src/**/*.ts"
+    "**/*.ts"
   ],
   "exclude": [
-    "../../src/**/*.test.ts",
-    "../../src/**/*.spec.ts",
-    "../../examples/**/*",
-    "../../tests/**/*"
+    "node_modules",
+    "dist"
   ]
 }

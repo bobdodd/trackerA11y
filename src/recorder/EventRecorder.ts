@@ -11,6 +11,7 @@ import { InteractionManager } from '@/interaction/InteractionManager';
 import { ScreenshotCapture } from './ScreenshotCapture';
 import { DOMCapture } from './DOMCapture';
 import { RecorderConfig, RecordedEvent, EventLog } from './types';
+import { SimpleMongoStore } from '@/database/SimpleMongoStore';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -22,6 +23,7 @@ export class EventRecorder extends EventEmitter {
   private interactionManager: InteractionManager;
   private screenshotCapture: ScreenshotCapture;
   private domCapture: DOMCapture;
+  private mongoStore: SimpleMongoStore;
   
   private isRecording = false;
   private sessionId: string;
@@ -61,6 +63,9 @@ export class EventRecorder extends EventEmitter {
     // Initialize capture systems
     this.screenshotCapture = new ScreenshotCapture(this.outputDir, config.screenshot);
     this.domCapture = new DOMCapture(this.outputDir, config.dom);
+    
+    // Initialize MongoDB store
+    this.mongoStore = new SimpleMongoStore();
 
     // Initialize event log
     this.eventLog = {
@@ -97,6 +102,15 @@ export class EventRecorder extends EventEmitter {
       await this.interactionManager.initialize();
       await this.screenshotCapture.initialize();
       await this.domCapture.initialize();
+      
+      // Initialize MongoDB connection
+      try {
+        await this.mongoStore.connect();
+        await this.mongoStore.createSession(this.sessionId, this.config);
+        console.log('📊 MongoDB session tracking enabled');
+      } catch (error) {
+        console.warn('⚠️ MongoDB connection failed, continuing without database:', error instanceof Error ? error.message : 'Unknown error');
+      }
 
       // Set up event handlers
       this.setupEventHandlers();
@@ -146,6 +160,14 @@ export class EventRecorder extends EventEmitter {
       // Finalize event log
       this.eventLog.endTime = this.timeSync.now();
       this.eventLog.events = this.eventBuffer;
+
+      // Complete MongoDB session
+      try {
+        await this.mongoStore.completeSession(this.sessionId, this.eventBuffer.length);
+        console.log('📊 MongoDB session completed');
+      } catch (error) {
+        console.warn('⚠️ Failed to complete MongoDB session:', error instanceof Error ? error.message : 'Unknown error');
+      }
 
       // Save event log
       const logPath = path.join(this.outputDir, 'events.json');
@@ -282,6 +304,11 @@ export class EventRecorder extends EventEmitter {
 
   private addEvent(event: RecordedEvent): void {
     this.eventBuffer.push(event);
+    
+    // Store in MongoDB
+    this.mongoStore.storeEvent(event).catch(err => {
+      console.warn('⚠️ Failed to store event in MongoDB:', err.message);
+    });
     
     // Real-time logging
     const time = new Date(event.timestamp / 1000).toISOString().split('T')[1].split('.')[0];
@@ -430,7 +457,8 @@ For audio analysis correlation:
       this.screenshotCapture.shutdown(),
       this.domCapture.shutdown(),
       this.focusManager.shutdown().catch(err => console.warn('Focus manager shutdown warning:', err.message)),
-      this.interactionManager.shutdown().catch(err => console.warn('Interaction manager shutdown warning:', err.message))
+      this.interactionManager.shutdown().catch(err => console.warn('Interaction manager shutdown warning:', err.message)),
+      this.mongoStore.disconnect().catch(err => console.warn('MongoDB disconnect warning:', err.message))
     ];
 
     await Promise.allSettled(shutdownPromises);

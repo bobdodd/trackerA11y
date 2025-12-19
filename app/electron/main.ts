@@ -5,9 +5,9 @@
 
 import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
-import { TrackerA11yCore } from '../../src/core/TrackerA11yCore';
-import { MongoDBStore } from '../../src/database/MongoDBStore';
-import { TrackerA11yConfig, TimestampedEvent } from '../../src/types';
+import { TrackerA11yCore } from '../../dist/core/TrackerA11yCore';
+import { MongoDBStore } from '../../dist/database/MongoDBStore';
+import { TrackerA11yConfig, TimestampedEvent } from '../../dist/types';
 
 interface AppState {
   tracker: TrackerA11yCore | null;
@@ -65,7 +65,6 @@ class TrackerA11yApp {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        enableRemoteModule: false,
         preload: path.join(__dirname, 'preload.js')
       }
     });
