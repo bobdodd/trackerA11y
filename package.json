@@ -18,6 +18,7 @@
     "demo:native": "ts-node -r tsconfig-paths/register examples/native-test-demo.ts",
     "demo:integrated": "ts-node -r tsconfig-paths/register examples/integrated-demo.ts",
     "demo:accessibility": "ts-node -r tsconfig-paths/register examples/accessibility-demo.ts",
+    "demo:enhanced": "ts-node -r tsconfig-paths/register examples/enhanced-tracker-demo.ts",
     "cli": "ts-node -r tsconfig-paths/register cli.ts",
     "record": "npm run cli record",
     "analyze": "npm run cli analyze"

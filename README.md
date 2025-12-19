@@ -27,25 +27,39 @@ TrackerA11y represents a paradigm shift from fragmented accessibility testing to
 
 ### Comprehensive Capabilities
 
-#### Visual & Interaction Tracking (TypeScript Core)
+#### Enhanced Interaction Tracking (TypeScript Core)
 1. **Application Focus Tracking**: Monitor which application has focus across all platforms
-2. **User Interaction Monitoring**: Capture and timestamp all user interactions with microsecond precision
-3. **Page/Screen Structure Analysis**: Deep inspection of accessibility trees and DOM structures
-4. **Lifecycle Tracking**: Monitor all changes and user interactions throughout testing sessions
-5. **Screen Recording Integration**: Synchronized visual capture with interaction overlays
+2. **Advanced Mouse Event Capture**: Complete mouse button support (left, right, middle, additional) with modifier keys
+   - **Modifier Key Support**: Capture Command+click, Shift+click, Control+click, Option+click combinations
+   - **Comprehensive Button Support**: All mouse buttons including middle-click and additional buttons
+   - **Enhanced Event Types**: Mouse down/up, drag, hover, dwell time tracking
+3. **Dock Integration**: Native macOS dock detection and interaction tracking
+   - **Universal Dock Detection**: Works with dock in any position (bottom, left, right)
+   - **Application Icon Tracking**: Identify specific applications being launched from dock
+   - **Coordinate-Based Detection**: Robust detection without hanging or timeouts
+4. **Browser Element Detection**: Deep DOM inspection for web accessibility testing
+   - **Cross-Browser Support**: Safari, Chrome, Firefox integration
+   - **Real-Time Element Identification**: Instant detection of clicked web elements
+   - **Coordinate Mapping**: Accurate screen-to-browser coordinate transformation
+5. **Hover & Dwell Time Analysis**: Advanced interaction timing analysis
+   - **Hover Detection**: 500ms threshold with 10px movement tolerance
+   - **Dwell Time Measurement**: Precise timing of user hesitation and exploration
+   - **Movement Tracking**: Sub-pixel precision mouse movement analysis
+6. **Page/Screen Structure Analysis**: Deep inspection of accessibility trees and DOM structures
+7. **Screen Recording Integration**: Synchronized visual capture with interaction overlays
 
 #### Integrated Audio Analysis (Python Pipeline)
-6. **High-Quality Audio Recording**: Professional-grade 48kHz/96kHz lossless audio capture
-7. **Speaker Diarization**: Advanced AI-powered separation using pyannote/speaker-diarization-3.1
-8. **Role-Aware Transcription**: Specialized transcription with Whisper Large v3 optimized for each speaker
-9. **Think-Aloud Analysis**: Deep analysis of user cognitive processes and mental models
-10. **Sentiment & Emotion Tracking**: Real-time detection of user frustration, confusion, and satisfaction
+8. **High-Quality Audio Recording**: Professional-grade 48kHz/96kHz lossless audio capture
+9. **Speaker Diarization**: Advanced AI-powered separation using pyannote/speaker-diarization-3.1
+10. **Role-Aware Transcription**: Specialized transcription with Whisper Large v3 optimized for each speaker
+11. **Think-Aloud Analysis**: Deep analysis of user cognitive processes and mental models
+12. **Sentiment & Emotion Tracking**: Real-time detection of user frustration, confusion, and satisfaction
 
 #### Intelligence & Correlation (Hybrid System)
-11. **Real-Time Correlation**: Immediate linking of user speech with their actions via IPC bridge
-12. **Accessibility Issue Detection**: Automated identification of barriers through audio-visual correlation
-13. **Intent Analysis**: Understanding user goals and expectations from speech-action patterns
-14. **Comprehensive Reporting**: Multi-format reports with unified audio-visual-interaction insights
+13. **Real-Time Correlation**: Immediate linking of user speech with their actions via IPC bridge
+14. **Accessibility Issue Detection**: Automated identification of barriers through audio-visual correlation
+15. **Intent Analysis**: Understanding user goals and expectations from speech-action patterns
+16. **Comprehensive Reporting**: Multi-format reports with unified audio-visual-interaction insights
 
 ### Technical Excellence
 
@@ -136,6 +150,63 @@ npm run dev
 # Terminal 2: Python pipeline in development mode
 cd audio_pipeline
 python -m audio_pipeline.main --mode standalone --log-level DEBUG
+```
+
+## Enhanced Usage Examples
+
+### Quick Start: Enhanced Demo
+Experience all the new enhanced features with the comprehensive demo:
+
+```bash
+# Run the enhanced accessibility demo with all features
+npm run demo:enhanced
+```
+
+This demo showcases:
+- 🖱️ **Advanced Mouse Tracking**: All button support with modifier keys
+- 🚢 **Dock Detection**: Native macOS dock interaction tracking  
+- 🌐 **Browser Integration**: Real-time DOM element detection
+- 🫧 **Hover Analysis**: Dwell time and movement precision
+- ⌨️ **Enhanced Output**: Clean, emoji-coded interaction logging
+
+### Recording with Enhanced Features
+Start a comprehensive recording session:
+
+```bash
+# Record everything with enhanced tracking
+npm run record
+```
+
+### Accessibility-Only Demo
+For focused accessibility testing:
+
+```bash
+# Original accessibility demo (clean output)
+npm run demo:accessibility
+```
+
+### Enhanced Feature Examples
+
+**Dock Interactions:**
+```
+🖱️ CLICK [Command] #1 | 🚢 Dock: Terminal
+⬇️ DOCK PRESS | 🚢 Dock: Safari
+🖱️ RIGHT CLICK #2 | 🚢 Dock: Chrome
+```
+
+**Browser Element Detection:**
+```
+🖱️ CLICK #3 | <button> "Submit Form"
+🖱️ CLICK [Shift] #4 | <a> "Learn More" (https://example.com...)
+⬇️ PRESS LEFT [Control] | <input>#search "Search for..."
+```
+
+**Enhanced Interactions:**
+```
+🫧 HOVER START | <div> "Navigation Menu"
+🫧 HOVER END (1250ms)
+🫳 DRAG LEFT [Option] | <div> "Draggable Item"
+⬆️ SCROLL [Command] | <main> "Main Content"
 ```
 
 ## Architecture Deep Dive
