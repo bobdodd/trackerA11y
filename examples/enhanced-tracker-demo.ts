@@ -9,7 +9,7 @@ import { TrackerA11yConfig } from '../src/types';
 
 async function runEnhancedDemo() {
   console.log('🚀 Enhanced TrackerA11y Demo');
-  console.log('✨ Features: Dock detection, Modifier keys, Hover tracking, Browser elements');
+  console.log('✨ Features: Focus tracking, Dock detection, Modifier keys, Hover tracking, Browser elements');
   console.log('🔍 Enhanced output with clean formatting');
   console.log('⏹️  Press Ctrl+C to stop\n');
 
@@ -39,8 +39,15 @@ async function runEnhancedDemo() {
   let isShuttingDown = false;
   let interactionCount = 0;
 
-  // Handle interactions with enhanced output
+  // Handle all events (interactions and focus changes) with enhanced output
   tracker.on('eventProcessed', (event) => {
+    if (event.source === 'focus') {
+      // Handle focus change events
+      const { applicationName, windowTitle, processId } = event.data;
+      console.log(`👁️  FOCUS | ${applicationName}${windowTitle ? ` - ${windowTitle}` : ''} (PID: ${processId})`);
+      return;
+    }
+    
     if (event.source !== 'interaction') return;
     
     const { interactionType, target, inputData } = event.data;
@@ -168,7 +175,7 @@ async function runEnhancedDemo() {
     console.log('🚀 Starting enhanced accessibility tracking...');
     await tracker.start();
     
-    console.log('👂 Interact with dock icons, web pages, and applications to see enhanced tracking...\\n');
+    console.log('👂 Switch between apps and interact with dock icons, web pages, and applications...\\n');
     
     // Keep running until interrupted
     await new Promise<void>((resolve) => {
