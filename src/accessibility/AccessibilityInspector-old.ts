@@ -52,9 +52,12 @@ export class AccessibilityInspector {
    */
   async hitTest(x: number, y: number, processId?: number): Promise<AccessibilityHitTest | null> {
     try {
+      console.debug(`🎯 AccessibilityInspector.hitTest starting for (${x}, ${y})`);
       // Use native accessibility APIs first - they know exactly what's at any coordinate
       const element = await this.getElementAtPoint(x, y, processId);
+      console.debug(`🎯 AccessibilityInspector.getElementAtPoint returned: ${element ? 'element found' : 'null'}`);
       if (element) {
+        console.debug(`🎯 Found native element: ${element.role} "${element.title}" desc:"${element.description}"`);
         // Only log dock icon detection for debugging
         if (element.description === 'Dock icon') {
           console.log(`🚢 DOCK ICON DETECTED: ${element.title} at (${element.bounds.x}, ${element.bounds.y})`);
@@ -76,7 +79,9 @@ export class AccessibilityInspector {
       }
 
       // Only try browser DOM inspection if native accessibility found nothing
+      console.debug(`🌐 AccessibilityInspector: Trying browser inspection for (${x}, ${y})`);
       const browserHitTest = await this.browserInspector.hitTest(x, y);
+      console.debug(`🌐 AccessibilityInspector: Browser inspection returned: ${browserHitTest ? 'found' : 'null'}`);
       if (browserHitTest) {
         // Convert browser hit test to our format
         return this.convertBrowserHitTest(browserHitTest);
@@ -93,20 +98,99 @@ export class AccessibilityInspector {
    * Get detailed information about a UI element at coordinates
    */
   private async getElementAtPoint(x: number, y: number, processId?: number): Promise<UIElement | null> {
-    // Simple coordinate-based dock detection without complex enumeration
+    // First try a simple coordinate-based dock detection
     const script = `
       tell application "System Events"
         try
-          -- Simple dock area detection based on coordinates only
-          if ${Math.round(y)} > 900 then
-            -- Just assume dock click for bottom area coordinates
-            return "button|Dock Icon|||Dock icon|true|false|false|${Math.round(x)},${Math.round(y)},60,60"
+          -- Simplified dock detection - check if coordinates are in likely dock area
+          set dockProcess to process "Dock"
+          set targetElement to missing value
+          
+          -- Get dock UI elements directly  
+          try
+            set dockList to first UI element of dockProcess
+            set dockItems to UI elements of dockList
+            
+            -- Check each dock item to see if coordinates match
+            repeat with dockItem in dockItems
+              try
+                set itemPos to position of dockItem
+                set itemSize to size of dockItem
+                set itemX to item 1 of itemPos
+                set itemY to item 2 of itemPos
+                set itemW to item 1 of itemSize
+                set itemH to item 2 of itemSize
+                
+                -- Generous clickable area around each dock item
+                -- Allow clicks above the dock (common for dock interaction)
+                set clickableX to itemX - 10
+                set clickableY to itemY - 100  -- Large area above dock
+                set clickableW to itemW + 20
+                set clickableH to itemH + 120  -- Extended upward area
+                
+                -- Check if coordinates are within this item's area
+                if ${Math.round(x)} >= clickableX and ${Math.round(x)} <= (clickableX + clickableW) and ${Math.round(y)} >= clickableY and ${Math.round(y)} <= (clickableY + clickableH) then
+                  set targetElement to dockItem
+                  exit repeat
+                end if
+                
+              on error
+                -- Skip problematic dock items
+              end try
+            end repeat
+            
+          on error dockError
+            -- If we can't access dock items, still try to detect dock area by coordinates
+            -- Bottom 200 pixels of screen are likely dock area when dock is visible
+            tell application "System Events"
+              tell process "Finder"
+                set screenBounds to bounds of window 1 of desktop
+                set screenHeight to item 4 of screenBounds
+                
+                -- If click is in bottom area and we have dock process, assume dock click
+                if ${Math.round(y)} > (screenHeight - 200) then
+                  return "button|Dock Icon|||Dock icon|true|false|false|${Math.round(x)},${Math.round(y)},60,60"
+                end if
+              end tell
+            end tell
+          end try
+          
+          -- If no dock item found, return empty for browser fallback
+          if targetElement is missing value then
+            return ""
           end if
           
-          return ""
+          -- Extract dock icon information with fallbacks
+          set elementTitle to "Dock Icon"
+          try
+            set elementTitle to title of targetElement
+            if elementTitle is missing value or elementTitle is "" then
+              try
+                set elementTitle to name of targetElement
+              end try
+            end if
+          on error
+            set elementTitle to "Dock Icon"
+          end try
+          
+          set elementPosition to {${Math.round(x)}, ${Math.round(y)}}
+          set elementSize to {60, 60}
+          try
+            set elementPosition to position of targetElement
+            set elementSize to size of targetElement
+          on error
+            -- Use click coordinates as fallback
+          end try
+          
+          set posX to item 1 of elementPosition
+          set posY to item 2 of elementPosition  
+          set sizeW to item 1 of elementSize
+          set sizeH to item 2 of elementSize
+          
+          return "button|" & elementTitle & "|||Dock icon|true|false|false|" & (posX as string) & "," & (posY as string) & "," & (sizeW as string) & "," & (sizeH as string)
           
         on error errMsg
-          return "error|" & errMsg
+          return "error|" & errMsg & "||||||||"
         end try
       end tell
     `;
@@ -117,8 +201,13 @@ export class AccessibilityInspector {
       });
       
       const result = stdout.trim();
+      console.debug(`🔍 AppleScript result for (${x}, ${y}): "${result}"`);
       
       if (!result || result.startsWith('error|')) {
+        if (result.startsWith('error|')) {
+          console.debug(`❌ AppleScript error: ${result.substring(6)}`);
+        }
+        console.debug(`❌ No dock element found at (${x}, ${y})`);
         return null;
       }
 
@@ -129,6 +218,7 @@ export class AccessibilityInspector {
         const [bx, by, bw, bh] = boundsStr.split(',').map(Number);
         if (!isNaN(bx) && !isNaN(by) && !isNaN(bw) && !isNaN(bh)) {
           bounds = { x: bx, y: by, width: bw, height: bh };
+          console.debug(`📏 Element bounds: (${bx}, ${by}) ${bw}×${bh}`);
         }
       }
 
@@ -145,6 +235,7 @@ export class AccessibilityInspector {
         bounds
       };
       
+      console.debug(`🎯 Parsed element: ${element.role} "${element.title}" (${element.description})`);
       return element;
     } catch (error) {
       if (error instanceof Error && (

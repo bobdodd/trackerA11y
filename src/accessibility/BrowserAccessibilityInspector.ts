@@ -54,48 +54,41 @@ export class BrowserAccessibilityInspector {
    * Test if coordinates are within a browser and get DOM element info
    */
   async hitTest(x: number, y: number, browserName?: string): Promise<BrowserHitTest | null> {
+    // Skip browser inspection for dock area coordinates (bottom 150px of screen)
+    if (y > 950) {
+      return null;
+    }
+    
     // First, detect which browser window contains these coordinates
-    console.debug(`BrowserAccessibilityInspector: Detecting active browser at (${x}, ${y})`);
     const activeBrowser = await this.detectActiveBrowser(x, y);
-    console.debug(`BrowserAccessibilityInspector: Active browser detection result: ${activeBrowser || 'none'}`);
     
     if (activeBrowser) {
       try {
-        console.debug(`BrowserAccessibilityInspector: Trying hit test for detected browser: ${activeBrowser}`);
         const result = await this.hitTestBrowser(x, y, activeBrowser);
         if (result) {
-          console.debug(`BrowserAccessibilityInspector: Hit test successful for ${activeBrowser}`);
           return result;
-        } else {
-          console.debug(`BrowserAccessibilityInspector: Hit test returned null for ${activeBrowser}`);
         }
       } catch (error) {
-        console.debug(`BrowserAccessibilityInspector: Hit test failed for ${activeBrowser}:`, error instanceof Error ? error.message : 'Unknown error');
+        // Continue to fallback
       }
     }
     
     // Fallback: try browsers in order of preference
-    console.debug(`BrowserAccessibilityInspector: No active browser detected, trying fallback browsers`);
     const browsersToTry = browserName ? [browserName] : ['Safari', 'Chrome', 'Firefox', 'Edge'];
     
     for (const browser of browsersToTry) {
       if (browser === activeBrowser) continue; // Already tried above
       
       try {
-        console.debug(`BrowserAccessibilityInspector: Trying fallback browser: ${browser}`);
         const result = await this.hitTestBrowser(x, y, browser);
         if (result) {
-          console.debug(`BrowserAccessibilityInspector: Fallback hit test successful for ${browser}`);
           return result;
-        } else {
-          console.debug(`BrowserAccessibilityInspector: Fallback hit test returned null for ${browser}`);
         }
       } catch (error) {
-        console.debug(`BrowserAccessibilityInspector: Fallback hit test failed for ${browser}:`, error instanceof Error ? error.message : 'Unknown error');
+        // Continue trying other browsers
       }
     }
     
-    console.debug(`BrowserAccessibilityInspector: All browser hit tests failed`);
     return null;
   }
 
@@ -135,8 +128,8 @@ export class BrowserAccessibilityInspector {
           set pageURL to URL of frontDoc
           set pageTitle to name of frontDoc
           
-          -- Execute JavaScript to find element at coordinates
-          set jsCode to "(function(){ try{ var screenX=${x}; var screenY=${y}; var windowX=window.screenX||0; var windowY=window.screenY||0; var chromeH=window.outerHeight-window.innerHeight; var scrollX=window.scrollX||window.pageXOffset||0; var scrollY=window.scrollY||window.pageYOffset||0; var pageX=screenX-windowX; var pageY=screenY-windowY-chromeH; var viewportW=window.innerWidth; var viewportH=window.innerHeight; var debugInfo='Screen:('+screenX+','+screenY+') WindowX:'+windowX+' WindowY:'+windowY+' ChromeH:'+chromeH+' Scroll:('+scrollX+','+scrollY+') Page:('+pageX+','+pageY+') Viewport:('+viewportW+'x'+viewportH+')'; if(pageX<0||pageY<0||pageX>=viewportW||pageY>=viewportH) return JSON.stringify({error:'Outside viewport',debug:debugInfo}); var el=document.elementFromPoint(pageX,pageY); if(!el) return JSON.stringify({error:'No element',debug:debugInfo}); return JSON.stringify({tagName:el.tagName,textContent:el.textContent?el.textContent.trim().substring(0,50):'',href:el.href||'',id:el.id||'',className:el.className||'',ariaLabel:el.getAttribute('aria-label')||'',role:el.getAttribute('role')||'',debug:debugInfo}); }catch(e){ return JSON.stringify({error:e.message,debug:'Exception occurred'}); } })();"
+          -- Execute JavaScript with simple coordinate mapping
+          set jsCode to "(function(){ try{ var screenX=${x}; var screenY=${y}; var windowX=window.screenX||window.screenLeft||0; var windowY=window.screenY||window.screenTop||0; var innerW=window.innerWidth; var innerH=window.innerHeight; var scrollX=window.scrollX||window.pageXOffset||0; var scrollY=window.scrollY||window.pageYOffset||0; var normalChromeH=80; var contentStartX=windowX; var contentStartY=windowY+normalChromeH; var pageX=screenX-contentStartX; var pageY=screenY-contentStartY; var debugInfo='Screen:('+screenX+','+screenY+') Window:('+windowX+','+windowY+') Inner:('+innerW+','+innerH+') ContentStart:('+contentStartX+','+contentStartY+') Page:('+pageX+','+pageY+') Scroll:('+scrollX+','+scrollY+')'; if(pageX<0||pageY<0||pageX>=innerW||pageY>=innerH) return JSON.stringify({error:'Outside viewport',debug:debugInfo}); var el=document.elementFromPoint(pageX,pageY); if(!el) return JSON.stringify({error:'No element',debug:debugInfo}); return JSON.stringify({tagName:el.tagName,textContent:el.textContent?el.textContent.trim().substring(0,50):'',href:el.href||'',id:el.id||'',className:el.className||'',ariaLabel:el.getAttribute('aria-label')||'',role:el.getAttribute('role')||'',debug:debugInfo}); }catch(e){ return JSON.stringify({error:e.message,debug:'Exception occurred'}); } })();"
           
           set elementInfo to do JavaScript jsCode in frontDoc
           
@@ -149,58 +142,42 @@ export class BrowserAccessibilityInspector {
     `;
 
     try {
-      console.debug(`BrowserAccessibilityInspector: Executing Safari AppleScript`);
       const { stdout } = await execFileAsync('/usr/bin/osascript', ['-e', script], {
         timeout: 5000
       });
       
       const result = stdout.trim();
-      console.debug(`BrowserAccessibilityInspector: Safari AppleScript result length: ${result.length}`);
-      console.debug(`BrowserAccessibilityInspector: Safari AppleScript result: "${result.substring(0, 200)}..."`);
       
       if (result.startsWith('ERROR:')) {
-        console.debug(`BrowserAccessibilityInspector: Safari returned error: ${result}`);
         return null;
       }
       
       if (!result) {
-        console.debug(`BrowserAccessibilityInspector: Safari returned empty result`);
         return null;
       }
 
       const [url, title, elementInfoStr] = result.split('||DELIMITER||');
-      console.debug(`BrowserAccessibilityInspector: Parsed Safari result - URL: ${url}, Title: ${title}, ElementInfo length: ${elementInfoStr?.length || 0}`);
       
       if (!elementInfoStr) {
-        console.debug(`BrowserAccessibilityInspector: No element info in Safari result`);
         return null;
       }
       
       if (elementInfoStr.startsWith('ERROR:')) {
-        console.debug(`BrowserAccessibilityInspector: Safari JavaScript error: ${elementInfoStr}`);
         return null;
       }
 
       try {
-        console.debug(`BrowserAccessibilityInspector: Parsing Safari element JSON`);
         const elementInfo = JSON.parse(elementInfoStr);
-        console.debug(`BrowserAccessibilityInspector: Safari element info:`, elementInfo);
         
-        // Show debug coordinate info
-        if (elementInfo.debug) {
+        // Show debug coordinate info only if needed
+        if (elementInfo.debug && process.env.DEBUG_COORDS) {
           console.log(`🔍 COORDINATE DEBUG: ${elementInfo.debug}`);
         }
         
         // Check for errors in the JavaScript execution
         if (elementInfo.error) {
-          console.debug(`BrowserAccessibilityInspector: Safari element info contains error: ${elementInfo.error}`);
-          if (elementInfo.debug) {
-            console.debug(`BrowserAccessibilityInspector: Error debug info: ${elementInfo.debug}`);
-          }
           return null;
         }
-        
-        console.debug(`BrowserAccessibilityInspector: Successfully parsed Safari element: ${elementInfo.tagName}`);
         return {
           element: {
             tagName: elementInfo.tagName || 'unknown',

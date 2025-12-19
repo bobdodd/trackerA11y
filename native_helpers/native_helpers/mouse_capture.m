@@ -149,7 +149,7 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
         switch (type) {
             case kCGEventLeftMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
-                outputEvent(@"mouse_click", @{
+                outputEvent(@"mouse_down", @{
                     @"button": @"left",
                     @"x": @(location.x),
                     @"y": @(location.y),
@@ -162,9 +162,33 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 break;
             }
                 
+            case kCGEventLeftMouseUp: {
+                int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                outputEvent(@"mouse_up", @{
+                    @"button": @"left",
+                    @"x": @(location.x),
+                    @"y": @(location.y),
+                    @"clickCount": @(clickCount),
+                    @"systemTimestamp": @(timestamp)
+                });
+                break;
+            }
+                
             case kCGEventRightMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
-                outputEvent(@"mouse_click", @{
+                outputEvent(@"mouse_down", @{
+                    @"button": @"right", 
+                    @"x": @(location.x),
+                    @"y": @(location.y),
+                    @"clickCount": @(clickCount),
+                    @"systemTimestamp": @(timestamp)
+                });
+                break;
+            }
+                
+            case kCGEventRightMouseUp: {
+                int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                outputEvent(@"mouse_up", @{
                     @"button": @"right", 
                     @"x": @(location.x),
                     @"y": @(location.y),
@@ -177,7 +201,20 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventOtherMouseDown: {
                 int64_t buttonNumber = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
                 NSString* buttonName = (buttonNumber == 2) ? @"middle" : [NSString stringWithFormat:@"button%lld", buttonNumber];
-                outputEvent(@"mouse_click", @{
+                outputEvent(@"mouse_down", @{
+                    @"button": buttonName,
+                    @"x": @(location.x),
+                    @"y": @(location.y),
+                    @"clickCount": @1,
+                    @"systemTimestamp": @(timestamp)
+                });
+                break;
+            }
+                
+            case kCGEventOtherMouseUp: {
+                int64_t buttonNumber = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
+                NSString* buttonName = (buttonNumber == 2) ? @"middle" : [NSString stringWithFormat:@"button%lld", buttonNumber];
+                outputEvent(@"mouse_up", @{
                     @"button": buttonName,
                     @"x": @(location.x),
                     @"y": @(location.y),
@@ -282,8 +319,11 @@ int main(int argc __unused, const char * argv[] __unused) {
         // Define which events we want to capture
         CGEventMask eventMask = 
             CGEventMaskBit(kCGEventLeftMouseDown) |
+            CGEventMaskBit(kCGEventLeftMouseUp) |
             CGEventMaskBit(kCGEventRightMouseDown) |
+            CGEventMaskBit(kCGEventRightMouseUp) |
             CGEventMaskBit(kCGEventOtherMouseDown) |
+            CGEventMaskBit(kCGEventOtherMouseUp) |
             CGEventMaskBit(kCGEventScrollWheel) |
             CGEventMaskBit(kCGEventKeyDown) |
             CGEventMaskBit(kCGEventMouseMoved) |
