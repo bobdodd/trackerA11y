@@ -116,7 +116,6 @@ export class BrowserAccessibilityInspector {
    * Safari-specific DOM element inspection
    */
   private async hitTestSafari(x: number, y: number): Promise<BrowserHitTest | null> {
-    console.debug(`BrowserAccessibilityInspector: Starting Safari DOM inspection at (${x}, ${y})`);
     const script = `
       tell application "Safari"
         try
@@ -213,18 +212,18 @@ export class BrowserAccessibilityInspector {
       }
       
     } catch (error) {
-      console.debug(`BrowserAccessibilityInspector: Safari AppleScript error:`, error instanceof Error ? error.message : String(error));
+      // Safari AppleScript error - silent fail
       
       if (error instanceof Error && (
         error.message.includes('SIGINT') || 
         error.message.includes('timeout') ||
         error.message.includes('Command failed')
       )) {
-        console.debug(`BrowserAccessibilityInspector: Safari AppleScript timeout or interrupt`);
+        // Safari AppleScript timeout or interrupt - silent fail
         return null;
       }
       
-      console.debug(`BrowserAccessibilityInspector: Safari AppleScript unexpected error`);
+      // Safari AppleScript unexpected error - silent fail
       return null;
     }
   }
@@ -332,7 +331,7 @@ export class BrowserAccessibilityInspector {
    */
   private async isSystemUIArea(x: number, y: number): Promise<boolean> {
     try {
-      console.debug(`isSystemUIArea: Checking coordinates (${x}, ${y})`);
+      // Checking coordinates for system UI area
       
       const script = `
         tell application "System Events"
@@ -388,14 +387,14 @@ export class BrowserAccessibilityInspector {
       });
       
       const result = stdout.trim();
-      console.debug(`isSystemUIArea: AppleScript result: "${result}"`);
+      // AppleScript result for system UI detection
       
       const isSystemUI = result.startsWith('menubar:') || result.startsWith('dock:');
-      console.debug(`isSystemUIArea: Final result: ${isSystemUI}`);
+      // Final system UI detection result
       return isSystemUI;
       
     } catch (error) {
-      console.debug('Failed to detect system UI areas:', error);
+      // Failed to detect system UI areas - silent fail
       // If we can't detect system UI, assume it's not system UI to avoid blocking legitimate clicks
       return false;
     }
