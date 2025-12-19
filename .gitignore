@@ -71,6 +71,12 @@ tmp/
 temp/
 .tmp/
 
+# Development artifacts
+*.png
+TrackerA11yApp-*.app/
+# But keep the final working version
+!TrackerA11yApp-FullyWorking.app/
+
 # Coverage reports
 coverage/
 *.lcov
@@ -81,6 +87,14 @@ jest-coverage/
 
 # TypeScript
 *.tsbuildinfo
+# TypeScript compiled output
+*.d.ts
+*.d.ts.map
+*.js.map
+# But keep specific JS files that are meant to be committed
+!jest.config.js
+!*.config.js
+!app/public/*.js
 
 # ESLint
 .eslintcache
