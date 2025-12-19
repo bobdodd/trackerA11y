@@ -15,8 +15,10 @@ async function runEnhancedDemo() {
 
   // Configure TrackerA11y with our enhanced settings
   const config: TrackerA11yConfig = {
-    platform: 'macos',
+    platforms: ['macos'],
     syncPrecision: 'microsecond',
+    realTimeMonitoring: true,
+    outputFormats: ['json'],
     
     // Enable interaction tracking with enhanced features
     interactionTracking: true,
@@ -28,10 +30,9 @@ async function runEnhancedDemo() {
       privacyMode: 'detailed',
       captureLevel: 'full',
       filterSensitive: false
-    },
+    }
     
-    // Disable audio for this demo
-    audioIntegration: undefined
+    // Audio integration is optional, so we'll omit it for this demo
   };
 
   const tracker = new TrackerA11yCore(config);
@@ -43,7 +44,6 @@ async function runEnhancedDemo() {
     if (event.source !== 'interaction') return;
     
     const { interactionType, target, inputData } = event.data;
-    const time = new Date(event.timestamp / 1000).toISOString().split('T')[1].split('.')[0];
     
     // Helper function for clean element description
     const getElementDesc = (element: any) => {
