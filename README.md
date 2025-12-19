@@ -79,10 +79,20 @@ TrackerA11y represents a paradigm shift from fragmented accessibility testing to
 
 ```
 trackerA11y/
+├── TrackerA11y/                  # Native macOS Application (Swift)
+│   ├── AppDelegate.swift         # Application lifecycle
+│   ├── MainViewController.swift  # Main interface controller
+│   ├── SessionListViewController.swift     # Session browser
+│   ├── SessionDetailViewController.swift   # Session viewer with tabs
+│   ├── TrackerBridge.swift       # TypeScript integration bridge
+│   └── Assets.xcassets/          # App icons and resources
+├── TrackerA11yApp.xcodeproj/     # Xcode project configuration
+├── TrackerA11yApp-FullyWorking.app/  # Pre-built native application
 ├── src/                          # TypeScript Core
 │   ├── core/                     # Core system orchestration
 │   ├── platforms/                # Platform-specific implementations
 │   ├── bridge/                   # Python IPC communication
+│   ├── recorder/                 # Event recording and session management
 │   ├── types/                    # TypeScript type definitions
 │   └── utils/                    # Utility functions
 ├── audio_pipeline/               # Python Audio Processing
@@ -91,6 +101,11 @@ trackerA11y/
 │   │   ├── models/               # Data models
 │   │   └── communication/        # IPC handling
 │   └── tests/                    # Python tests
+├── app/                          # Electron Application (Development)
+│   ├── electron/                 # Electron main and renderer processes
+│   ├── src/                      # React frontend components
+│   └── public/                   # Static web assets
+├── recordings/                   # Session data storage
 ├── docs/                         # Comprehensive documentation
 └── tests/                        # TypeScript tests
 ```
@@ -98,6 +113,12 @@ trackerA11y/
 ## Getting Started
 
 ### Prerequisites
+
+**Native macOS Application:**
+- macOS 14.0+ (Sonoma or later)
+- Xcode 15.0+ (for building from source)
+- MongoDB installed and running
+- Accessibility permissions enabled
 
 **TypeScript Core:**
 - Node.js 18+
@@ -110,7 +131,23 @@ trackerA11y/
 - PyTorch (for ML models)
 - Audio system access
 
-### Installation
+### Quick Start - Native macOS App
+
+The easiest way to get started is with our native macOS application:
+
+1. **Run the pre-built app:**
+```bash
+# Launch the native TrackerA11y application
+open TrackerA11yApp-FullyWorking.app
+```
+
+2. **Or build from source:**
+```bash
+# Build the native macOS application
+xcodebuild -project TrackerA11yApp.xcodeproj -scheme TrackerA11yApp -configuration Release build
+```
+
+### Development Installation
 
 1. **Install TypeScript dependencies:**
 ```bash
@@ -151,6 +188,49 @@ npm run dev
 cd audio_pipeline
 python -m audio_pipeline.main --mode standalone --log-level DEBUG
 ```
+
+## Native macOS Application Features
+
+TrackerA11y includes a complete native macOS application for session management and analysis:
+
+### 🖥️ **Session Management**
+- **Real-time Recording Controls**: Start/stop tracking sessions with one click
+- **MongoDB Integration**: Direct connection to session database with status monitoring
+- **Session History**: Browse and analyze all recorded sessions
+- **Export Functionality**: Export session data in multiple formats
+
+### 📊 **Session Viewer**
+- **Three-tab Interface**: Session Info, Event Log, and Timeline views
+- **Real Data Display**: Shows actual event counts and session statistics
+- **Interactive Timeline**: Visual timeline with colored event tracks by type
+- **Detailed Event Logs**: Formatted event display with timestamps and metadata
+
+### 🎯 **Key Features**
+- **Native Performance**: Built with Swift for optimal macOS integration
+- **Professional UI**: Follows macOS design guidelines with native controls
+- **Database Connectivity**: Real-time MongoDB connection status and validation
+- **Accessibility Focus**: Purpose-built for accessibility testing workflows
+
+### 📱 **Using the Native App**
+
+1. **Launch the application:**
+```bash
+open TrackerA11yApp-FullyWorking.app
+```
+
+2. **Start a recording session:**
+   - Click "Start Recording" to begin tracking
+   - The app monitors focus changes, interactions, and events
+   - View real-time event counts and session statistics
+
+3. **View session history:**
+   - Click "View Sessions" to browse recorded sessions
+   - Select any session to view detailed information
+   - Explore session info, event logs, and timeline visualizations
+
+4. **Export session data:**
+   - Use the export function to save session data
+   - Multiple format options for analysis and reporting
 
 ## Enhanced Usage Examples
 

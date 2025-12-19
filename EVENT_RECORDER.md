@@ -231,6 +231,55 @@ npm run cli analyze <recording-directory>
 # - Number of screenshots and DOM states captured
 ```
 
+## Native Session Viewer
+
+TrackerA11y includes a complete native macOS application for viewing and analyzing recorded sessions:
+
+### 📱 **Visual Session Analysis**
+
+Launch the session viewer:
+```bash
+open TrackerA11yApp-FullyWorking.app
+```
+
+### 🔍 **Session Browser Features**
+- **Complete Session List**: Browse all recorded sessions from MongoDB
+- **Session Statistics**: View event counts, duration, and status for each session
+- **Real Data Display**: Shows actual recorded event counts (3 events vs 93+ events)
+- **Quick Navigation**: Click any session to open detailed view
+
+### 📊 **Three-Tab Session Detail View**
+
+#### 1. **Session Info Tab**
+- Session ID and creation timestamp
+- Recording status and duration
+- Total event count and statistics
+- Data source information
+
+#### 2. **Event Log Tab**  
+- Formatted event list with timestamps
+- Event source identification (system, focus, interaction)
+- Detailed event data and metadata
+- Chronological ordering for analysis
+
+#### 3. **Timeline Tab**
+- **Interactive timeline visualization** 
+- **Color-coded event tracks** by type:
+  - 🔵 Focus events (blue)
+  - 🟢 Interaction events (green)  
+  - 🟠 System events (orange)
+  - 🟣 Custom events (purple)
+- **Time axis** with start/end timestamps
+- **Event markers** positioned by actual timing
+
+### ✨ **Key Benefits**
+
+- **No Command Line Required**: Point-and-click interface for session analysis
+- **Real-time Data**: Loads actual session data from recordings directory
+- **Professional Interface**: Native macOS design following system patterns
+- **MongoDB Integration**: Direct database connectivity with status monitoring
+- **Export Capabilities**: Save session data in multiple formats
+
 ## Integration with Audio Analysis
 
 The event recorder is designed to provide **perfect context** for audio analysis:
