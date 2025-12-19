@@ -246,6 +246,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           inputData = {
             button: nativeEvent.data.button,
             clickCount: nativeEvent.data.clickCount || 1,
+            modifiers: nativeEvent.data.modifiers || [],
             // Add semantic context from accessibility tree
             ...(accessibilityInfo?.element && {
               elementRole: accessibilityInfo.element.role,
@@ -279,6 +280,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           const upInputData = {
             button: nativeEvent.data.button,
             clickCount: nativeEvent.data.clickCount || 1,
+            modifiers: nativeEvent.data.modifiers || [],
             // Add semantic context from accessibility tree
             ...(mouseUpAccessibilityInfo?.element && {
               elementRole: mouseUpAccessibilityInfo.element.role,
@@ -345,6 +347,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
               x: nativeEvent.data.deltaX,
               y: nativeEvent.data.deltaY
             },
+            modifiers: nativeEvent.data.modifiers || [],
             // Add semantic context from accessibility tree
             ...(scrollAccessibilityInfo?.element && {
               elementRole: scrollAccessibilityInfo.element.role,
@@ -414,6 +417,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           };
           inputData = {
             button: nativeEvent.data.button,
+            modifiers: nativeEvent.data.modifiers || [],
             // Add semantic context from accessibility tree
             ...(dragAccessibilityInfo?.element && {
               elementRole: dragAccessibilityInfo.element.role,

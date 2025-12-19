@@ -149,11 +149,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
         switch (type) {
             case kCGEventLeftMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_down", @{
                     @"button": @"left",
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp),
                     @"sourceState": @(sourceState),
                     @"isUserEvent": @(isUserEvent),
@@ -164,11 +166,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 
             case kCGEventLeftMouseUp: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_up", @{
                     @"button": @"left",
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -176,11 +180,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 
             case kCGEventRightMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_down", @{
                     @"button": @"right", 
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -188,11 +194,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 
             case kCGEventRightMouseUp: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_up", @{
                     @"button": @"right", 
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -201,11 +209,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventOtherMouseDown: {
                 int64_t buttonNumber = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
                 NSString* buttonName = (buttonNumber == 2) ? @"middle" : [NSString stringWithFormat:@"button%lld", buttonNumber];
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_down", @{
                     @"button": buttonName,
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @1,
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -214,11 +224,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventOtherMouseUp: {
                 int64_t buttonNumber = CGEventGetIntegerValueField(event, kCGMouseEventButtonNumber);
                 NSString* buttonName = (buttonNumber == 2) ? @"middle" : [NSString stringWithFormat:@"button%lld", buttonNumber];
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_up", @{
                     @"button": buttonName,
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @1,
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -227,11 +239,13 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventScrollWheel: {
                 int64_t deltaY = CGEventGetIntegerValueField(event, kCGScrollWheelEventDeltaAxis1);
                 int64_t deltaX = CGEventGetIntegerValueField(event, kCGScrollWheelEventDeltaAxis2);
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"scroll", @{
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"deltaX": @(deltaX),
                     @"deltaY": @(deltaY),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;
@@ -281,10 +295,12 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventOtherMouseDragged: {
                 NSString* button = (type == kCGEventLeftMouseDragged) ? @"left" : 
                                   (type == kCGEventRightMouseDragged) ? @"right" : @"other";
+                NSArray* modifiers = getModifierFlags(flags);
                 outputEvent(@"mouse_drag", @{
                     @"button": button,
                     @"x": @(location.x),
                     @"y": @(location.y),
+                    @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
                 });
                 break;

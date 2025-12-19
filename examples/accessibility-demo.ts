@@ -70,25 +70,28 @@ async function runAccessibilityDemo() {
         const clickType = inputData.button === 'right' ? 'RIGHT CLICK' :
                          inputData.button === 'middle' ? 'MIDDLE CLICK' :
                          isDoubleClick ? 'DOUBLE CLICK' : 'CLICK';
+        const modifierStr = inputData.modifiers?.length ? ` [${inputData.modifiers.join('+')}]` : '';
         
-        console.log(`${clickIcon}${clickType} #${clickCount} | ${getElementDesc(target.element)}`);
+        console.log(`${clickIcon}${clickType}${modifierStr} #${clickCount} | ${getElementDesc(target.element)}`);
         break;
 
       case 'mouse_down':
         const downIcon = inputData.button === 'right' ? '⬇️ ' : '⬇️ ';
         const description = getElementDesc(target.element);
+        const downModifierStr = inputData.modifiers?.length ? ` [${inputData.modifiers.join('+')}]` : '';
         
         // Special handling for dock icons in mouse down
         if (target.element?.description === 'Dock icon') {
-          console.log(`${downIcon}DOCK PRESS | ${description}`);
+          console.log(`${downIcon}DOCK PRESS${downModifierStr} | ${description}`);
         } else {
-          console.log(`${downIcon}PRESS ${inputData.button.toUpperCase()} | ${description}`);
+          console.log(`${downIcon}PRESS ${inputData.button.toUpperCase()}${downModifierStr} | ${description}`);
         }
         break;
 
       case 'mouse_up':
         const upIcon = inputData.button === 'right' ? '⬆️ ' : '⬆️ ';
-        console.log(`${upIcon}RELEASE ${inputData.button.toUpperCase()} | ${getElementDesc(target.element)}`);
+        const upModifierStr = inputData.modifiers?.length ? ` [${inputData.modifiers.join('+')}]` : '';
+        console.log(`${upIcon}RELEASE ${inputData.button.toUpperCase()}${upModifierStr} | ${getElementDesc(target.element)}`);
         break;
 
       case 'hover':
@@ -100,12 +103,14 @@ async function runAccessibilityDemo() {
         break;
 
       case 'drag':
-        console.log(`🫳 DRAG ${inputData.button.toUpperCase()} | ${getElementDesc(target.element)}`);
+        const dragModifierStr = inputData.modifiers?.length ? ` [${inputData.modifiers.join('+')}]` : '';
+        console.log(`🫳 DRAG ${inputData.button.toUpperCase()}${dragModifierStr} | ${getElementDesc(target.element)}`);
         break;
 
       case 'scroll':
         const direction = inputData.scrollDelta.y > 0 ? '⬆️ ' : inputData.scrollDelta.y < 0 ? '⬇️ ' : '↔️ ';
-        console.log(`${direction}SCROLL | ${getElementDesc(target.element)}`);
+        const scrollModifierStr = inputData.modifiers?.length ? ` [${inputData.modifiers.join('+')}]` : '';
+        console.log(`${direction}SCROLL${scrollModifierStr} | ${getElementDesc(target.element)}`);
         break;
 
       case 'key':
