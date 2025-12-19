@@ -1,0 +1,20 @@
+{
+  "url": "http://localhost:8080/test-page.html",
+  "title": "TrackerA11y Test Page",
+  "timestamp": 1766164587233000,
+  "elementCount": 50,
+  "viewport": {
+    "width": 971,
+    "height": 839
+  },
+  "scrollPosition": {
+    "x": 0,
+    "y": 0
+  },
+  "activeElement": {
+    "tagName": "BODY",
+    "id": "",
+    "className": "",
+    "textContent": "\n    TEST LINK (0,0)\n    \n    \n        TrackerA11y Coordinate Mapping Test\n        Click on the blue"
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "sessionId": "session_1766165960972",
+  "startTime": 1766165961561683,
+  "endTime": 1766165964712312,
+  "events": [
+    {
+      "id": "system_1766165961836019_4sair23uw",
+      "timestamp": 1766165961836019,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "TrackerA11yApp",
+        "windowTitle": "Unknown Window",
+        "processId": 19837,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/Users/bob3/Desktop/trackerA11y/TrackerA11yApp-Complete.app/Contents/MacOS/TrackerA11yApp"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165960972",
+        "capturedAt": 1766165961837000,
+        "timingInfo": {
+          "originalTimestamp": 1766165961837000,
+          "synchronizedTimestamp": 1766165961836068,
+          "latency": -1764717756992271,
+          "accuracy": 3938.4147967311815,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165961837000,
+            "syncedTime": 1766165961836068,
+            "uncertainty": 3938.4147967311815,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165961_1000000us"
+          }
+        }
+      },
+      "_id": "69458dc9b0ee9cb1969bead9"
+    },
+    {
+      "id": "focus_1766165962082444_owe6kgkxq",
+      "timestamp": 1766165962082444,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "TrackerA11yApp",
+        "windowTitle": "Unknown Window",
+        "processId": 19837,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/Users/bob3/Desktop/trackerA11y/TrackerA11yApp-Complete.app/Contents/MacOS/TrackerA11yApp"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165960972",
+        "capturedAt": 1766165962083000,
+        "timingInfo": {
+          "originalTimestamp": 1766165962083000,
+          "synchronizedTimestamp": 1766165962082457,
+          "latency": -1764717756991882,
+          "accuracy": 3938.4147967311815,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165962083000,
+            "syncedTime": 1766165962082457,
+            "uncertainty": 3938.4147967311815,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165962_1000000us"
+          }
+        }
+      },
+      "_id": "69458dcab0ee9cb1969beada"
+    },
+    {
+      "id": "system_1766165964710437_iwckz4b23",
+      "timestamp": 1766165964710437,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 3148739,
+        "totalEvents": 2
+      },
+      "metadata": {
+        "sessionId": "session_1766165960972",
+        "capturedAt": 1766165964711000,
+        "timingInfo": {
+          "originalTimestamp": 1766165964711000,
+          "synchronizedTimestamp": 1766165964710452,
+          "latency": -1764717756991887,
+          "accuracy": 3938.4147967311815,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165964711000,
+            "syncedTime": 1766165964710452,
+            "uncertainty": 3938.4147967311815,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165964_1000000us"
+          }
+        }
+      },
+      "_id": "69458dccb0ee9cb1969beadb"
+    },
+    {
+      "id": "system_1766165964712166_50lj6uhbx",
+      "timestamp": 1766165964712166,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 3150476,
+        "totalEvents": 3
+      },
+      "metadata": {
+        "sessionId": "session_1766165960972",
+        "capturedAt": 1766165964713000,
+        "timingInfo": {
+          "originalTimestamp": 1766165964713000,
+          "synchronizedTimestamp": 1766165964712176,
+          "latency": -1764717756992163,
+          "accuracy": 3938.4147967311815,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165964713000,
+            "syncedTime": 1766165964712176,
+            "uncertainty": 3938.4147967311815,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165964_1000000us"
+          }
+        }
+      },
+      "_id": "69458dccb0ee9cb1969beadc"
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "./recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "medium",
+        "format": "png",
+        "minInterval": 2000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": false
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": true,
+        "captureStyles": false,
+        "captureResources": false,
+        "minInterval": 5000,
+        "browsers": [
+          "Safari",
+          "Chrome",
+          "Firefox",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": false,
+        "captureTouchEvents": true,
+        "captureCoordinates": true,
+        "captureTimings": true
+      },
+      "flushInterval": 10000
+    },
+    "version": "1.0.0"
+  }
+}

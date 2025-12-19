@@ -1,0 +1,150 @@
+{
+  "sessionId": "session_1766121152140",
+  "startTime": 1766121152476148,
+  "endTime": 1766121157523913,
+  "events": [
+    {
+      "id": "system_1766121153062651_5eptnjck5",
+      "timestamp": 1766121153062651,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "Electron",
+        "windowTitle": "Claude Code — trackerA11y",
+        "processId": 33841,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/Applications/Visual Studio Code.app/Contents/MacOS/Electron"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766121152140",
+        "capturedAt": 1766121153063000,
+        "timingInfo": {
+          "originalTimestamp": 1766121153063000,
+          "synchronizedTimestamp": 1766121153062691,
+          "latency": -1764717756606786,
+          "accuracy": 3717.824931626316,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766121153063000,
+            "syncedTime": 1766121153062691,
+            "uncertainty": 3717.824931626316,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766121153_1000000us"
+          }
+        }
+      },
+      "_id": "6944dec14ee81c7238b32a8c"
+    },
+    {
+      "id": "focus_1766121153309620_6g75nlkfd",
+      "timestamp": 1766121153309620,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Electron",
+        "windowTitle": "Claude Code — trackerA11y",
+        "processId": 33841,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/Applications/Visual Studio Code.app/Contents/MacOS/Electron"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766121152140",
+        "capturedAt": 1766121153310000,
+        "timingInfo": {
+          "originalTimestamp": 1766121153310000,
+          "synchronizedTimestamp": 1766121153309637,
+          "latency": -1764717756606840,
+          "accuracy": 3717.824931626316,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766121153310000,
+            "syncedTime": 1766121153309637,
+            "uncertainty": 3717.824931626316,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766121153_1000000us"
+          }
+        }
+      },
+      "_id": "6944dec14ee81c7238b32a8d"
+    },
+    {
+      "id": "system_1766121157523687_5l9owrm9u",
+      "timestamp": 1766121157523687,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 5047526,
+        "totalEvents": 2
+      },
+      "metadata": {
+        "sessionId": "session_1766121152140",
+        "capturedAt": 1766121157524000,
+        "timingInfo": {
+          "originalTimestamp": 1766121157524000,
+          "synchronizedTimestamp": 1766121157523699,
+          "latency": -1764717756606778,
+          "accuracy": 3717.824931626316,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766121157524000,
+            "syncedTime": 1766121157523699,
+            "uncertainty": 3717.824931626316,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766121157_1000000us"
+          }
+        }
+      },
+      "_id": "6944dec54ee81c7238b32a8e"
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "./recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "high",
+        "format": "png",
+        "minInterval": 1000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": true
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": false,
+        "captureStyles": true,
+        "captureResources": false,
+        "minInterval": 2000,
+        "browsers": [
+          "Chrome",
+          "Firefox",
+          "Safari",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": true,
+        "captureTouchEvents": false,
+        "captureCoordinates": true,
+        "captureTimings": true
+      }
+    },
+    "version": "1.0.0"
+  }
+}

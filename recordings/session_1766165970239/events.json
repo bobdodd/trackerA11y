@@ -1,0 +1,274 @@
+{
+  "sessionId": "session_1766165970239",
+  "startTime": 1766165970628650,
+  "endTime": 1766165985492953,
+  "events": [
+    {
+      "id": "system_1766165970914599_4uyonmaa4",
+      "timestamp": 1766165970914599,
+      "source": "system",
+      "type": "initial_focus",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "Unknown Window",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165970915000,
+        "timingInfo": {
+          "originalTimestamp": 1766165970915000,
+          "synchronizedTimestamp": 1766165970914657,
+          "latency": -1764717756992232,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165970915000,
+            "syncedTime": 1766165970914657,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165970_1000000us"
+          }
+        }
+      },
+      "_id": "69458dd29d844d472b3b91cd"
+    },
+    {
+      "id": "focus_1766165971186212_o8lp4w6e8",
+      "timestamp": 1766165971186212,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Terminal",
+        "windowTitle": "Unknown Window",
+        "processId": 545,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165971186000,
+        "timingInfo": {
+          "originalTimestamp": 1766165971186000,
+          "synchronizedTimestamp": 1766165971186226,
+          "latency": -1764717756991663,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165971186000,
+            "syncedTime": 1766165971186226,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165971_1000000us"
+          }
+        }
+      },
+      "_id": "69458dd39d844d472b3b91ce"
+    },
+    {
+      "id": "focus_1766165977749301_t46p7l9ft",
+      "timestamp": 1766165977749301,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "Safari",
+        "windowTitle": "Unknown Window",
+        "processId": 499,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165977749000,
+        "timingInfo": {
+          "originalTimestamp": 1766165977749000,
+          "synchronizedTimestamp": 1766165977749316,
+          "latency": -1764717756991573,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165977749000,
+            "syncedTime": 1766165977749316,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165977_1000000us"
+          }
+        }
+      },
+      "domState": {
+        "url": "http://localhost:8080/test-page.html",
+        "title": "TrackerA11y Test Page",
+        "timestamp": 1766165977942000,
+        "filename": "dom_0_1766165977942000.html",
+        "path": "/Users/bob3/Desktop/trackerA11y/recordings/session_1766165970239/dom_states/dom_0_1766165977942000.html",
+        "elementCount": 50,
+        "viewport": {
+          "width": 971,
+          "height": 839
+        },
+        "scrollPosition": {
+          "x": 0,
+          "y": 0
+        },
+        "activeElement": {
+          "tagName": "BODY",
+          "id": "",
+          "className": "",
+          "textContent": "\n    TEST LINK (0,0)\n    \n    \n        TrackerA11y Coordinate Mapping Test\n        Click on the blue"
+        }
+      },
+      "_id": "69458dd99d844d472b3b91cf"
+    },
+    {
+      "id": "focus_1766165985264514_f5y8kuie9",
+      "timestamp": 1766165985264514,
+      "source": "focus",
+      "type": "application_focus_changed",
+      "data": {
+        "applicationName": "TrackerA11yApp",
+        "windowTitle": "Unknown Window",
+        "processId": 19837,
+        "accessibilityContext": {
+          "states": [],
+          "properties": {
+            "bundleId": "/Users/bob3/Desktop/trackerA11y/TrackerA11yApp-Complete.app/Contents/MacOS/TrackerA11yApp"
+          }
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165985265000,
+        "timingInfo": {
+          "originalTimestamp": 1766165985265000,
+          "synchronizedTimestamp": 1766165985264534,
+          "latency": -1764717756992355,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165985265000,
+            "syncedTime": 1766165985264534,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165985_1000000us"
+          }
+        }
+      },
+      "_id": "69458de19d844d472b3b91d0"
+    },
+    {
+      "id": "system_1766165985490123_7bspeu5be",
+      "timestamp": 1766165985490123,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 14861450,
+        "totalEvents": 4
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165985490000,
+        "timingInfo": {
+          "originalTimestamp": 1766165985490000,
+          "synchronizedTimestamp": 1766165985490146,
+          "latency": -1764717756991743,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165985490000,
+            "syncedTime": 1766165985490146,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165985_1000000us"
+          }
+        }
+      },
+      "_id": "69458de19d844d472b3b91d1"
+    },
+    {
+      "id": "system_1766165985492732_xsa47jpxg",
+      "timestamp": 1766165985492732,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 14864077,
+        "totalEvents": 5
+      },
+      "metadata": {
+        "sessionId": "session_1766165970239",
+        "capturedAt": 1766165985493000,
+        "timingInfo": {
+          "originalTimestamp": 1766165985493000,
+          "synchronizedTimestamp": 1766165985492747,
+          "latency": -1764717756992142,
+          "accuracy": 3829.708431025352,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766165985493000,
+            "syncedTime": 1766165985492747,
+            "uncertainty": 3829.708431025352,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766165985_1000000us"
+          }
+        }
+      },
+      "_id": "69458de19d844d472b3b91d2"
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "./recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "medium",
+        "format": "png",
+        "minInterval": 2000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": false
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": true,
+        "captureStyles": false,
+        "captureResources": false,
+        "minInterval": 5000,
+        "browsers": [
+          "Safari",
+          "Chrome",
+          "Firefox",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": false,
+        "captureTouchEvents": true,
+        "captureCoordinates": true,
+        "captureTimings": true
+      },
+      "flushInterval": 10000
+    },
+    "version": "1.0.0"
+  }
+}

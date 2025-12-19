@@ -1,0 +1,6540 @@
+{
+  "sessionId": "session_1766120465388",
+  "startTime": 1766120465943151,
+  "endTime": 1766120487275284,
+  "events": [
+    {
+      "id": "interaction_1766120467553029_x8zx386te",
+      "timestamp": 1766120467553029,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 252.9296875,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 252.9296875,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 252.9296875,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120467553000,
+        "timingInfo": {
+          "originalTimestamp": 1766120467553000,
+          "synchronizedTimestamp": 1766120467553115,
+          "latency": -1764717756612243,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120467553000,
+            "syncedTime": 1766120467553115,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120467_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a490968"
+    },
+    {
+      "id": "interaction_1766120467789121_cg0g1ny0c",
+      "timestamp": 1766120467789121,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 264.546875,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 264.546875,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 264.546875,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120467789000,
+        "timingInfo": {
+          "originalTimestamp": 1766120467789000,
+          "synchronizedTimestamp": 1766120467789131,
+          "latency": -1764717756612227,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120467789000,
+            "syncedTime": 1766120467789131,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120467_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a490969"
+    },
+    {
+      "id": "interaction_1766120467912697_t8j291wwk",
+      "timestamp": 1766120467912697,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 239.5859375,
+            "y": 953.2734375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 239.5859375,
+              "y": 953.2734375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 239.5859375,
+          "y": 953.2734375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120467912000,
+        "timingInfo": {
+          "originalTimestamp": 1766120467912000,
+          "synchronizedTimestamp": 1766120467912715,
+          "latency": -1764717756611643,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120467912000,
+            "syncedTime": 1766120467912715,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120467_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096a"
+    },
+    {
+      "id": "interaction_1766120468016553_x8yjmcips",
+      "timestamp": 1766120468016553,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 216.06640625,
+            "y": 944.55078125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 216.06640625,
+              "y": 944.55078125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 216.06640625,
+          "y": 944.55078125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468016000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468016000,
+          "synchronizedTimestamp": 1766120468016596,
+          "latency": -1764717756611762,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468016000,
+            "syncedTime": 1766120468016596,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096b"
+    },
+    {
+      "id": "interaction_1766120468127585_qqjcqpruu",
+      "timestamp": 1766120468127585,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 209.4296875,
+            "y": 940.82421875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 209.4296875,
+              "y": 940.82421875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 209.4296875,
+          "y": 940.82421875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468127000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468127000,
+          "synchronizedTimestamp": 1766120468127595,
+          "latency": -1764717756611763,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468127000,
+            "syncedTime": 1766120468127595,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096c"
+    },
+    {
+      "id": "interaction_1766120468228570_s9dinmhzj",
+      "timestamp": 1766120468228570,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 206.26953125,
+            "y": 938.47265625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 206.26953125,
+              "y": 938.47265625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 206.26953125,
+          "y": 938.47265625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468228000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468228000,
+          "synchronizedTimestamp": 1766120468228579,
+          "latency": -1764717756611779,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468228000,
+            "syncedTime": 1766120468228579,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096d"
+    },
+    {
+      "id": "interaction_1766120468342005_uebh3gcn0",
+      "timestamp": 1766120468342005,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 206.0078125,
+            "y": 936.70703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 206.0078125,
+              "y": 936.70703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 206.0078125,
+          "y": 936.70703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468342000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468342000,
+          "synchronizedTimestamp": 1766120468342014,
+          "latency": -1764717756612344,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468342000,
+            "syncedTime": 1766120468342014,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096e"
+    },
+    {
+      "id": "interaction_1766120468455976_r89chi86r",
+      "timestamp": 1766120468455976,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 221.4296875,
+            "y": 933.125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 221.4296875,
+              "y": 933.125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 221.4296875,
+          "y": 933.125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468456000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468456000,
+          "synchronizedTimestamp": 1766120468455994,
+          "latency": -1764717756612364,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468456000,
+            "syncedTime": 1766120468455994,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc15649a64303a49096f"
+    },
+    {
+      "id": "interaction_1766120468520139_ok0q8fu90",
+      "timestamp": 1766120468520139,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 394.06640625,
+            "y": 413.5703125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 394.06640625,
+          "y": 413.5703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468520000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468520000,
+          "synchronizedTimestamp": 1766120468520154,
+          "latency": -1764717756612204,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468520000,
+            "syncedTime": 1766120468520154,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490970"
+    },
+    {
+      "id": "interaction_1766120468555874_detbetzhy",
+      "timestamp": 1766120468555874,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 229.0078125,
+            "y": 931.65234375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 229.0078125,
+              "y": 931.65234375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 229.0078125,
+          "y": 931.65234375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468556000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468556000,
+          "synchronizedTimestamp": 1766120468555887,
+          "latency": -1764717756612471,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468556000,
+            "syncedTime": 1766120468555887,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490971"
+    },
+    {
+      "id": "interaction_1766120468626613_1tkttleu0",
+      "timestamp": 1766120468626613,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 382.59375,
+            "y": 473.63671875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 382.59375,
+          "y": 473.63671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468626000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468626000,
+          "synchronizedTimestamp": 1766120468626629,
+          "latency": -1764717756611729,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468626000,
+            "syncedTime": 1766120468626629,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490972"
+    },
+    {
+      "id": "interaction_1766120468660647_78ijpr38e",
+      "timestamp": 1766120468660647,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 235.27734375,
+            "y": 930.7890625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 235.27734375,
+              "y": 930.7890625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 235.27734375,
+          "y": 930.7890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468660000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468660000,
+          "synchronizedTimestamp": 1766120468660652,
+          "latency": -1764717756611706,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468660000,
+            "syncedTime": 1766120468660652,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490973"
+    },
+    {
+      "id": "interaction_1766120468761631_poaq7dpkc",
+      "timestamp": 1766120468761631,
+      "source": "interaction",
+      "type": "mouse_down",
+      "data": {
+        "interactionType": "mouse_down",
+        "target": {
+          "coordinates": {
+            "x": 236.78515625,
+            "y": 930.7890625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 236.78515625,
+              "y": 930.7890625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 236.78515625,
+          "y": 930.7890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468761000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468761000,
+          "synchronizedTimestamp": 1766120468761642,
+          "latency": -1764717756611716,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468761000,
+            "syncedTime": 1766120468761642,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490974"
+    },
+    {
+      "id": "interaction_1766120468884171_lq55cpr38",
+      "timestamp": 1766120468884171,
+      "source": "interaction",
+      "type": "mouse_up",
+      "data": {
+        "interactionType": "mouse_up",
+        "target": {
+          "coordinates": {
+            "x": 236.78515625,
+            "y": 930.7890625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 236.78515625,
+              "y": 930.7890625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 236.78515625,
+          "y": 930.7890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468884000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468884000,
+          "synchronizedTimestamp": 1766120468884182,
+          "latency": -1764717756612176,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468884000,
+            "syncedTime": 1766120468884182,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490975"
+    },
+    {
+      "id": "interaction_1766120468885794_efng1ys68",
+      "timestamp": 1766120468885794,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 236.78515625,
+            "y": 930.7890625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 236.78515625,
+              "y": 930.7890625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 236.78515625,
+          "y": 930.7890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468885000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468885000,
+          "synchronizedTimestamp": 1766120468885799,
+          "latency": -1764717756611559,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468885000,
+            "syncedTime": 1766120468885799,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490976"
+    },
+    {
+      "id": "interaction_1766120468985011_9t14ubiyb",
+      "timestamp": 1766120468985011,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 368.67578125,
+            "y": 526.03515625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 368.67578125,
+          "y": 526.03515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120468985000,
+        "timingInfo": {
+          "originalTimestamp": 1766120468985000,
+          "synchronizedTimestamp": 1766120468985042,
+          "latency": -1764717756612316,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120468985000,
+            "syncedTime": 1766120468985042,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120468_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490977"
+    },
+    {
+      "id": "interaction_1766120469085846_1zm2y555i",
+      "timestamp": 1766120469085846,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 330.26953125,
+            "y": 602.73046875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 330.26953125,
+          "y": 602.73046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120469085000,
+        "timingInfo": {
+          "originalTimestamp": 1766120469085000,
+          "synchronizedTimestamp": 1766120469085851,
+          "latency": -1764717756611507,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120469085000,
+            "syncedTime": 1766120469085851,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120469_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490978"
+    },
+    {
+      "id": "interaction_1766120469193213_9flq11wn9",
+      "timestamp": 1766120469193213,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 262.4765625,
+            "y": 786.54296875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 262.4765625,
+          "y": 786.54296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120469193000,
+        "timingInfo": {
+          "originalTimestamp": 1766120469193000,
+          "synchronizedTimestamp": 1766120469193225,
+          "latency": -1764717756612133,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120469193000,
+            "syncedTime": 1766120469193225,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120469_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a490979"
+    },
+    {
+      "id": "interaction_1766120469221465_6dmydj5zc",
+      "timestamp": 1766120469221465,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 236.78515625,
+            "y": 930.5546875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 236.78515625,
+              "y": 930.5546875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 236.78515625,
+          "y": 930.5546875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120469221000,
+        "timingInfo": {
+          "originalTimestamp": 1766120469221000,
+          "synchronizedTimestamp": 1766120469221471,
+          "latency": -1764717756611887,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120469221000,
+            "syncedTime": 1766120469221471,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120469_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a49097a"
+    },
+    {
+      "id": "interaction_1766120469396409_l4xh70u3u",
+      "timestamp": 1766120469396409,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 247.890625,
+            "y": 811.109375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 247.890625,
+          "y": 811.109375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120469396000,
+        "timingInfo": {
+          "originalTimestamp": 1766120469396000,
+          "synchronizedTimestamp": 1766120469396416,
+          "latency": -1764717756611942,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120469396000,
+            "syncedTime": 1766120469396416,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120469_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc16649a64303a49097b"
+    },
+    {
+      "id": "interaction_1766120471288597_7ofn8xjr5",
+      "timestamp": 1766120471288597,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 393.36328125,
+            "y": 733.37890625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 393.36328125,
+          "y": 733.37890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120471288000,
+        "timingInfo": {
+          "originalTimestamp": 1766120471288000,
+          "synchronizedTimestamp": 1766120471288688,
+          "latency": -1764717756611670,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120471288000,
+            "syncedTime": 1766120471288688,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120471_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc18649a64303a49097c"
+    },
+    {
+      "id": "interaction_1766120471399187_i6me80x8l",
+      "timestamp": 1766120471399187,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 538.37890625,
+            "y": 529.4375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 538.37890625,
+          "y": 529.4375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120471399000,
+        "timingInfo": {
+          "originalTimestamp": 1766120471399000,
+          "synchronizedTimestamp": 1766120471399193,
+          "latency": -1764717756612165,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120471399000,
+            "syncedTime": 1766120471399193,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120471_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc18649a64303a49097d"
+    },
+    {
+      "id": "interaction_1766120471663833_w5m992a5z",
+      "timestamp": 1766120471663833,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 544.2890625,
+            "y": 519.6328125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 544.2890625,
+          "y": 519.6328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120471663000,
+        "timingInfo": {
+          "originalTimestamp": 1766120471663000,
+          "synchronizedTimestamp": 1766120471663843,
+          "latency": -1764717756611515,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120471663000,
+            "syncedTime": 1766120471663843,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120471_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc19649a64303a49097e"
+    },
+    {
+      "id": "interaction_1766120471772408_1gpdxcy0l",
+      "timestamp": 1766120471772408,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 419.62109375,
+            "y": 392.8125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 419.62109375,
+          "y": 392.8125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120471772000,
+        "timingInfo": {
+          "originalTimestamp": 1766120471772000,
+          "synchronizedTimestamp": 1766120471772414,
+          "latency": -1764717756611944,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120471772000,
+            "syncedTime": 1766120471772414,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120471_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc19649a64303a49097f"
+    },
+    {
+      "id": "interaction_1766120472172520_vx86drsbl",
+      "timestamp": 1766120472172520,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 356.07421875,
+            "y": 340.5859375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 356.07421875,
+          "y": 340.5859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120472172000,
+        "timingInfo": {
+          "originalTimestamp": 1766120472172000,
+          "synchronizedTimestamp": 1766120472172536,
+          "latency": -1764717756611822,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120472172000,
+            "syncedTime": 1766120472172536,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120472_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc19649a64303a490980"
+    },
+    {
+      "id": "interaction_1766120472279717_501p180v3",
+      "timestamp": 1766120472279717,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 294.34375,
+            "y": 321.859375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 294.34375,
+          "y": 321.859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120472279000,
+        "timingInfo": {
+          "originalTimestamp": 1766120472279000,
+          "synchronizedTimestamp": 1766120472279727,
+          "latency": -1764717756611631,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120472279000,
+            "syncedTime": 1766120472279727,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120472_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc19649a64303a490981"
+    },
+    {
+      "id": "interaction_1766120472394873_4mzu061rw",
+      "timestamp": 1766120472394873,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 258.828125,
+            "y": 310.796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 258.828125,
+          "y": 310.796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120472394000,
+        "timingInfo": {
+          "originalTimestamp": 1766120472395000,
+          "synchronizedTimestamp": 1766120472394891,
+          "latency": -1764717756612467,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120472395000,
+            "syncedTime": 1766120472394891,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120472_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc19649a64303a490982"
+    },
+    {
+      "id": "interaction_1766120472510724_vkk2bpsgz",
+      "timestamp": 1766120472510724,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 257.90625,
+            "y": 304.31640625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 257.90625,
+          "y": 304.31640625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120472510000,
+        "timingInfo": {
+          "originalTimestamp": 1766120472510000,
+          "synchronizedTimestamp": 1766120472510730,
+          "latency": -1764717756611628,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120472510000,
+            "syncedTime": 1766120472510730,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120472_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1a649a64303a490983"
+    },
+    {
+      "id": "interaction_1766120473145327_b8186v125",
+      "timestamp": 1766120473145327,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 257.90625,
+            "y": 300.75
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 257.90625,
+          "y": 300.75
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473145000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473145000,
+          "synchronizedTimestamp": 1766120473145337,
+          "latency": -1764717756612021,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473145000,
+            "syncedTime": 1766120473145337,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1a649a64303a490984"
+    },
+    {
+      "id": "interaction_1766120473251374_736gi6uec",
+      "timestamp": 1766120473251374,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 266.9140625,
+            "y": 320.99609375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 266.9140625,
+          "y": 320.99609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473251000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473251000,
+          "synchronizedTimestamp": 1766120473251387,
+          "latency": -1764717756611971,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473251000,
+            "syncedTime": 1766120473251387,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1a649a64303a490985"
+    },
+    {
+      "id": "interaction_1766120473367225_w29jmqrbi",
+      "timestamp": 1766120473367225,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 290.3671875,
+            "y": 368.875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 290.3671875,
+          "y": 368.875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473368000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473368000,
+          "synchronizedTimestamp": 1766120473368194,
+          "latency": -1764717756612164,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473368000,
+            "syncedTime": 1766120473368194,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1a649a64303a490986"
+    },
+    {
+      "id": "interaction_1766120473474071_bgzmeef6o",
+      "timestamp": 1766120473474071,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 305.26171875,
+            "y": 396.14453125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 305.26171875,
+          "y": 396.14453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473474000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473474000,
+          "synchronizedTimestamp": 1766120473474080,
+          "latency": -1764717756612278,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473474000,
+            "syncedTime": 1766120473474080,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1a649a64303a490987"
+    },
+    {
+      "id": "interaction_1766120473578003_yhte9vaj2",
+      "timestamp": 1766120473578003,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 309.56640625,
+            "y": 403.15234375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 309.56640625,
+          "y": 403.15234375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473578000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473578000,
+          "synchronizedTimestamp": 1766120473578008,
+          "latency": -1764717756612350,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473578000,
+            "syncedTime": 1766120473578008,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a490988"
+    },
+    {
+      "id": "interaction_1766120473705674_p7y60ov4r",
+      "timestamp": 1766120473705674,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.59765625,
+            "y": 405.1484375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.59765625,
+          "y": 405.1484375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120473705000,
+        "timingInfo": {
+          "originalTimestamp": 1766120473705000,
+          "synchronizedTimestamp": 1766120473705679,
+          "latency": -1764717756611679,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120473705000,
+            "syncedTime": 1766120473705679,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120473_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a490989"
+    },
+    {
+      "id": "interaction_1766120474240770_hf9bp5nun",
+      "timestamp": 1766120474240770,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.83203125,
+            "y": 404.9140625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.83203125,
+          "y": 404.9140625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474240000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474240000,
+          "synchronizedTimestamp": 1766120474240775,
+          "latency": -1764717756611583,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474240000,
+            "syncedTime": 1766120474240775,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a49098a"
+    },
+    {
+      "id": "interaction_1766120474343256_2qo24vpnp",
+      "timestamp": 1766120474343256,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 307.79296875,
+            "y": 399.07421875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 307.79296875,
+          "y": 399.07421875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474343000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474343000,
+          "synchronizedTimestamp": 1766120474343262,
+          "latency": -1764717756612096,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474343000,
+            "syncedTime": 1766120474343262,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a49098b"
+    },
+    {
+      "id": "interaction_1766120474453346_tckw29y3g",
+      "timestamp": 1766120474453346,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 292.51953125,
+            "y": 367.25
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 292.51953125,
+          "y": 367.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474453000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474453000,
+          "synchronizedTimestamp": 1766120474453356,
+          "latency": -1764717756612002,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474453000,
+            "syncedTime": 1766120474453356,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a49098c"
+    },
+    {
+      "id": "interaction_1766120474485917_qqczbugkf",
+      "timestamp": 1766120474485917,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 292.51953125,
+            "y": 367.25
+          },
+          "element": {
+            "role": "text",
+            "title": "TrackerA11y Coordinate Mapping Test\n        Click ",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 247.890625,
+              "y": 811.109375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477026088379375,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 292.51953125,
+          "y": 367.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474486000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474486000,
+          "synchronizedTimestamp": 1766120474485927,
+          "latency": -1764717756612431,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474486000,
+            "syncedTime": 1766120474485927,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1b649a64303a49098d"
+    },
+    {
+      "id": "interaction_1766120474557107_he3rv1aqy",
+      "timestamp": 1766120474557107,
+      "source": "interaction",
+      "type": "hover_end",
+      "data": {
+        "interactionType": "hover_end",
+        "target": {
+          "coordinates": {
+            "x": 292.51953125,
+            "y": 367.25
+          },
+          "element": {
+            "role": "text",
+            "title": "TrackerA11y Coordinate Mapping Test\n        Click ",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 247.890625,
+              "y": 811.109375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "dwellTime": 107243.125,
+          "hoverStartTime": 477026088379375
+        },
+        "coordinates": {
+          "x": 292.51953125,
+          "y": 367.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474557000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474557000,
+          "synchronizedTimestamp": 1766120474557113,
+          "latency": -1764717756612245,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474557000,
+            "syncedTime": 1766120474557113,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a49098e"
+    },
+    {
+      "id": "interaction_1766120474565347_j49tzju79",
+      "timestamp": 1766120474565347,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 274,
+            "y": 328.5
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 274,
+          "y": 328.5
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474565000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474565000,
+          "synchronizedTimestamp": 1766120474565353,
+          "latency": -1764717756612005,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474565000,
+            "syncedTime": 1766120474565353,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a49098f"
+    },
+    {
+      "id": "interaction_1766120474672842_5e8biedev",
+      "timestamp": 1766120474672842,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 264.421875,
+            "y": 309.2109375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 264.421875,
+          "y": 309.2109375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474672000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474672000,
+          "synchronizedTimestamp": 1766120474672847,
+          "latency": -1764717756611511,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474672000,
+            "syncedTime": 1766120474672847,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490990"
+    },
+    {
+      "id": "interaction_1766120474772129_yraqp1fmb",
+      "timestamp": 1766120474772129,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 261.48046875,
+            "y": 306.26953125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 261.48046875,
+          "y": 306.26953125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474772000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474772000,
+          "synchronizedTimestamp": 1766120474772139,
+          "latency": -1764717756612219,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474772000,
+            "syncedTime": 1766120474772139,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490991"
+    },
+    {
+      "id": "interaction_1766120474878688_xjcx39rfp",
+      "timestamp": 1766120474878688,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 304.453125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 304.453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120474878000,
+        "timingInfo": {
+          "originalTimestamp": 1766120474878000,
+          "synchronizedTimestamp": 1766120474878699,
+          "latency": -1764717756611659,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120474878000,
+            "syncedTime": 1766120474878699,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120474_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490992"
+    },
+    {
+      "id": "interaction_1766120475207624_a6rl9lk1i",
+      "timestamp": 1766120475207624,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 304.4453125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 304.4453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120475207000,
+        "timingInfo": {
+          "originalTimestamp": 1766120475207000,
+          "synchronizedTimestamp": 1766120475207636,
+          "latency": -1764717756611722,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120475207000,
+            "syncedTime": 1766120475207636,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120475_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490993"
+    },
+    {
+      "id": "interaction_1766120475230729_w5ut0uryt",
+      "timestamp": 1766120475230729,
+      "source": "interaction",
+      "type": "mouse_down",
+      "data": {
+        "interactionType": "mouse_down",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 304.4453125
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 304.4453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120475230000,
+        "timingInfo": {
+          "originalTimestamp": 1766120475230000,
+          "synchronizedTimestamp": 1766120475230734,
+          "latency": -1764717756611624,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120475230000,
+            "syncedTime": 1766120475230734,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120475_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490994"
+    },
+    {
+      "id": "interaction_1766120475353027_cge3wupaf",
+      "timestamp": 1766120475353027,
+      "source": "interaction",
+      "type": "mouse_up",
+      "data": {
+        "interactionType": "mouse_up",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 304.4453125
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 304.4453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120475353000,
+        "timingInfo": {
+          "originalTimestamp": 1766120475353000,
+          "synchronizedTimestamp": 1766120475353032,
+          "latency": -1764717756612326,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120475353000,
+            "syncedTime": 1766120475353032,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120475_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490995"
+    },
+    {
+      "id": "interaction_1766120475353494_m3wy6c79d",
+      "timestamp": 1766120475353494,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 304.4453125
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 304.4453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120475353000,
+        "timingInfo": {
+          "originalTimestamp": 1766120475353000,
+          "synchronizedTimestamp": 1766120475353497,
+          "latency": -1764717756611861,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120475353000,
+            "syncedTime": 1766120475353497,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120475_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1c649a64303a490996"
+    },
+    {
+      "id": "interaction_1766120476528370_fhgrnbv8b",
+      "timestamp": 1766120476528370,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 259.6640625,
+            "y": 305.13671875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 259.6640625,
+          "y": 305.13671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120476528000,
+        "timingInfo": {
+          "originalTimestamp": 1766120476528000,
+          "synchronizedTimestamp": 1766120476528376,
+          "latency": -1764717756611982,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120476528000,
+            "syncedTime": 1766120476528376,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120476_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a490997"
+    },
+    {
+      "id": "interaction_1766120476618961_z38n6dljp",
+      "timestamp": 1766120476618961,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 268.01953125,
+            "y": 381.83984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 268.01953125,
+          "y": 381.83984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120476619000,
+        "timingInfo": {
+          "originalTimestamp": 1766120476619000,
+          "synchronizedTimestamp": 1766120476618971,
+          "latency": -1764717756612387,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120476619000,
+            "syncedTime": 1766120476618971,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120476_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a490998"
+    },
+    {
+      "id": "interaction_1766120476721101_p09eafbwm",
+      "timestamp": 1766120476721101,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 295.5625,
+            "y": 531.08984375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 295.5625,
+          "y": 531.08984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120476721000,
+        "timingInfo": {
+          "originalTimestamp": 1766120476721000,
+          "synchronizedTimestamp": 1766120476721110,
+          "latency": -1764717756612248,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120476721000,
+            "syncedTime": 1766120476721110,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120476_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a490999"
+    },
+    {
+      "id": "interaction_1766120476825676_evd4ay8nl",
+      "timestamp": 1766120476825676,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 299.83984375,
+            "y": 580.00390625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 299.83984375,
+          "y": 580.00390625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120476825000,
+        "timingInfo": {
+          "originalTimestamp": 1766120476825000,
+          "synchronizedTimestamp": 1766120476825681,
+          "latency": -1764717756611677,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120476825000,
+            "syncedTime": 1766120476825681,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120476_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099a"
+    },
+    {
+      "id": "interaction_1766120476941260_5qle10p9q",
+      "timestamp": 1766120476941260,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 649.0625,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 649.0625,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 649.0625,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120476941000,
+        "timingInfo": {
+          "originalTimestamp": 1766120476941000,
+          "synchronizedTimestamp": 1766120476941265,
+          "latency": -1764717756612093,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120476941000,
+            "syncedTime": 1766120476941265,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120476_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099b"
+    },
+    {
+      "id": "interaction_1766120477160425_3kx7fsvqj",
+      "timestamp": 1766120477160425,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 603.2265625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 603.2265625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477160000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477160000,
+          "synchronizedTimestamp": 1766120477160430,
+          "latency": -1764717756611928,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477160000,
+            "syncedTime": 1766120477160430,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099c"
+    },
+    {
+      "id": "interaction_1766120477267906_7k8vfyoer",
+      "timestamp": 1766120477267906,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 679.51953125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 679.51953125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477267000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477267000,
+          "synchronizedTimestamp": 1766120477267916,
+          "latency": -1764717756611442,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477267000,
+            "syncedTime": 1766120477267916,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099d"
+    },
+    {
+      "id": "interaction_1766120477280966_sqyxj7hyb",
+      "timestamp": 1766120477280966,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 670.6640625,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 670.6640625,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 670.6640625,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477281000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477281000,
+          "synchronizedTimestamp": 1766120477280971,
+          "latency": -1764717756612387,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477281000,
+            "syncedTime": 1766120477280971,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099e"
+    },
+    {
+      "id": "interaction_1766120477383680_c98x496g5",
+      "timestamp": 1766120477383680,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 720.08203125
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 720.08203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477383000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477383000,
+          "synchronizedTimestamp": 1766120477383690,
+          "latency": -1764717756611668,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477383000,
+            "syncedTime": 1766120477383690,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a49099f"
+    },
+    {
+      "id": "interaction_1766120477417947_mnoejlgz5",
+      "timestamp": 1766120477417947,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 683.3046875,
+            "y": 952.17578125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 683.3046875,
+              "y": 952.17578125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 683.3046875,
+          "y": 952.17578125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477418000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477418000,
+          "synchronizedTimestamp": 1766120477417955,
+          "latency": -1764717756612403,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477418000,
+            "syncedTime": 1766120477417955,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1e649a64303a4909a0"
+    },
+    {
+      "id": "interaction_1766120477509120_fnsyp28bi",
+      "timestamp": 1766120477509120,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 692.921875,
+            "y": 945.29296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 692.921875,
+              "y": 945.29296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 692.921875,
+          "y": 945.29296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477509000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477509000,
+          "synchronizedTimestamp": 1766120477509125,
+          "latency": -1764717756612233,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477509000,
+            "syncedTime": 1766120477509125,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a1"
+    },
+    {
+      "id": "interaction_1766120477565618_014rtmymj",
+      "timestamp": 1766120477565618,
+      "source": "interaction",
+      "type": "mouse_down",
+      "data": {
+        "interactionType": "mouse_down",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 722.87890625
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 722.87890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477565000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477565000,
+          "synchronizedTimestamp": 1766120477565623,
+          "latency": -1764717756611735,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477565000,
+            "syncedTime": 1766120477565623,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a2"
+    },
+    {
+      "id": "interaction_1766120477639752_hh28dyvk9",
+      "timestamp": 1766120477639752,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 702.484375,
+            "y": 941.3515625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 702.484375,
+              "y": 941.3515625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 702.484375,
+          "y": 941.3515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477639000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477639000,
+          "synchronizedTimestamp": 1766120477639758,
+          "latency": -1764717756611600,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477639000,
+            "syncedTime": 1766120477639758,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a3"
+    },
+    {
+      "id": "interaction_1766120477759018_9ucff9mar",
+      "timestamp": 1766120477759018,
+      "source": "interaction",
+      "type": "mouse_up",
+      "data": {
+        "interactionType": "mouse_up",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 722.87890625
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 722.87890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477759000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477759000,
+          "synchronizedTimestamp": 1766120477759028,
+          "latency": -1764717756612330,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477759000,
+            "syncedTime": 1766120477759028,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a4"
+    },
+    {
+      "id": "interaction_1766120477759672_hh16x0xt8",
+      "timestamp": 1766120477759672,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 310.01171875,
+            "y": 722.87890625
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": []
+        },
+        "coordinates": {
+          "x": 310.01171875,
+          "y": 722.87890625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477759000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477759000,
+          "synchronizedTimestamp": 1766120477759678,
+          "latency": -1764717756611680,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477759000,
+            "syncedTime": 1766120477759678,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a5"
+    },
+    {
+      "id": "interaction_1766120477832645_kjximlizv",
+      "timestamp": 1766120477832645,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 703.0078125,
+            "y": 940.84375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 703.0078125,
+              "y": 940.84375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 703.0078125,
+          "y": 940.84375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477832000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477832000,
+          "synchronizedTimestamp": 1766120477832661,
+          "latency": -1764717756611697,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477832000,
+            "syncedTime": 1766120477832661,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a6"
+    },
+    {
+      "id": "interaction_1766120477936332_jtocz644q",
+      "timestamp": 1766120477936332,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 701.5078125,
+            "y": 940.59765625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 701.5078125,
+              "y": 940.59765625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 701.5078125,
+          "y": 940.59765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120477936000,
+        "timingInfo": {
+          "originalTimestamp": 1766120477936000,
+          "synchronizedTimestamp": 1766120477936342,
+          "latency": -1764717756612016,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120477936000,
+            "syncedTime": 1766120477936342,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120477_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a7"
+    },
+    {
+      "id": "interaction_1766120478005047_7dvn2laa3",
+      "timestamp": 1766120478005047,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 310.70703125,
+            "y": 722.1796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 310.70703125,
+          "y": 722.1796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478005000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478005000,
+          "synchronizedTimestamp": 1766120478005052,
+          "latency": -1764717756612306,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478005000,
+            "syncedTime": 1766120478005052,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a8"
+    },
+    {
+      "id": "interaction_1766120478113315_hyw2nipkq",
+      "timestamp": 1766120478113315,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 347.9453125,
+            "y": 683.01171875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 347.9453125,
+          "y": 683.01171875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478113000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478113000,
+          "synchronizedTimestamp": 1766120478113320,
+          "latency": -1764717756612038,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478113000,
+            "syncedTime": 1766120478113320,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909a9"
+    },
+    {
+      "id": "interaction_1766120478221089_4c7fws0iz",
+      "timestamp": 1766120478221089,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 383.4609375,
+            "y": 662.875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 383.4609375,
+          "y": 662.875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478221000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478221000,
+          "synchronizedTimestamp": 1766120478221094,
+          "latency": -1764717756612264,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478221000,
+            "syncedTime": 1766120478221094,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909aa"
+    },
+    {
+      "id": "interaction_1766120478325921_581sxa0n9",
+      "timestamp": 1766120478325921,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 390.51171875,
+            "y": 661.0859375
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 390.51171875,
+          "y": 661.0859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478325000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478325000,
+          "synchronizedTimestamp": 1766120478325926,
+          "latency": -1764717756611432,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478325000,
+            "syncedTime": 1766120478325926,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909ab"
+    },
+    {
+      "id": "interaction_1766120478420642_owbr8wvss",
+      "timestamp": 1766120478420642,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 701.4921875,
+            "y": 940.59765625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 701.4921875,
+              "y": 940.59765625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 701.4921875,
+          "y": 940.59765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478420000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478420000,
+          "synchronizedTimestamp": 1766120478420646,
+          "latency": -1764717756611712,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478420000,
+            "syncedTime": 1766120478420646,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909ac"
+    },
+    {
+      "id": "interaction_1766120478435564_vyfo1hgo1",
+      "timestamp": 1766120478435564,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 476.74609375,
+            "y": 681.66796875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 476.74609375,
+          "y": 681.66796875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478435000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478435000,
+          "synchronizedTimestamp": 1766120478435570,
+          "latency": -1764717756611788,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478435000,
+            "syncedTime": 1766120478435570,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc1f649a64303a4909ad"
+    },
+    {
+      "id": "interaction_1766120478537630_22hci1w5c",
+      "timestamp": 1766120478537630,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 606.77734375,
+            "y": 788.765625
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 606.77734375,
+          "y": 788.765625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478537000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478537000,
+          "synchronizedTimestamp": 1766120478537635,
+          "latency": -1764717756611723,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478537000,
+            "syncedTime": 1766120478537635,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909ae"
+    },
+    {
+      "id": "interaction_1766120478568016_65w0nxvib",
+      "timestamp": 1766120478568016,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 736.34375,
+            "y": 949.328125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 736.34375,
+              "y": 949.328125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 736.34375,
+          "y": 949.328125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478568000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478568000,
+          "synchronizedTimestamp": 1766120478568021,
+          "latency": -1764717756612337,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478568000,
+            "syncedTime": 1766120478568021,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909af"
+    },
+    {
+      "id": "interaction_1766120478766867_k0t5pzt0h",
+      "timestamp": 1766120478766867,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 607.82421875,
+            "y": 792.671875
+          }
+        },
+        "inputData": {},
+        "coordinates": {
+          "x": 607.82421875,
+          "y": 792.671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478766000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478766000,
+          "synchronizedTimestamp": 1766120478766876,
+          "latency": -1764717756611482,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478766000,
+            "syncedTime": 1766120478766876,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b0"
+    },
+    {
+      "id": "interaction_1766120478881088_ja9y6ogh6",
+      "timestamp": 1766120478881088,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 748.5703125,
+            "y": 953.18359375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 748.5703125,
+              "y": 953.18359375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 748.5703125,
+          "y": 953.18359375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478881000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478881000,
+          "synchronizedTimestamp": 1766120478881093,
+          "latency": -1764717756612265,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478881000,
+            "syncedTime": 1766120478881093,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b1"
+    },
+    {
+      "id": "interaction_1766120478990712_ovkwzildb",
+      "timestamp": 1766120478990712,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 715.19921875,
+            "y": 951.93359375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 715.19921875,
+              "y": 951.93359375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 715.19921875,
+          "y": 951.93359375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120478990000,
+        "timingInfo": {
+          "originalTimestamp": 1766120478990000,
+          "synchronizedTimestamp": 1766120478990718,
+          "latency": -1764717756611640,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120478990000,
+            "syncedTime": 1766120478990718,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120478_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b2"
+    },
+    {
+      "id": "interaction_1766120479101026_po1t5oe96",
+      "timestamp": 1766120479101026,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 694.3828125,
+            "y": 950.90234375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 694.3828125,
+              "y": 950.90234375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 694.3828125,
+          "y": 950.90234375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479101000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479101000,
+          "synchronizedTimestamp": 1766120479101031,
+          "latency": -1764717756612327,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479101000,
+            "syncedTime": 1766120479101031,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b3"
+    },
+    {
+      "id": "interaction_1766120479205744_qrd1sxt26",
+      "timestamp": 1766120479205744,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 686.12890625,
+            "y": 949.71875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 686.12890625,
+              "y": 949.71875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 686.12890625,
+          "y": 949.71875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479205000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479205000,
+          "synchronizedTimestamp": 1766120479205749,
+          "latency": -1764717756611609,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479205000,
+            "syncedTime": 1766120479205749,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b4"
+    },
+    {
+      "id": "interaction_1766120479309467_gzx70luoz",
+      "timestamp": 1766120479309467,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 679.390625,
+            "y": 948.8515625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 679.390625,
+              "y": 948.8515625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 679.390625,
+          "y": 948.8515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479309000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479309000,
+          "synchronizedTimestamp": 1766120479309477,
+          "latency": -1764717756611881,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479309000,
+            "syncedTime": 1766120479309477,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc20649a64303a4909b5"
+    },
+    {
+      "id": "interaction_1766120479660490_2hgm36odl",
+      "timestamp": 1766120479660490,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 677.55078125,
+            "y": 948.8515625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 677.55078125,
+              "y": 948.8515625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 677.55078125,
+          "y": 948.8515625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479660000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479660000,
+          "synchronizedTimestamp": 1766120479660505,
+          "latency": -1764717756611853,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479660000,
+            "syncedTime": 1766120479660505,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909b6"
+    },
+    {
+      "id": "interaction_1766120479764271_0tote9lse",
+      "timestamp": 1766120479764271,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 627.71484375,
+            "y": 942.8984375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 627.71484375,
+              "y": 942.8984375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 627.71484375,
+          "y": 942.8984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479764000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479764000,
+          "synchronizedTimestamp": 1766120479764277,
+          "latency": -1764717756612081,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479764000,
+            "syncedTime": 1766120479764277,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909b7"
+    },
+    {
+      "id": "interaction_1766120479880117_l62dsh3h4",
+      "timestamp": 1766120479880117,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 574.16796875,
+            "y": 932.38671875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 574.16796875,
+              "y": 932.38671875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 574.16796875,
+          "y": 932.38671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479880000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479880000,
+          "synchronizedTimestamp": 1766120479880122,
+          "latency": -1764717756612236,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479880000,
+            "syncedTime": 1766120479880122,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909b8"
+    },
+    {
+      "id": "interaction_1766120479975854_fbqmyh878",
+      "timestamp": 1766120479975854,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 567.21875,
+            "y": 930.9140625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 567.21875,
+              "y": 930.9140625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 567.21875,
+          "y": 930.9140625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120479975000,
+        "timingInfo": {
+          "originalTimestamp": 1766120479975000,
+          "synchronizedTimestamp": 1766120479975861,
+          "latency": -1764717756611497,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120479975000,
+            "syncedTime": 1766120479975861,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120479_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909b9"
+    },
+    {
+      "id": "interaction_1766120480414067_nx5245p4z",
+      "timestamp": 1766120480414067,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 574.16796875,
+            "y": 932.38671875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 574.16796875,
+              "y": 932.38671875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477033469662708,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 574.16796875,
+          "y": 932.38671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480414000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480414000,
+          "synchronizedTimestamp": 1766120480414074,
+          "latency": -1764717756612284,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480414000,
+            "syncedTime": 1766120480414074,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909ba"
+    },
+    {
+      "id": "interaction_1766120480453574_bjrq6sat6",
+      "timestamp": 1766120480453574,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 566.94140625,
+            "y": 930.67578125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 566.94140625,
+              "y": 930.67578125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 566.94140625,
+          "y": 930.67578125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480453000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480453000,
+          "synchronizedTimestamp": 1766120480453581,
+          "latency": -1764717756611777,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480453000,
+            "syncedTime": 1766120480453581,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc21649a64303a4909bb"
+    },
+    {
+      "id": "interaction_1766120480569952_0zloo1ktx",
+      "timestamp": 1766120480569952,
+      "source": "interaction",
+      "type": "hover_end",
+      "data": {
+        "interactionType": "hover_end",
+        "target": {
+          "coordinates": {
+            "x": 574.16796875,
+            "y": 932.38671875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 574.16796875,
+              "y": 932.38671875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "dwellTime": 695820.75,
+          "hoverStartTime": 477033469662708
+        },
+        "coordinates": {
+          "x": 574.16796875,
+          "y": 932.38671875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480570000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480570000,
+          "synchronizedTimestamp": 1766120480569957,
+          "latency": -1764717756612401,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480570000,
+            "syncedTime": 1766120480569957,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909bc"
+    },
+    {
+      "id": "interaction_1766120480570419_p5o1t90kx",
+      "timestamp": 1766120480570419,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 607.14453125,
+            "y": 935.10546875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 607.14453125,
+              "y": 935.10546875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 607.14453125,
+          "y": 935.10546875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480570000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480570000,
+          "synchronizedTimestamp": 1766120480570422,
+          "latency": -1764717756611936,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480570000,
+            "syncedTime": 1766120480570422,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909bd"
+    },
+    {
+      "id": "interaction_1766120480665329_6dxhq3vz8",
+      "timestamp": 1766120480665329,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 788.39453125,
+            "y": 936.5390625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 788.39453125,
+              "y": 936.5390625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 788.39453125,
+          "y": 936.5390625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480665000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480665000,
+          "synchronizedTimestamp": 1766120480665353,
+          "latency": -1764717756612005,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480665000,
+            "syncedTime": 1766120480665353,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909be"
+    },
+    {
+      "id": "interaction_1766120480774926_oy2gg8c39",
+      "timestamp": 1766120480774926,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 828.22265625,
+            "y": 938.83203125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 828.22265625,
+              "y": 938.83203125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 828.22265625,
+          "y": 938.83203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480774000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480774000,
+          "synchronizedTimestamp": 1766120480774931,
+          "latency": -1764717756611427,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480774000,
+            "syncedTime": 1766120480774931,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909bf"
+    },
+    {
+      "id": "interaction_1766120480878924_9ufqjckt4",
+      "timestamp": 1766120480878924,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 823.5625,
+            "y": 939.83984375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 823.5625,
+              "y": 939.83984375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 823.5625,
+          "y": 939.83984375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480878000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480878000,
+          "synchronizedTimestamp": 1766120480878930,
+          "latency": -1764717756611428,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480878000,
+            "syncedTime": 1766120480878930,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c0"
+    },
+    {
+      "id": "interaction_1766120480980273_0uor4eovp",
+      "timestamp": 1766120480980273,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 773.95703125,
+            "y": 935.51171875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 773.95703125,
+              "y": 935.51171875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 773.95703125,
+          "y": 935.51171875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120480980000,
+        "timingInfo": {
+          "originalTimestamp": 1766120480980000,
+          "synchronizedTimestamp": 1766120480980279,
+          "latency": -1764717756612079,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120480980000,
+            "syncedTime": 1766120480980279,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120480_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c1"
+    },
+    {
+      "id": "interaction_1766120481081822_75kba22zf",
+      "timestamp": 1766120481081822,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 773.95703125,
+            "y": 935.51171875
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477034584720166,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 773.95703125,
+          "y": 935.51171875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481081000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481081000,
+          "synchronizedTimestamp": 1766120481081828,
+          "latency": -1764717756611530,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481081000,
+            "syncedTime": 1766120481081828,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c2"
+    },
+    {
+      "id": "interaction_1766120481095417_jnc48qzlz",
+      "timestamp": 1766120481095417,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 703.35546875,
+            "y": 928.484375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 703.35546875,
+              "y": 928.484375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 703.35546875,
+          "y": 928.484375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481095000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481095000,
+          "synchronizedTimestamp": 1766120481095423,
+          "latency": -1764717756611935,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481095000,
+            "syncedTime": 1766120481095423,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c3"
+    },
+    {
+      "id": "interaction_1766120481203922_7i3y8upuv",
+      "timestamp": 1766120481203922,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 684.97265625,
+            "y": 925.54296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 684.97265625,
+              "y": 925.54296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 684.97265625,
+          "y": 925.54296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481203000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481203000,
+          "synchronizedTimestamp": 1766120481203928,
+          "latency": -1764717756611430,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481203000,
+            "syncedTime": 1766120481203928,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c4"
+    },
+    {
+      "id": "interaction_1766120481372934_oiruwtz13",
+      "timestamp": 1766120481372934,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 685.203125,
+            "y": 925.296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 685.203125,
+              "y": 925.296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 685.203125,
+          "y": 925.296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481372000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481372000,
+          "synchronizedTimestamp": 1766120481372939,
+          "latency": -1764717756611419,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481372000,
+            "syncedTime": 1766120481372939,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c5"
+    },
+    {
+      "id": "interaction_1766120481472725_qtz0t7dwj",
+      "timestamp": 1766120481472725,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 686.9375,
+            "y": 925.296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 686.9375,
+              "y": 925.296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 686.9375,
+          "y": 925.296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481472000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481472000,
+          "synchronizedTimestamp": 1766120481472731,
+          "latency": -1764717756611627,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481472000,
+            "syncedTime": 1766120481472731,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc22649a64303a4909c6"
+    },
+    {
+      "id": "interaction_1766120481579519_z7j8cev4p",
+      "timestamp": 1766120481579519,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 687.88671875,
+            "y": 925.296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 687.88671875,
+              "y": 925.296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 687.88671875,
+          "y": 925.296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481579000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481579000,
+          "synchronizedTimestamp": 1766120481579524,
+          "latency": -1764717756611834,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481579000,
+            "syncedTime": 1766120481579524,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909c7"
+    },
+    {
+      "id": "interaction_1766120481736442_lqq9qhnbx",
+      "timestamp": 1766120481736442,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 684.97265625,
+            "y": 925.54296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 684.97265625,
+              "y": 925.54296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477034809979083,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 684.97265625,
+          "y": 925.54296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120481736000,
+        "timingInfo": {
+          "originalTimestamp": 1766120481736000,
+          "synchronizedTimestamp": 1766120481736448,
+          "latency": -1764717756611910,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120481736000,
+            "syncedTime": 1766120481736448,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120481_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909c8"
+    },
+    {
+      "id": "interaction_1766120482077077_7l1vz7cwg",
+      "timestamp": 1766120482077077,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 684.97265625,
+            "y": 925.54296875
+          },
+          "element": {
+            "role": "text",
+            "title": "TrackerA11y Coordinate Mapping Test\n        Click ",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 305.26171875,
+              "y": 396.14453125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477034809979083,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 684.97265625,
+          "y": 925.54296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482077000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482077000,
+          "synchronizedTimestamp": 1766120482077083,
+          "latency": -1764717756612275,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482077000,
+            "syncedTime": 1766120482077083,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909c9"
+    },
+    {
+      "id": "interaction_1766120482174286_ctw3gkzf0",
+      "timestamp": 1766120482174286,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 688.13671875,
+            "y": 925.5390625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 688.13671875,
+              "y": 925.5390625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 688.13671875,
+          "y": 925.5390625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482174000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482174000,
+          "synchronizedTimestamp": 1766120482174292,
+          "latency": -1764717756612066,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482174000,
+            "syncedTime": 1766120482174292,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909ca"
+    },
+    {
+      "id": "interaction_1766120482366347_n0v6u581i",
+      "timestamp": 1766120482366347,
+      "source": "interaction",
+      "type": "hover_end",
+      "data": {
+        "interactionType": "hover_end",
+        "target": {
+          "coordinates": {
+            "x": 684.97265625,
+            "y": 925.54296875
+          },
+          "element": {
+            "role": "text",
+            "title": "TrackerA11y Coordinate Mapping Test\n        Click ",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 305.26171875,
+              "y": 396.14453125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "dwellTime": 946800.208,
+          "hoverStartTime": 477034809979083
+        },
+        "coordinates": {
+          "x": 684.97265625,
+          "y": 925.54296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482366000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482366000,
+          "synchronizedTimestamp": 1766120482366352,
+          "latency": -1764717756612006,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482366000,
+            "syncedTime": 1766120482366352,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909cb"
+    },
+    {
+      "id": "interaction_1766120482367973_y5ditl58m",
+      "timestamp": 1766120482367973,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 607.55859375,
+            "y": 922.09375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 607.55859375,
+              "y": 922.09375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 607.55859375,
+          "y": 922.09375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482368000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482368000,
+          "synchronizedTimestamp": 1766120482367977,
+          "latency": -1764717756612381,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482368000,
+            "syncedTime": 1766120482367977,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909cc"
+    },
+    {
+      "id": "interaction_1766120482408027_wm9gnhh6g",
+      "timestamp": 1766120482408027,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 607.55859375,
+            "y": 922.09375
+          },
+          "element": {
+            "role": "link",
+            "title": "TEST 1 at (100, 150)",
+            "identifier": "test1",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 264.421875,
+              "y": 309.2109375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477035756779291,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 607.55859375,
+          "y": 922.09375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482408000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482408000,
+          "synchronizedTimestamp": 1766120482408035,
+          "latency": -1764717756612323,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482408000,
+            "syncedTime": 1766120482408035,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc23649a64303a4909cd"
+    },
+    {
+      "id": "interaction_1766120482503675_9xk68xin8",
+      "timestamp": 1766120482503675,
+      "source": "interaction",
+      "type": "hover_end",
+      "data": {
+        "interactionType": "hover_end",
+        "target": {
+          "coordinates": {
+            "x": 607.55859375,
+            "y": 922.09375
+          },
+          "element": {
+            "role": "link",
+            "title": "TEST 1 at (100, 150)",
+            "identifier": "test1",
+            "enabled": true,
+            "focused": false,
+            "bounds": {
+              "x": 264.421875,
+              "y": 309.2109375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": 499,
+            "applicationName": "Safari",
+            "windowTitle": "TrackerA11y Test Page - http://localhost:8080/test-page.html"
+          }
+        },
+        "inputData": {
+          "dwellTime": 96104.209,
+          "hoverStartTime": 477035756779291
+        },
+        "coordinates": {
+          "x": 607.55859375,
+          "y": 922.09375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482503000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482503000,
+          "synchronizedTimestamp": 1766120482503679,
+          "latency": -1764717756611679,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482503000,
+            "syncedTime": 1766120482503679,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909ce"
+    },
+    {
+      "id": "interaction_1766120482504094_jwcnc80wg",
+      "timestamp": 1766120482504094,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 465.0859375,
+            "y": 928.2578125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 465.0859375,
+              "y": 928.2578125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 465.0859375,
+          "y": 928.2578125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482504000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482504000,
+          "synchronizedTimestamp": 1766120482504096,
+          "latency": -1764717756612262,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482504000,
+            "syncedTime": 1766120482504096,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909cf"
+    },
+    {
+      "id": "interaction_1766120482871230_bylmbbyhw",
+      "timestamp": 1766120482871230,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 468.44921875,
+            "y": 928.40625
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 468.44921875,
+              "y": 928.40625,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 468.44921875,
+          "y": 928.40625
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482871000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482871000,
+          "synchronizedTimestamp": 1766120482871235,
+          "latency": -1764717756612123,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482871000,
+            "syncedTime": 1766120482871235,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909d0"
+    },
+    {
+      "id": "interaction_1766120482979629_2dr6hnnlr",
+      "timestamp": 1766120482979629,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 980.72265625,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 980.72265625,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 980.72265625,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120482979000,
+        "timingInfo": {
+          "originalTimestamp": 1766120482979000,
+          "synchronizedTimestamp": 1766120482979633,
+          "latency": -1764717756611725,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120482979000,
+            "syncedTime": 1766120482979633,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120482_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909d1"
+    },
+    {
+      "id": "interaction_1766120483220531_fg6f6rf25",
+      "timestamp": 1766120483220531,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1131.8671875,
+            "y": 955.98046875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1131.8671875,
+              "y": 955.98046875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1131.8671875,
+          "y": 955.98046875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483220000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483220000,
+          "synchronizedTimestamp": 1766120483220536,
+          "latency": -1764717756611822,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483220000,
+            "syncedTime": 1766120483220536,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909d2"
+    },
+    {
+      "id": "interaction_1766120483332461_k8rk1t2gy",
+      "timestamp": 1766120483332461,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1252.484375,
+            "y": 949.99609375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1252.484375,
+              "y": 949.99609375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1252.484375,
+          "y": 949.99609375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483332000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483332000,
+          "synchronizedTimestamp": 1766120483332465,
+          "latency": -1764717756611893,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483332000,
+            "syncedTime": 1766120483332465,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc24649a64303a4909d3"
+    },
+    {
+      "id": "interaction_1766120483575515_85uhqga4k",
+      "timestamp": 1766120483575515,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1260.3359375,
+            "y": 949.29296875
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1260.3359375,
+              "y": 949.29296875,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1260.3359375,
+          "y": 949.29296875
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483575000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483575000,
+          "synchronizedTimestamp": 1766120483575520,
+          "latency": -1764717756611838,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483575000,
+            "syncedTime": 1766120483575520,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d4"
+    },
+    {
+      "id": "interaction_1766120483685834_5mqcng7an",
+      "timestamp": 1766120483685834,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1278.87109375,
+            "y": 931.8203125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1278.87109375,
+              "y": 931.8203125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1278.87109375,
+          "y": 931.8203125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483685000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483685000,
+          "synchronizedTimestamp": 1766120483685839,
+          "latency": -1764717756611519,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483685000,
+            "syncedTime": 1766120483685839,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d5"
+    },
+    {
+      "id": "interaction_1766120483788328_5949gfc92",
+      "timestamp": 1766120483788328,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1292.703125,
+            "y": 919.25
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1292.703125,
+              "y": 919.25,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1292.703125,
+          "y": 919.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483788000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483788000,
+          "synchronizedTimestamp": 1766120483788332,
+          "latency": -1764717756612026,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483788000,
+            "syncedTime": 1766120483788332,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d6"
+    },
+    {
+      "id": "interaction_1766120483898062_g4d3w2xbz",
+      "timestamp": 1766120483898062,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1299.96875,
+            "y": 915.7578125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1299.96875,
+              "y": 915.7578125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1299.96875,
+          "y": 915.7578125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120483898000,
+        "timingInfo": {
+          "originalTimestamp": 1766120483898000,
+          "synchronizedTimestamp": 1766120483898067,
+          "latency": -1764717756612291,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120483898000,
+            "syncedTime": 1766120483898067,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120483_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d7"
+    },
+    {
+      "id": "interaction_1766120484004415_7z6q5rnme",
+      "timestamp": 1766120484004415,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 917.453125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 917.453125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 917.453125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484004000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484004000,
+          "synchronizedTimestamp": 1766120484004420,
+          "latency": -1764717756611938,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484004000,
+            "syncedTime": 1766120484004420,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d8"
+    },
+    {
+      "id": "interaction_1766120484121581_7wa7lqpd7",
+      "timestamp": 1766120484121581,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 927.4375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 927.4375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 927.4375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484121000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484121000,
+          "synchronizedTimestamp": 1766120484121603,
+          "latency": -1764717756611755,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484121000,
+            "syncedTime": 1766120484121603,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909d9"
+    },
+    {
+      "id": "interaction_1766120484231882_mg10te143",
+      "timestamp": 1766120484231882,
+      "source": "interaction",
+      "type": "mouse_down",
+      "data": {
+        "interactionType": "mouse_down",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 930.5859375
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 930.5859375,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 930.5859375
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484231000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484231000,
+          "synchronizedTimestamp": 1766120484231888,
+          "latency": -1764717756611470,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484231000,
+            "syncedTime": 1766120484231888,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909da"
+    },
+    {
+      "id": "interaction_1766120484248677_tqzlzo92j",
+      "timestamp": 1766120484248677,
+      "source": "interaction",
+      "type": "drag",
+      "data": {
+        "interactionType": "drag",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 930.703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 930.703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 930.703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484248000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484248000,
+          "synchronizedTimestamp": 1766120484248682,
+          "latency": -1764717756611676,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484248000,
+            "syncedTime": 1766120484248682,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909db"
+    },
+    {
+      "id": "interaction_1766120484377451_9hl4yxo9l",
+      "timestamp": 1766120484377451,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 1292.703125,
+            "y": 919.25
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1292.703125,
+              "y": 919.25,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477037389874083,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 1292.703125,
+          "y": 919.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484377000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484377000,
+          "synchronizedTimestamp": 1766120484377455,
+          "latency": -1764717756611903,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484377000,
+            "syncedTime": 1766120484377455,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909dc"
+    },
+    {
+      "id": "interaction_1766120484380326_wiv75k9gy",
+      "timestamp": 1766120484380326,
+      "source": "interaction",
+      "type": "mouse_up",
+      "data": {
+        "interactionType": "mouse_up",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 930.703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 930.703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 930.703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484380000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484380000,
+          "synchronizedTimestamp": 1766120484380330,
+          "latency": -1764717756612028,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484380000,
+            "syncedTime": 1766120484380330,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909dd"
+    },
+    {
+      "id": "interaction_1766120484381292_tawn33lgp",
+      "timestamp": 1766120484381292,
+      "source": "interaction",
+      "type": "click",
+      "data": {
+        "interactionType": "click",
+        "target": {
+          "coordinates": {
+            "x": 1301.7421875,
+            "y": 930.703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.7421875,
+              "y": 930.703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "button": "left",
+          "clickCount": 1,
+          "modifiers": [],
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.7421875,
+          "y": 930.703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484381000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484381000,
+          "synchronizedTimestamp": 1766120484381295,
+          "latency": -1764717756612063,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484381000,
+            "syncedTime": 1766120484381295,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc25649a64303a4909de"
+    },
+    {
+      "id": "interaction_1766120484798388_s4ljkg1xp",
+      "timestamp": 1766120484798388,
+      "source": "interaction",
+      "type": "hover_end",
+      "data": {
+        "interactionType": "hover_end",
+        "target": {
+          "coordinates": {
+            "x": 1292.703125,
+            "y": 919.25
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1292.703125,
+              "y": 919.25,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "dwellTime": 1017112.833,
+          "hoverStartTime": 477037389874083
+        },
+        "coordinates": {
+          "x": 1292.703125,
+          "y": 919.25
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484798000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484798000,
+          "synchronizedTimestamp": 1766120484798394,
+          "latency": -1764717756611964,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484798000,
+            "syncedTime": 1766120484798394,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc26649a64303a4909df"
+    },
+    {
+      "id": "interaction_1766120484798792_j1ozs3qw2",
+      "timestamp": 1766120484798792,
+      "source": "interaction",
+      "type": "mouse_move",
+      "data": {
+        "interactionType": "mouse_move",
+        "target": {
+          "coordinates": {
+            "x": 1301.27734375,
+            "y": 930.703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.27734375,
+              "y": 930.703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "elementRole": "button",
+          "elementTitle": "Dock Icon",
+          "elementLabel": "Dock icon"
+        },
+        "coordinates": {
+          "x": 1301.27734375,
+          "y": 930.703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120484798000,
+        "timingInfo": {
+          "originalTimestamp": 1766120484798000,
+          "synchronizedTimestamp": 1766120484798795,
+          "latency": -1764717756611563,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120484798000,
+            "syncedTime": 1766120484798795,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120484_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc26649a64303a4909e0"
+    },
+    {
+      "id": "interaction_1766120485346149_fsp5k6qgl",
+      "timestamp": 1766120485346149,
+      "source": "interaction",
+      "type": "hover",
+      "data": {
+        "interactionType": "hover",
+        "target": {
+          "coordinates": {
+            "x": 1301.27734375,
+            "y": 930.703125
+          },
+          "element": {
+            "role": "button",
+            "title": "Dock Icon",
+            "label": "Dock icon",
+            "identifier": "true",
+            "enabled": false,
+            "focused": false,
+            "selected": false,
+            "bounds": {
+              "x": 1301.27734375,
+              "y": 930.703125,
+              "width": 0,
+              "height": 0
+            }
+          },
+          "applicationContext": {
+            "processId": -1,
+            "applicationName": "Unknown"
+          }
+        },
+        "inputData": {
+          "hoverStartTime": 477038406986916,
+          "minHoverDuration": 500
+        },
+        "coordinates": {
+          "x": 1301.27734375,
+          "y": 930.703125
+        }
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120485346000,
+        "timingInfo": {
+          "originalTimestamp": 1766120485346000,
+          "synchronizedTimestamp": 1766120485346154,
+          "latency": -1764717756612204,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120485346000,
+            "syncedTime": 1766120485346154,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120485_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc26649a64303a4909e1"
+    },
+    {
+      "id": "system_1766120487275085_32apf7rup",
+      "timestamp": 1766120487275085,
+      "source": "system",
+      "type": "recording_ended",
+      "data": {
+        "duration": 21331921,
+        "totalEvents": 122
+      },
+      "metadata": {
+        "sessionId": "session_1766120465388",
+        "capturedAt": 1766120487275000,
+        "timingInfo": {
+          "originalTimestamp": 1766120487275000,
+          "synchronizedTimestamp": 1766120487275091,
+          "latency": -1764717756612267,
+          "accuracy": 3478.5054261852174,
+          "source": "timestamper",
+          "metadata": {
+            "sourceTime": 1766120487275000,
+            "syncedTime": 1766120487275091,
+            "uncertainty": 3478.5054261852174,
+            "source": "performance",
+            "correlationWindow": "timewindow_1766120487_1000000us"
+          }
+        }
+      },
+      "_id": "6944dc27649a64303a4909e2"
+    }
+  ],
+  "metadata": {
+    "platform": "darwin",
+    "config": {
+      "outputDirectory": "./recordings",
+      "screenshot": {
+        "enabled": true,
+        "quality": "high",
+        "format": "png",
+        "minInterval": 1000,
+        "triggers": [
+          "click",
+          "focus_change",
+          "key"
+        ],
+        "captureFullScreen": true,
+        "captureActiveWindow": true
+      },
+      "dom": {
+        "enabled": true,
+        "captureFullDOM": false,
+        "captureStyles": true,
+        "captureResources": false,
+        "minInterval": 2000,
+        "browsers": [
+          "Chrome",
+          "Firefox",
+          "Safari",
+          "Edge"
+        ]
+      },
+      "interactions": {
+        "captureClicks": true,
+        "captureKeystrokes": true,
+        "captureScrolls": true,
+        "captureMouseMovements": true,
+        "captureTouchEvents": false,
+        "captureCoordinates": true,
+        "captureTimings": true
+      }
+    },
+    "version": "1.0.0"
+  }
+}

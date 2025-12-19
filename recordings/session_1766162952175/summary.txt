@@ -1,17 +1,15 @@
 
 Event Recording Summary
 ======================
-Session ID: session_1765989954455
-Duration: 42.02 seconds
-Total Events: 17
+Session ID: session_1766162952175
+Duration: 22.89 seconds
+Total Events: 6
 Platform: darwin
 
 Event Breakdown:
-  application_focus_changed: 9
-  click: 3
-  key: 3
+  application_focus_changed: 3
+  recording_ended: 2
   initial_focus: 1
-  recording_ended: 1
 
 Output Files:
 - events.json: Complete event log with timestamps
