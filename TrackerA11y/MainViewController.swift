@@ -58,15 +58,15 @@ class MainViewController: NSViewController {
         view.addSubview(statusBox)
         
         statusLabel = NSTextField(labelWithString: "Ready")
-        statusLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        statusLabel.font = NSFont.systemFont(ofSize: 16, weight: .medium)
         statusLabel.textColor = NSColor.systemGreen
         
         sessionLabel = NSTextField(labelWithString: "No active session")
-        sessionLabel.font = NSFont.systemFont(ofSize: 12)
+        sessionLabel.font = NSFont.systemFont(ofSize: 16)
         sessionLabel.textColor = NSColor.secondaryLabelColor
         
         eventCountLabel = NSTextField(labelWithString: "Events captured: 0")
-        eventCountLabel.font = NSFont.systemFont(ofSize: 12)
+        eventCountLabel.font = NSFont.systemFont(ofSize: 16)
         eventCountLabel.textColor = NSColor.secondaryLabelColor
         
         let statusStack = NSStackView(views: [statusLabel, sessionLabel, eventCountLabel])
@@ -107,7 +107,7 @@ class MainViewController: NSViewController {
         view.addSubview(dbBox)
         
         databaseStatusLabel = NSTextField(labelWithString: "Checking...")
-        databaseStatusLabel.font = NSFont.systemFont(ofSize: 14)
+        databaseStatusLabel.font = NSFont.systemFont(ofSize: 16)
         databaseStatusLabel.textColor = NSColor.systemOrange
         databaseStatusLabel.translatesAutoresizingMaskIntoConstraints = false
         
@@ -141,7 +141,7 @@ class MainViewController: NSViewController {
         """
         
         let featuresLabel = NSTextField(labelWithString: featuresText)
-        featuresLabel.font = NSFont.systemFont(ofSize: 12)
+        featuresLabel.font = NSFont.systemFont(ofSize: 16)
         featuresLabel.textColor = NSColor.labelColor
         featuresLabel.maximumNumberOfLines = 0
         featuresLabel.translatesAutoresizingMaskIntoConstraints = false

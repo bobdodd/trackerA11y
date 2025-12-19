@@ -1,5 +1,61 @@
 import Cocoa
 
+final class CustomTableHeaderCell: NSTableHeaderCell {
+    
+    override init(textCell: String) {
+        super.init(textCell: textCell)
+        self.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        self.alignment = .center
+    }
+    
+    required init(coder: NSCoder) {
+        super.init(coder: coder)
+        self.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        self.alignment = .center
+    }
+    
+    override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+        // Draw background first
+        NSColor.controlBackgroundColor.setFill()
+        cellFrame.fill()
+        
+        // Draw custom text with our font
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 16, weight: .semibold),
+            .foregroundColor: NSColor.headerTextColor
+        ]
+        
+        let attributedString = NSAttributedString(string: stringValue, attributes: attributes)
+        let textSize = attributedString.size()
+        
+        // Calculate x position based on alignment
+        let xPosition: CGFloat
+        switch alignment {
+        case .left:
+            xPosition = cellFrame.minX + 8 // 8px padding from left
+        case .right:
+            xPosition = cellFrame.maxX - textSize.width - 8
+        default: // center
+            xPosition = cellFrame.midX - textSize.width / 2
+        }
+        
+        let textRect = NSRect(
+            x: xPosition,
+            y: cellFrame.midY - textSize.height / 2,
+            width: textSize.width,
+            height: textSize.height
+        )
+        
+        attributedString.draw(in: textRect)
+        
+        // Draw border
+        NSColor.separatorColor.setStroke()
+        let borderPath = NSBezierPath(rect: cellFrame)
+        borderPath.lineWidth = 0.5
+        borderPath.stroke()
+    }
+}
+
 struct SessionData {
     var sessionId: String
     var customName: String?
@@ -37,9 +93,21 @@ class SessionListViewController: NSViewController {
     }
     
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 1000, height: 700))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 700))
         setupUI()
+        setupTableHeaders()
         loadSessions()
+    }
+    
+    private func setupTableHeaders() {
+        for column in tableView.tableColumns {
+            let headerCell = CustomTableHeaderCell(textCell: column.title)
+            // Left-align the Actions column header to match button alignment
+            if column.identifier.rawValue == "actions" {
+                headerCell.alignment = .left
+            }
+            column.headerCell = headerCell
+        }
     }
     
     private func setupUI() {
@@ -53,7 +121,7 @@ class SessionListViewController: NSViewController {
         
         // Sessions count label
         sessionsLabel = NSTextField(labelWithString: "0 sessions")
-        sessionsLabel.font = NSFont.systemFont(ofSize: 14)
+        sessionsLabel.font = NSFont.systemFont(ofSize: 18)
         sessionsLabel.textColor = .secondaryLabelColor
         sessionsLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(sessionsLabel)
@@ -66,6 +134,7 @@ class SessionListViewController: NSViewController {
         // Search field
         searchField = NSSearchField()
         searchField.placeholderString = "Search sessions..."
+        searchField.font = NSFont.systemFont(ofSize: 16)
         searchField.target = self
         searchField.action = #selector(searchFieldChanged)
         searchField.translatesAutoresizingMaskIntoConstraints = false
@@ -81,6 +150,7 @@ class SessionListViewController: NSViewController {
             "Sort by Events (Most)",
             "Sort by Events (Least)"
         ])
+        sortPopup.font = NSFont.systemFont(ofSize: 16)
         sortPopup.target = self
         sortPopup.action = #selector(sortOrderChanged)
         sortPopup.translatesAutoresizingMaskIntoConstraints = false
@@ -89,6 +159,7 @@ class SessionListViewController: NSViewController {
         // Buttons
         refreshButton = NSButton()
         refreshButton.title = "Refresh"
+        refreshButton.font = NSFont.systemFont(ofSize: 16)
         refreshButton.target = self
         refreshButton.action = #selector(loadSessions)
         refreshButton.translatesAutoresizingMaskIntoConstraints = false
@@ -96,6 +167,7 @@ class SessionListViewController: NSViewController {
         
         deleteButton = NSButton()
         deleteButton.title = "Delete"
+        deleteButton.font = NSFont.systemFont(ofSize: 16)
         deleteButton.target = self
         deleteButton.action = #selector(deleteSelectedSessions)
         deleteButton.isEnabled = false
@@ -104,8 +176,10 @@ class SessionListViewController: NSViewController {
         
         // Table view with enhanced columns
         tableView = NSTableView()
-        tableView.headerView = NSTableHeaderView()
-        tableView.rowSizeStyle = .default
+        let headerView = NSTableHeaderView()
+        tableView.headerView = headerView
+        tableView.rowSizeStyle = .large
+        tableView.rowHeight = 32
         tableView.delegate = self
         tableView.dataSource = self
         tableView.doubleAction = #selector(editSessionName)
@@ -121,7 +195,8 @@ class SessionListViewController: NSViewController {
         
         let createdColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("created"))
         createdColumn.title = "Created"
-        createdColumn.width = 160
+        createdColumn.width = 240
+        createdColumn.minWidth = 220
         tableView.addTableColumn(createdColumn)
         
         let eventsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("events"))
@@ -141,8 +216,14 @@ class SessionListViewController: NSViewController {
         
         let actionsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("actions"))
         actionsColumn.title = "Actions"
-        actionsColumn.width = 120
+        actionsColumn.width = 110
+        actionsColumn.minWidth = 110
         tableView.addTableColumn(actionsColumn)
+        
+        // Set header height for larger fonts
+        if let headerView = tableView.headerView as? NSTableHeaderView {
+            headerView.frame.size.height = 30
+        }
         
         // Scroll view
         scrollView = NSScrollView()
@@ -536,6 +617,7 @@ class SessionListViewController: NSViewController {
         )
         detailWindow.title = "Session Details - \(session.displayName)"
         detailWindow.center()
+        detailWindow.contentMinSize = NSSize(width: 800, height: 600)
         
         // Ensure window doesn't cause app to quit when closed
         detailWindow.isReleasedWhenClosed = false
@@ -561,6 +643,7 @@ class SessionListViewController: NSViewController {
         
         detailWindow.makeKeyAndOrderFront(nil)
     }
+    
 }
 
 // MARK: - Table View Data Source
@@ -595,6 +678,7 @@ extension SessionListViewController: NSTableViewDelegate {
             textField.isBordered = false
             textField.isEditable = true
             textField.backgroundColor = .clear
+            textField.font = NSFont.systemFont(ofSize: 16)
             textField.stringValue = session.displayName
             textField.target = self
             textField.action = #selector(sessionNameChanged(_:))
@@ -617,11 +701,13 @@ extension SessionListViewController: NSTableViewDelegate {
             textField.isBordered = false
             textField.isEditable = false
             textField.backgroundColor = .clear
+            textField.font = NSFont.systemFont(ofSize: 16)
+            textField.lineBreakMode = .byWordWrapping
             
             let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .short
-            dateFormatter.timeStyle = .short
+            dateFormatter.dateFormat = "MMM d, yyyy h:mm a"
             textField.stringValue = dateFormatter.string(from: session.createdDate)
+            textField.maximumNumberOfLines = 1
             
             cellView.addSubview(textField)
             textField.translatesAutoresizingMaskIntoConstraints = false
@@ -640,6 +726,7 @@ extension SessionListViewController: NSTableViewDelegate {
             textField.isBordered = false
             textField.isEditable = false
             textField.backgroundColor = .clear
+            textField.font = NSFont.systemFont(ofSize: 16)
             textField.alignment = .center
             textField.stringValue = "\(session.eventCount)"
             
@@ -660,6 +747,7 @@ extension SessionListViewController: NSTableViewDelegate {
             textField.isBordered = false
             textField.isEditable = false
             textField.backgroundColor = .clear
+            textField.font = NSFont.systemFont(ofSize: 16)
             textField.stringValue = session.status.capitalized
             
             // Color code the status
@@ -693,6 +781,7 @@ extension SessionListViewController: NSTableViewDelegate {
             textField.isBordered = false
             textField.isEditable = false
             textField.backgroundColor = .clear
+            textField.font = NSFont.systemFont(ofSize: 16)
             textField.alignment = .center
             
             if let duration = session.duration {
@@ -723,6 +812,7 @@ extension SessionListViewController: NSTableViewDelegate {
             
             let viewButton = NSButton()
             viewButton.title = "View"
+            viewButton.font = NSFont.systemFont(ofSize: 16)
             viewButton.target = self
             viewButton.action = #selector(viewSession(_:))
             viewButton.tag = row
@@ -731,6 +821,7 @@ extension SessionListViewController: NSTableViewDelegate {
             
             let deleteButton = NSButton()
             deleteButton.title = "Delete"
+            deleteButton.font = NSFont.systemFont(ofSize: 16)
             deleteButton.target = self
             deleteButton.action = #selector(deleteSession(_:))
             deleteButton.tag = row
@@ -746,11 +837,11 @@ extension SessionListViewController: NSTableViewDelegate {
             NSLayoutConstraint.activate([
                 viewButton.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 5),
                 viewButton.centerYAnchor.constraint(equalTo: cellView.centerYAnchor),
-                viewButton.widthAnchor.constraint(equalToConstant: 50),
+                viewButton.widthAnchor.constraint(equalToConstant: 45),
                 
                 deleteButton.leadingAnchor.constraint(equalTo: viewButton.trailingAnchor, constant: 5),
                 deleteButton.centerYAnchor.constraint(equalTo: cellView.centerYAnchor),
-                deleteButton.widthAnchor.constraint(equalToConstant: 50)
+                deleteButton.widthAnchor.constraint(equalToConstant: 55)
             ])
             
             return cellView
