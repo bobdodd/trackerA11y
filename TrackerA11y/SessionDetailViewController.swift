@@ -86,6 +86,7 @@ class SessionDetailViewController: NSViewController {
     private var filteredEvents: [[String: Any]] = []
     private var eventTags: [Int: Set<String>] = [:]  // Maps event index to tags
     private var eventNotes: [Int: Data] = [:]  // Maps event index to RTF data
+    private var eventMarkers: [Int: (name: String, note: Data?)] = [:]  // Maps event index to marker
     private var allTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
     private var allTypes: Set<String> = []
     
@@ -93,6 +94,7 @@ class SessionDetailViewController: NSViewController {
     private var currentNoteTextView: NSTextView?
     private var currentNoteEventIndex: Int = -1
     private var pendingNoteRTFData: Data?
+    private var pendingMarkerEventIndex: Int?
     
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
@@ -1637,12 +1639,26 @@ class SessionDetailViewController: NSViewController {
         
         let tags = eventTags[eventIndex] ?? Set<String>()
         let hasNote = eventNotes[eventIndex] != nil
+        let marker = eventMarkers[eventIndex]
         
         let stackView = NSStackView()
         stackView.orientation = .horizontal
         stackView.spacing = 4
         stackView.alignment = .centerY
         stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        if let marker = marker {
+            let markerBadge = NSTextField(labelWithString: "🚩 \(marker.name)")
+            markerBadge.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+            markerBadge.textColor = .systemRed
+            markerBadge.backgroundColor = NSColor.systemRed.withAlphaComponent(0.15)
+            markerBadge.drawsBackground = true
+            markerBadge.isBordered = false
+            markerBadge.isEditable = false
+            markerBadge.wantsLayer = true
+            markerBadge.layer?.cornerRadius = 3
+            stackView.addArrangedSubview(markerBadge)
+        }
         
         if hasNote {
             let noteLabel = NSTextField(labelWithString: "📝")
@@ -1663,7 +1679,7 @@ class SessionDetailViewController: NSViewController {
             stackView.addArrangedSubview(badge)
         }
         
-        if tags.isEmpty && !hasNote {
+        if tags.isEmpty && !hasNote && marker == nil {
             let placeholder = NSTextField(labelWithString: "—")
             placeholder.font = NSFont.systemFont(ofSize: 12)
             placeholder.textColor = .tertiaryLabelColor
@@ -1683,12 +1699,35 @@ class SessionDetailViewController: NSViewController {
     func createTagsNotesContextMenu(for eventIndex: Int) -> NSMenu {
         let tags = eventTags[eventIndex] ?? Set<String>()
         let hasNote = eventNotes[eventIndex] != nil
-        return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote)
+        let hasMarker = eventMarkers[eventIndex] != nil
+        return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote, hasMarker: hasMarker)
     }
     
-    private func createTagsNotesContextMenuInternal(for eventIndex: Int, tags: Set<String>, hasNote: Bool) -> NSMenu {
+    private func createTagsNotesContextMenuInternal(for eventIndex: Int, tags: Set<String>, hasNote: Bool, hasMarker: Bool) -> NSMenu {
         let menu = NSMenu()
         
+        // Marker section
+        if hasMarker {
+            let markerName = eventMarkers[eventIndex]?.name ?? "Marker"
+            let editMarkerItem = NSMenuItem(title: "Edit Marker '\(markerName)'...", action: #selector(editMarkerAction(_:)), keyEquivalent: "")
+            editMarkerItem.target = self
+            editMarkerItem.representedObject = eventIndex
+            menu.addItem(editMarkerItem)
+            
+            let deleteMarkerItem = NSMenuItem(title: "Delete Marker", action: #selector(deleteMarkerAction(_:)), keyEquivalent: "")
+            deleteMarkerItem.target = self
+            deleteMarkerItem.representedObject = eventIndex
+            menu.addItem(deleteMarkerItem)
+        } else {
+            let addMarkerItem = NSMenuItem(title: "Add Marker...", action: #selector(addMarkerAction(_:)), keyEquivalent: "")
+            addMarkerItem.target = self
+            addMarkerItem.representedObject = eventIndex
+            menu.addItem(addMarkerItem)
+        }
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        // Note section
         if hasNote {
             let editNoteItem = NSMenuItem(title: "Edit Note...", action: #selector(tagsNotesEditNote(_:)), keyEquivalent: "")
             editNoteItem.target = self
@@ -1708,6 +1747,7 @@ class SessionDetailViewController: NSViewController {
         
         menu.addItem(NSMenuItem.separator())
         
+        // Tag section
         if !tags.isEmpty {
             let removeTagsMenu = NSMenu()
             for tag in tags.sorted() {
@@ -1818,6 +1858,267 @@ class SessionDetailViewController: NSViewController {
                 eventsTableView?.reloadData()
             }
         }
+    }
+    
+    @objc private func addMarkerAction(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        showMarkerEditor(for: eventIndex, existingMarker: nil)
+    }
+    
+    @objc private func editMarkerAction(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        let existingMarker = eventMarkers[eventIndex]
+        showMarkerEditor(for: eventIndex, existingMarker: existingMarker)
+    }
+    
+    @objc private func deleteMarkerAction(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        eventMarkers.removeValue(forKey: eventIndex)
+        saveTags()
+        eventsTableView?.reloadData()
+        timelineView?.eventMarkers = eventMarkers
+        timelineView?.needsDisplay = true
+    }
+    
+    private func showMarkerEditor(for eventIndex: Int, existingMarker: (name: String, note: Data?)?) {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+                              styleMask: [.titled, .closable, .resizable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = existingMarker != nil ? "Edit Marker" : "Add Marker"
+        window.center()
+        
+        let contentView = NSView(frame: window.contentRect(forFrameRect: window.frame))
+        contentView.autoresizingMask = [.width, .height]
+        
+        let nameLabel = NSTextField(labelWithString: "Marker Name:")
+        nameLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        nameLabel.frame = NSRect(x: 12, y: contentView.bounds.height - 32, width: 100, height: 20)
+        nameLabel.autoresizingMask = [.minYMargin]
+        contentView.addSubview(nameLabel)
+        
+        let nameField = NSTextField(frame: NSRect(x: 120, y: contentView.bounds.height - 34, width: contentView.bounds.width - 132, height: 24))
+        nameField.font = NSFont.systemFont(ofSize: 14)
+        nameField.stringValue = existingMarker?.name ?? ""
+        nameField.placeholderString = "Enter marker name..."
+        nameField.autoresizingMask = [.width, .minYMargin]
+        contentView.addSubview(nameField)
+        
+        let noteLabel = NSTextField(labelWithString: "Note (optional):")
+        noteLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        noteLabel.frame = NSRect(x: 12, y: contentView.bounds.height - 60, width: 150, height: 20)
+        noteLabel.autoresizingMask = [.minYMargin]
+        contentView.addSubview(noteLabel)
+        
+        let ribbonHeight: CGFloat = 36
+        let ribbon = NSStackView(frame: NSRect(x: 0, y: contentView.bounds.height - 60 - ribbonHeight - 4, width: contentView.bounds.width, height: ribbonHeight))
+        ribbon.orientation = .horizontal
+        ribbon.spacing = 4
+        ribbon.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        ribbon.autoresizingMask = [.width, .minYMargin]
+        ribbon.wantsLayer = true
+        ribbon.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        
+        let fontPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fontPopup.addItems(withTitles: ["System", "Helvetica", "Times", "Courier", "Georgia", "Verdana"])
+        fontPopup.font = NSFont.systemFont(ofSize: 11)
+        fontPopup.target = self
+        fontPopup.action = #selector(noteFontChanged(_:))
+        ribbon.addArrangedSubview(fontPopup)
+        
+        let sizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        sizePopup.addItems(withTitles: ["10", "11", "12", "14", "16", "18", "20", "24", "28", "32", "36", "48"])
+        sizePopup.selectItem(withTitle: "14")
+        sizePopup.font = NSFont.systemFont(ofSize: 11)
+        sizePopup.target = self
+        sizePopup.action = #selector(noteSizeChanged(_:))
+        ribbon.addArrangedSubview(sizePopup)
+        
+        let sep1 = NSBox()
+        sep1.boxType = .separator
+        sep1.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep1)
+        
+        let boldBtn = NSButton(title: "B", target: self, action: #selector(noteToggleBold(_:)))
+        boldBtn.font = NSFont.boldSystemFont(ofSize: 13)
+        boldBtn.bezelStyle = .texturedRounded
+        boldBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(boldBtn)
+        
+        let italicBtn = NSButton(title: "I", target: self, action: #selector(noteToggleItalic(_:)))
+        italicBtn.font = NSFont(name: "Times-Italic", size: 13) ?? NSFont.systemFont(ofSize: 13)
+        italicBtn.bezelStyle = .texturedRounded
+        italicBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(italicBtn)
+        
+        let underlineBtn = NSButton(title: "U", target: self, action: #selector(noteToggleUnderline(_:)))
+        underlineBtn.bezelStyle = .texturedRounded
+        underlineBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(underlineBtn)
+        
+        let strikeBtn = NSButton(title: "S", target: self, action: #selector(noteToggleStrikethrough(_:)))
+        strikeBtn.bezelStyle = .texturedRounded
+        strikeBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(strikeBtn)
+        
+        let sep2 = NSBox()
+        sep2.boxType = .separator
+        sep2.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep2)
+        
+        let textColorBtn = NSButton(title: "A", target: self, action: #selector(noteTextColor(_:)))
+        textColorBtn.bezelStyle = .texturedRounded
+        textColorBtn.contentTintColor = .systemRed
+        textColorBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(textColorBtn)
+        
+        let highlightBtn = NSButton(title: "H", target: self, action: #selector(noteHighlight(_:)))
+        highlightBtn.bezelStyle = .texturedRounded
+        highlightBtn.wantsLayer = true
+        highlightBtn.layer?.backgroundColor = NSColor.systemYellow.cgColor
+        highlightBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(highlightBtn)
+        
+        let sep3 = NSBox()
+        sep3.boxType = .separator
+        sep3.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep3)
+        
+        let leftBtn = NSButton(image: NSImage(systemSymbolName: "text.alignleft", accessibilityDescription: "Left")!, target: self, action: #selector(noteAlignLeft(_:)))
+        leftBtn.bezelStyle = .texturedRounded
+        leftBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(leftBtn)
+        
+        let centerBtn = NSButton(image: NSImage(systemSymbolName: "text.aligncenter", accessibilityDescription: "Center")!, target: self, action: #selector(noteAlignCenter(_:)))
+        centerBtn.bezelStyle = .texturedRounded
+        centerBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(centerBtn)
+        
+        let rightBtn = NSButton(image: NSImage(systemSymbolName: "text.alignright", accessibilityDescription: "Right")!, target: self, action: #selector(noteAlignRight(_:)))
+        rightBtn.bezelStyle = .texturedRounded
+        rightBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(rightBtn)
+        
+        let sep4 = NSBox()
+        sep4.boxType = .separator
+        sep4.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep4)
+        
+        let bulletBtn = NSButton(image: NSImage(systemSymbolName: "list.bullet", accessibilityDescription: "Bullets")!, target: self, action: #selector(noteInsertBullet(_:)))
+        bulletBtn.bezelStyle = .texturedRounded
+        bulletBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(bulletBtn)
+        
+        let numberBtn = NSButton(image: NSImage(systemSymbolName: "list.number", accessibilityDescription: "Numbers")!, target: self, action: #selector(noteInsertNumber(_:)))
+        numberBtn.bezelStyle = .texturedRounded
+        numberBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(numberBtn)
+        
+        let ribbonSpacer = NSView()
+        ribbonSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        ribbon.addArrangedSubview(ribbonSpacer)
+        
+        contentView.addSubview(ribbon)
+        
+        let scrollView = NSScrollView(frame: NSRect(x: 12, y: 60, width: contentView.bounds.width - 24, height: contentView.bounds.height - 60 - ribbonHeight - 4 - 72))
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .bezelBorder
+        
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: scrollView.bounds.width - 20, height: scrollView.bounds.height))
+        textView.autoresizingMask = [.width]
+        textView.isRichText = true
+        textView.allowsUndo = true
+        textView.usesFontPanel = true
+        textView.font = NSFont.systemFont(ofSize: 14)
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.textContainer?.widthTracksTextView = true
+        
+        currentNoteTextView = textView
+        
+        if let existingNote = existingMarker?.note,
+           let attrString = NSAttributedString(rtf: existingNote, documentAttributes: nil) {
+            textView.textStorage?.setAttributedString(attrString)
+        }
+        
+        scrollView.documentView = textView
+        contentView.addSubview(scrollView)
+        
+        let buttonBar = NSStackView(frame: NSRect(x: 12, y: 12, width: contentView.bounds.width - 24, height: 36))
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = 12
+        buttonBar.autoresizingMask = [.width, .maxYMargin]
+        
+        if existingMarker != nil {
+            let deleteBtn = NSButton(title: "Delete Marker", target: self, action: #selector(deleteMarkerFromEditor(_:)))
+            deleteBtn.bezelStyle = .rounded
+            deleteBtn.contentTintColor = .systemRed
+            deleteBtn.tag = eventIndex
+            buttonBar.addArrangedSubview(deleteBtn)
+        }
+        
+        let btnSpacer = NSView()
+        btnSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        buttonBar.addArrangedSubview(btnSpacer)
+        
+        let cancelBtn = NSButton(title: "Cancel", target: self, action: #selector(markerEditorCancel(_:)))
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}"
+        buttonBar.addArrangedSubview(cancelBtn)
+        
+        let saveBtn = NSButton(title: "Save", target: self, action: #selector(markerEditorSave(_:)))
+        saveBtn.bezelStyle = .rounded
+        saveBtn.keyEquivalent = "\r"
+        buttonBar.addArrangedSubview(saveBtn)
+        
+        contentView.addSubview(buttonBar)
+        window.contentView = contentView
+        
+        window.makeFirstResponder(nameField)
+        
+        pendingMarkerEventIndex = eventIndex
+        
+        let response = NSApp.runModal(for: window)
+        
+        window.orderOut(nil)
+        
+        if response == .OK {
+            let markerName = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !markerName.isEmpty {
+                var noteData: Data? = nil
+                if let storage = textView.textStorage, storage.length > 0 {
+                    noteData = storage.rtf(from: NSRange(location: 0, length: storage.length), documentAttributes: [:])
+                }
+                eventMarkers[eventIndex] = (name: markerName, note: noteData)
+                saveTags()
+                eventsTableView?.reloadData()
+                timelineView?.eventMarkers = eventMarkers
+                timelineView?.needsDisplay = true
+            }
+        } else if response == .abort {
+            eventMarkers.removeValue(forKey: eventIndex)
+            saveTags()
+            eventsTableView?.reloadData()
+            timelineView?.eventMarkers = eventMarkers
+            timelineView?.needsDisplay = true
+        }
+        
+        currentNoteTextView = nil
+        pendingMarkerEventIndex = nil
+    }
+    
+    @objc private func deleteMarkerFromEditor(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .abort)
+    }
+    
+    @objc private func markerEditorCancel(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .cancel)
+    }
+    
+    @objc private func markerEditorSave(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .OK)
     }
     
     private func applyEventsFilters() {
@@ -2808,8 +3109,21 @@ class SessionDetailViewController: NSViewController {
                             }
                         }
                     }
+                    if let markersDict = tagsDict["eventMarkers"] as? [String: [String: Any]] {
+                        eventMarkers = [:]
+                        for (key, markerData) in markersDict {
+                            if let index = Int(key), let name = markerData["name"] as? String {
+                                var noteData: Data? = nil
+                                if let noteBase64 = markerData["note"] as? String {
+                                    noteData = Data(base64Encoded: noteBase64)
+                                }
+                                eventMarkers[index] = (name: name, note: noteData)
+                            }
+                        }
+                    }
                     populateTagFilter()
                     populateTimelineTagFilter()
+                    timelineView?.eventMarkers = eventMarkers
                 }
             } catch {
                 print("Failed to load tags: \(error)")
@@ -2830,12 +3144,22 @@ class SessionDetailViewController: NSViewController {
             eventNotesDict[String(index)] = noteData.base64EncodedString()
         }
         
+        var eventMarkersDict: [String: [String: Any]] = [:]
+        for (index, marker) in eventMarkers {
+            var markerData: [String: Any] = ["name": marker.name]
+            if let noteData = marker.note {
+                markerData["note"] = noteData.base64EncodedString()
+            }
+            eventMarkersDict[String(index)] = markerData
+        }
+        
         let defaultTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
         let customTags = Array(allTags.subtracting(defaultTags))
         
         let tagsDict: [String: Any] = [
             "eventTags": eventTagsDict,
             "eventNotes": eventNotesDict,
+            "eventMarkers": eventMarkersDict,
             "customTags": customTags
         ]
         
@@ -4425,6 +4749,7 @@ class EnhancedTimelineView: NSView {
     private var hoveredEventIndex: Int? = nil
     var onEventSelected: (([String: Any]) -> Void)?
     var onEventRightClicked: (([String: Any], Int, NSEvent) -> Void)?
+    var eventMarkers: [Int: (name: String, note: Data?)] = [:]
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -4656,6 +4981,7 @@ class EnhancedTimelineView: NSView {
                 )
                 
                 let isHovered = hoveredEventIndex != nil && eventRects.count == hoveredEventIndex
+                let hasMarker = eventMarkers[originalIndex] != nil
                 
                 if isHovered {
                     color.withAlphaComponent(1.0).setFill()
@@ -4668,6 +4994,15 @@ class EnhancedTimelineView: NSView {
                     color.withAlphaComponent(0.8).setFill()
                     let path = NSBezierPath(roundedRect: markerRect, xRadius: 2, yRadius: 2)
                     path.fill()
+                }
+                
+                if hasMarker {
+                    let flagText = "🚩"
+                    let flagAttrs: [NSAttributedString.Key: Any] = [
+                        .font: NSFont.systemFont(ofSize: max(10, 12 * zoomLevel / 2))
+                    ]
+                    let flagSize = flagText.size(withAttributes: flagAttrs)
+                    flagText.draw(at: NSPoint(x: x - flagSize.width / 2, y: markerRect.maxY + 2), withAttributes: flagAttrs)
                 }
                 
                 let clickableRect = markerRect.insetBy(dx: -4, dy: -4)
