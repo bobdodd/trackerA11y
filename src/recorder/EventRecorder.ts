@@ -348,12 +348,20 @@ export class EventRecorder extends EventEmitter {
       // Handle focus changes with detailed element info
       if (data.interactionType === 'focus_change') {
         const el = data.inputData?.focusedElement;
+        const trigger = data.inputData?.trigger || 'keyboard';
+        const triggerIcon = trigger === 'click' ? '🖱️' : trigger === 'programmatic' ? '⚡' : '⌨️';
         if (el) {
           const label = el.label || el.title || el.roleDescription || 'element';
           const role = el.role?.replace('AX', '') || 'unknown';
-          return `🎯 FOCUS → ${label} [${role}]`;
+          return `🎯 FOCUS ${triggerIcon} → ${label} [${role}]`;
         }
-        return `🎯 FOCUS → (no element info)`;
+        return `🎯 FOCUS ${triggerIcon} → (no element info)`;
+      }
+      // Handle focus lost
+      if (data.interactionType === 'focus_lost') {
+        const trigger = data.inputData?.trigger || 'click';
+        const triggerIcon = trigger === 'click' ? '🖱️' : trigger === 'programmatic' ? '⚡' : '⌨️';
+        return `🚫 FOCUS LOST ${triggerIcon}`;
       }
       if (data.inputData?.key) return `Key: ${data.inputData.key}`;
       if (data.coordinates) return `Click: (${data.coordinates.x},${data.coordinates.y})`;

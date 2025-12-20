@@ -12,6 +12,12 @@
 // Global flag for clean shutdown
 static volatile bool shouldContinue = true;
 
+// Track last focused element to suppress duplicates
+static NSString* lastFocusedElementSignature = nil;
+
+// Forward declarations
+void outputEvent(NSString* eventType, NSDictionary* eventData);
+
 // Get UI element information at screen coordinates using AXUIElement API
 NSDictionary* getElementAtPoint(CGFloat x, CGFloat y) {
     AXUIElementRef systemWide = AXUIElementCreateSystemWide();
@@ -243,6 +249,96 @@ NSDictionary* getFocusedElement(void) {
     return nil;
 }
 
+// Create a signature string for a focused element to detect duplicates
+NSString* createFocusSignature(NSDictionary* element) {
+    if (!element) return @"";
+    // Use stable identifiers only - bounds can shift slightly
+    return [NSString stringWithFormat:@"%@|%@|%@|%@|%@",
+            element[@"role"] ?: @"",
+            element[@"title"] ?: @"",
+            element[@"label"] ?: @"",
+            element[@"domId"] ?: @"",
+            element[@"applicationName"] ?: @""];
+}
+
+// Check if focus changed to a different element (returns YES if different)
+BOOL isFocusDifferent(NSDictionary* newElement) {
+    NSString* newSignature = createFocusSignature(newElement);
+    if ([newSignature isEqualToString:lastFocusedElementSignature ?: @""]) {
+        return NO; // Same element, suppress duplicate
+    }
+    lastFocusedElementSignature = [newSignature copy];
+    return YES; // Different element
+}
+
+// Check if element has an interactive role worth tracking focus for
+BOOL isInteractiveRole(NSString* role) {
+    if (!role) return NO;
+    return ([role isEqualToString:@"AXButton"] ||
+            [role isEqualToString:@"AXLink"] ||
+            [role isEqualToString:@"AXTextField"] ||
+            [role isEqualToString:@"AXTextArea"] ||
+            [role isEqualToString:@"AXCheckBox"] ||
+            [role isEqualToString:@"AXRadioButton"] ||
+            [role isEqualToString:@"AXPopUpButton"] ||
+            [role isEqualToString:@"AXComboBox"] ||
+            [role isEqualToString:@"AXSlider"] ||
+            [role isEqualToString:@"AXTabGroup"] ||
+            [role isEqualToString:@"AXTab"] ||
+            [role isEqualToString:@"AXMenuItem"] ||
+            [role isEqualToString:@"AXMenuButton"] ||
+            [role isEqualToString:@"AXDisclosureTriangle"] ||
+            [role isEqualToString:@"AXIncrementor"] ||
+            [role isEqualToString:@"AXColorWell"] ||
+            [role isEqualToString:@"AXWebArea"] ||
+            [role isEqualToString:@"AXGroup"] ||
+            [role isEqualToString:@"AXDialog"] ||
+            [role isEqualToString:@"AXSheet"] ||
+            [role isEqualToString:@"AXWindow"]);
+}
+
+// Emit focus_change event if focus moved to a new interactive element, or focus_lost if no focus
+void emitFocusChangeIfNeeded(NSString* trigger, CGFloat x, CGFloat y, CGEventTimestamp timestamp) {
+    NSDictionary* focusedElement = getFocusedElement();
+    
+    if (focusedElement) {
+        if (isFocusDifferent(focusedElement)) {
+            NSString* role = focusedElement[@"role"];
+            if (isInteractiveRole(role)) {
+                NSMutableDictionary* focusEventData = [NSMutableDictionary dictionaryWithDictionary:@{
+                    @"trigger": trigger,
+                    @"x": @(x),
+                    @"y": @(y),
+                    @"systemTimestamp": @(timestamp)
+                }];
+                focusEventData[@"focusedElement"] = focusedElement;
+                outputEvent(@"focus_change", focusEventData);
+            }
+        }
+    } else {
+        // No element has focus - emit focus_lost if we previously had focus
+        if (lastFocusedElementSignature && ![lastFocusedElementSignature isEqualToString:@""]) {
+            lastFocusedElementSignature = @"";
+            outputEvent(@"focus_lost", @{
+                @"trigger": trigger,
+                @"x": @(x),
+                @"y": @(y),
+                @"systemTimestamp": @(timestamp)
+            });
+        }
+    }
+}
+
+// Schedule delayed focus checks for programmatic focus changes (modals, skip links)
+void scheduleDelayedFocusCheck(CGFloat x, CGFloat y, CGEventTimestamp timestamp) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(100 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        emitFocusChangeIfNeeded(@"programmatic", x, y, timestamp);
+    });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        emitFocusChangeIfNeeded(@"programmatic", x, y, timestamp);
+    });
+}
+
 // Convert key codes to readable key names
 NSString* keyCodeToString(CGKeyCode keyCode) {
     switch (keyCode) {
@@ -427,6 +523,12 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 }
                 
                 outputEvent(@"mouse_up", eventData);
+                
+                // Check for immediate focus change (clicking on focusable elements)
+                emitFocusChangeIfNeeded(@"click", location.x, location.y, timestamp);
+                
+                // Schedule delayed checks for programmatic focus changes (modals, skip links)
+                scheduleDelayedFocusCheck(location.x, location.y, timestamp);
                 break;
             }
                 
@@ -560,18 +662,21 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     // Get the now-focused element (focus has moved after Tab was processed)
                     NSDictionary* focusedElement = getFocusedElement();
                     
-                    NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
-                        @"key": @"Tab",
-                        @"keyCode": @(keyCode),
-                        @"modifiers": modifiers,
-                        @"systemTimestamp": @(timestamp)
-                    }];
-                    
-                    if (focusedElement) {
-                        eventData[@"focusedElement"] = focusedElement;
+                    // Only emit if focus actually changed to a different element
+                    if (isFocusDifferent(focusedElement)) {
+                        NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
+                            @"key": @"Tab",
+                            @"keyCode": @(keyCode),
+                            @"modifiers": modifiers,
+                            @"systemTimestamp": @(timestamp)
+                        }];
+                        
+                        if (focusedElement) {
+                            eventData[@"focusedElement"] = focusedElement;
+                        }
+                        
+                        outputEvent(@"focus_change", eventData);
                     }
-                    
-                    outputEvent(@"focus_change", eventData);
                 }
                 break;
             }

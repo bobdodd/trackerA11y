@@ -407,4 +407,76 @@ export class BrowserAccessibilityInspector {
     const activeBrowser = await this.detectActiveBrowser(x, y);
     return activeBrowser !== null;
   }
+
+  async getFocusedElement(): Promise<{ element: DOMElement & { xpath?: string }; url: string; title: string } | null> {
+    try {
+      const script = `
+        tell application "Safari"
+          try
+            if (count of documents) = 0 then
+              return "ERROR:No documents"
+            end if
+            
+            set frontDoc to front document
+            set pageURL to URL of frontDoc
+            set pageTitle to name of frontDoc
+            
+            set jsCode to "(function(){ try{ var el=document.activeElement; if(!el || el===document.body) return JSON.stringify({error:'No focused element'}); function getXPath(e){if(e.id)return'//*[@id=\"'+e.id+'\"]';if(e===document.body)return'/html/body';var ix=0;var siblings=e.parentNode?e.parentNode.childNodes:[];for(var i=0;i<siblings.length;i++){var s=siblings[i];if(s===e)return getXPath(e.parentNode)+'/'+e.tagName.toLowerCase()+'['+(ix+1)+']';if(s.nodeType===1&&s.tagName===e.tagName)ix++;} return '';} var rect=el.getBoundingClientRect(); return JSON.stringify({tagName:el.tagName,id:el.id||'',className:el.className||'',type:el.type||'',placeholder:el.placeholder||'',ariaLabel:el.getAttribute('aria-label')||'',role:el.getAttribute('role')||'',textContent:(el.textContent||'').trim().substring(0,50),href:el.href||'',name:el.name||'',value:el.value?el.value.substring(0,20):'',xpath:getXPath(el),bounds:{x:rect.left,y:rect.top,width:rect.width,height:rect.height}}); }catch(e){ return JSON.stringify({error:e.message}); } })();"
+            
+            set elementInfo to do JavaScript jsCode in frontDoc
+            
+            return pageURL & "||DELIMITER||" & pageTitle & "||DELIMITER||" & elementInfo
+            
+          on error errMsg
+            return "ERROR:" & errMsg
+          end try
+        end tell
+      `;
+
+      const { stdout } = await execFileAsync('/usr/bin/osascript', ['-e', script], {
+        timeout: 2000
+      });
+      
+      const result = stdout.trim();
+      
+      if (result.startsWith('ERROR:') || !result) {
+        return null;
+      }
+
+      const [url, title, elementInfoStr] = result.split('||DELIMITER||');
+      
+      if (!elementInfoStr) {
+        return null;
+      }
+
+      const elementInfo = JSON.parse(elementInfoStr);
+      
+      if (elementInfo.error) {
+        return null;
+      }
+
+      return {
+        element: {
+          tagName: elementInfo.tagName || 'unknown',
+          role: elementInfo.role || undefined,
+          id: elementInfo.id || undefined,
+          className: elementInfo.className || undefined,
+          ariaLabel: elementInfo.ariaLabel || undefined,
+          type: elementInfo.type || undefined,
+          value: elementInfo.value || undefined,
+          textContent: elementInfo.textContent || undefined,
+          href: elementInfo.href || undefined,
+          placeholder: elementInfo.placeholder || undefined,
+          xpath: elementInfo.xpath || undefined,
+          disabled: false,
+          readonly: false,
+          bounds: elementInfo.bounds || { x: 0, y: 0, width: 0, height: 0 }
+        },
+        url: url || 'unknown',
+        title: title || 'Unknown Page'
+      };
+    } catch (error) {
+      return null;
+    }
+  }
 }

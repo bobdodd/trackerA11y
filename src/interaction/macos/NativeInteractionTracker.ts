@@ -96,7 +96,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
   }
 
   getSupportedTypes(): string[] {
-    return ['click', 'mouse_down', 'mouse_up', 'key', 'scroll', 'mouse_move', 'drag', 'hover', 'focus_change'];
+    return ['click', 'mouse_down', 'mouse_up', 'key', 'scroll', 'mouse_move', 'drag', 'hover', 'focus_change', 'focus_lost'];
   }
 
   private async checkNativeHelper(): Promise<void> {
@@ -334,33 +334,80 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
 
         case 'focus_change':
           interactionType = 'focus_change';
-          const focusKey = nativeEvent.data.key;
-          const focusModifiers = nativeEvent.data.modifiers || [];
           const focusedElement = nativeEvent.data.focusedElement;
+          const focusTrigger = nativeEvent.data.trigger || 'keyboard';
           
-          inputData = {
-            key: focusKey,
-            keyCode: nativeEvent.data.keyCode,
-            modifiers: focusModifiers,
-            ...(focusedElement && {
-              focusedElement: {
-                role: focusedElement.role,
-                subrole: focusedElement.subrole,
-                title: focusedElement.title,
-                label: focusedElement.label,
-                value: focusedElement.value,
-                roleDescription: focusedElement.roleDescription,
-                domId: focusedElement.domId,
-                domClassList: focusedElement.domClassList,
-                applicationName: focusedElement.applicationName,
-                bounds: focusedElement.boundsX !== undefined ? {
-                  x: focusedElement.boundsX,
-                  y: focusedElement.boundsY,
-                  width: focusedElement.boundsWidth,
-                  height: focusedElement.boundsHeight
-                } : undefined
+          if (focusTrigger === 'click') {
+            target = {
+              coordinates: {
+                x: nativeEvent.data.x,
+                y: nativeEvent.data.y
               }
-            })
+            };
+            inputData = {
+              trigger: 'click',
+              ...(focusedElement && {
+                focusedElement: {
+                  role: focusedElement.role,
+                  subrole: focusedElement.subrole,
+                  title: focusedElement.title,
+                  label: focusedElement.label,
+                  value: focusedElement.value,
+                  roleDescription: focusedElement.roleDescription,
+                  domId: focusedElement.domId,
+                  domClassList: focusedElement.domClassList,
+                  applicationName: focusedElement.applicationName,
+                  bounds: focusedElement.boundsX !== undefined ? {
+                    x: focusedElement.boundsX,
+                    y: focusedElement.boundsY,
+                    width: focusedElement.boundsWidth,
+                    height: focusedElement.boundsHeight
+                  } : undefined
+                }
+              })
+            };
+          } else {
+            const focusKey = nativeEvent.data.key;
+            const focusModifiers = nativeEvent.data.modifiers || [];
+            inputData = {
+              trigger: 'keyboard',
+              key: focusKey,
+              keyCode: nativeEvent.data.keyCode,
+              modifiers: focusModifiers,
+              ...(focusedElement && {
+                focusedElement: {
+                  role: focusedElement.role,
+                  subrole: focusedElement.subrole,
+                  title: focusedElement.title,
+                  label: focusedElement.label,
+                  value: focusedElement.value,
+                  roleDescription: focusedElement.roleDescription,
+                  domId: focusedElement.domId,
+                  domClassList: focusedElement.domClassList,
+                  applicationName: focusedElement.applicationName,
+                  bounds: focusedElement.boundsX !== undefined ? {
+                    x: focusedElement.boundsX,
+                    y: focusedElement.boundsY,
+                    width: focusedElement.boundsWidth,
+                    height: focusedElement.boundsHeight
+                  } : undefined
+                }
+              })
+            };
+          }
+          break;
+
+        case 'focus_lost':
+          interactionType = 'focus_lost';
+          const lostTrigger = nativeEvent.data.trigger || 'click';
+          target = {
+            coordinates: {
+              x: nativeEvent.data.x,
+              y: nativeEvent.data.y
+            }
+          };
+          inputData = {
+            trigger: lostTrigger
           };
           break;
 

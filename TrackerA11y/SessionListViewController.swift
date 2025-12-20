@@ -79,6 +79,7 @@ class SessionListViewController: NSViewController {
     private var addButton: NSButton!
     private var deleteButton: NSButton!
     private var refreshButton: NSButton!
+    private var cleanupButton: NSButton!
     private var sessionsLabel: NSTextField!
     
     private var allSessions: [SessionData] = []

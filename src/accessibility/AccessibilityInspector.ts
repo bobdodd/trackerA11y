@@ -55,16 +55,12 @@ export class AccessibilityInspector {
       // Use native accessibility APIs first - they know exactly what's at any coordinate
       const element = await this.getElementAtPoint(x, y, processId);
       if (element) {
-        // Only log dock icon detection for debugging
-        if (element.description === 'Dock icon') {
-          console.log(`🚢 DOCK ICON DETECTED: ${element.title} at (${element.bounds.x}, ${element.bounds.y})`);
-        }
         
         // Get the hierarchy from root to this element
         const hierarchy = await this.getElementHierarchy(element, processId);
 
         // Get application context (for dock, use Dock process)
-        const contextProcessId = element.description === 'Dock icon' ? undefined : processId;
+        const contextProcessId = element.description === 'Dock item' ? undefined : processId;
         const context = await this.getApplicationContext(contextProcessId);
 
         return {
@@ -220,16 +216,19 @@ export class AccessibilityInspector {
       tell application "System Events"
         tell process "Dock"
           set dockItems to UI elements of list 1
+          set clickX to ${Math.round(x)}
+          set bestMatch to ""
+          set bestDistance to 9999
+          
           repeat with dockItem in dockItems
             try
               set itemPos to position of dockItem
               set itemSize to size of dockItem
               set itemX to item 1 of itemPos
-              set itemY to item 2 of itemPos
               set itemW to item 1 of itemSize
-              set itemH to item 2 of itemSize
               
-              if ${Math.round(x)} >= itemX and ${Math.round(x)} <= (itemX + itemW) and ${Math.round(y)} >= itemY and ${Math.round(y)} <= (itemY + itemH) then
+              -- Check if X coordinate is within this item's horizontal bounds
+              if clickX >= itemX and clickX <= (itemX + itemW) then
                 set itemName to ""
                 set itemRole to ""
                 set itemDesc to ""
@@ -252,7 +251,7 @@ export class AccessibilityInspector {
                   set itemDesc to ""
                 end try
                 
-                return itemRole & "|" & itemName & "||" & itemDesc & "|" & itemName & "|true|false|false|" & itemX & "," & itemY & "," & itemW & "," & itemH
+                return itemRole & "|" & itemName & "||" & itemDesc & "|" & itemName & "|true|false|false|" & itemX & ",${Math.round(y)}," & itemW & ",72"
               end if
             end try
           end repeat
