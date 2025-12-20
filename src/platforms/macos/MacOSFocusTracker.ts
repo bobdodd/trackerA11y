@@ -35,8 +35,10 @@ interface MacOSAccessibilityInfo {
 
 export class MacOSFocusTracker extends BaseFocusTracker {
   private monitoringTimer: NodeJS.Timeout | null = null;
+  private elementFocusTimer: NodeJS.Timeout | null = null;
   private osascriptPath = '/usr/bin/osascript';
   private lastKnownPid: number | null = null;
+  private lastFocusedElement: string | null = null;
 
   constructor(pollInterval = 500) { // macOS requires less frequent polling
     super('macos', pollInterval);
@@ -50,6 +52,7 @@ export class MacOSFocusTracker extends BaseFocusTracker {
 
     this.isMonitoring = true;
     this.startPolling();
+    this.startElementFocusPolling();
     
     // Also set up NSWorkspace notifications if available
     this.setupWorkspaceNotifications();
@@ -63,6 +66,11 @@ export class MacOSFocusTracker extends BaseFocusTracker {
     if (this.monitoringTimer) {
       clearInterval(this.monitoringTimer);
       this.monitoringTimer = null;
+    }
+    
+    if (this.elementFocusTimer) {
+      clearInterval(this.elementFocusTimer);
+      this.elementFocusTimer = null;
     }
   }
 
@@ -159,6 +167,120 @@ export class MacOSFocusTracker extends BaseFocusTracker {
     // For future implementation - NSWorkspace notifications via native addon
     // This would provide real-time notifications instead of polling
     console.log('Workspace notifications not yet implemented, using polling');
+  }
+
+  private startElementFocusPolling(): void {
+    this.elementFocusTimer = setInterval(async () => {
+      if (!this.isMonitoring) return;
+
+      try {
+        const focusedElement = await this.getFocusedUIElement();
+        if (focusedElement && focusedElement !== this.lastFocusedElement) {
+          this.lastFocusedElement = focusedElement;
+          this.emit('elementFocusChanged', this.parseElementFocusInfo(focusedElement));
+        }
+      } catch (error) {
+        // Silent fail for element focus - it's supplementary
+      }
+    }, 200); // Poll element focus more frequently (200ms)
+  }
+
+  private async getFocusedUIElement(): Promise<string | null> {
+    const script = `
+      tell application "System Events"
+        try
+          set frontApp to first process whose frontmost is true
+          set focusedElem to focused UI element of frontApp
+          
+          set elemRole to ""
+          set elemTitle to ""
+          set elemValue to ""
+          set elemDesc to ""
+          set elemHelp to ""
+          
+          try
+            set elemRole to role of focusedElem
+          end try
+          try
+            set elemTitle to title of focusedElem
+          end try
+          try
+            set elemValue to value of focusedElem
+          end try
+          try
+            set elemDesc to description of focusedElem
+          end try
+          try
+            set elemHelp to help of focusedElem
+          end try
+          
+          -- Get position and size for unique identification
+          set elemPos to "0,0"
+          set elemSize to "0,0"
+          try
+            set pos to position of focusedElem
+            set elemPos to (item 1 of pos as string) & "," & (item 2 of pos as string)
+          end try
+          try
+            set sz to size of focusedElem
+            set elemSize to (item 1 of sz as string) & "," & (item 2 of sz as string)
+          end try
+          
+          return elemRole & "|" & elemTitle & "|" & elemValue & "|" & elemDesc & "|" & elemHelp & "|" & elemPos & "|" & elemSize
+        on error
+          return ""
+        end try
+      end tell
+    `;
+
+    try {
+      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script], {
+        timeout: 500
+      });
+      const result = stdout.trim();
+      return result || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private parseElementFocusInfo(elementString: string): {
+    role: string;
+    title: string;
+    value: string;
+    description: string;
+    help: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  } {
+    const [role, title, value, description, help, posStr, sizeStr] = elementString.split('|');
+    
+    let position = { x: 0, y: 0 };
+    let size = { width: 0, height: 0 };
+    
+    if (posStr && posStr.includes(',')) {
+      const [x, y] = posStr.split(',').map(Number);
+      if (!isNaN(x) && !isNaN(y)) {
+        position = { x, y };
+      }
+    }
+    
+    if (sizeStr && sizeStr.includes(',')) {
+      const [w, h] = sizeStr.split(',').map(Number);
+      if (!isNaN(w) && !isNaN(h)) {
+        size = { width: w, height: h };
+      }
+    }
+    
+    return {
+      role: role || 'unknown',
+      title: title || '',
+      value: value || '',
+      description: description || '',
+      help: help || '',
+      position,
+      size
+    };
   }
 
   private async getFrontmostApplication(): Promise<MacOSAppInfo | null> {

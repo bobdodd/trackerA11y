@@ -119,6 +119,7 @@ export class FocusManager extends EventEmitter {
 
     try {
       this.tracker.on('focusChanged', this.handleFocusChange.bind(this));
+      this.tracker.on('elementFocusChanged', this.handleElementFocusChange.bind(this));
       this.tracker.on('error', this.handleTrackerError.bind(this));
       
       await this.tracker.startMonitoring();
@@ -161,6 +162,15 @@ export class FocusManager extends EventEmitter {
 
     // Forward to listeners
     this.emit('focusChanged', event);
+  }
+
+  private handleElementFocusChange(elementInfo: any): void {
+    // Emit element focus change for keyboard navigation tracking
+    this.emit('elementFocusChanged', {
+      timestamp: Date.now() * 1000,
+      element: elementInfo,
+      platform: this.currentPlatform
+    });
   }
 
   private handleTrackerError(error: Error): void {

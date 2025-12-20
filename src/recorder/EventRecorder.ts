@@ -246,6 +246,21 @@ export class EventRecorder extends EventEmitter {
       this.addEvent(recordedEvent);
     });
 
+    // Element focus change events (keyboard navigation)
+    this.focusManager.on('elementFocusChanged', async (event) => {
+      const recordedEvent = this.createRecordedEvent('focus', 'element_focus_changed', {
+        element: event.element,
+        role: event.element.role,
+        title: event.element.title,
+        value: event.element.value,
+        description: event.element.description,
+        position: event.element.position,
+        size: event.element.size
+      });
+
+      this.addEvent(recordedEvent);
+    });
+
     // Interaction events
     this.interactionManager.on('interaction', async (event) => {
       const recordedEvent = this.createRecordedEvent('interaction', event.data.interactionType, {

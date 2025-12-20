@@ -93,22 +93,78 @@ export class AccessibilityInspector {
    * Get detailed information about a UI element at coordinates
    */
   private async getElementAtPoint(x: number, y: number, processId?: number): Promise<UIElement | null> {
-    // Simple coordinate-based dock detection without complex enumeration
+    const screenHeight = await this.getScreenHeight();
+    const dockThreshold = screenHeight - 120;
+    
+    if (y > dockThreshold) {
+      const dockElement = await this.getDockItemAtPoint(x, y);
+      if (dockElement) {
+        return dockElement;
+      }
+    }
+    
+    return null;
+  }
+
+  private async getScreenHeight(): Promise<number> {
+    try {
+      const script = `
+        tell application "Finder"
+          set screenBounds to bounds of window of desktop
+          return item 4 of screenBounds
+        end tell
+      `;
+      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script], { timeout: 1000 });
+      return parseInt(stdout.trim()) || 1080;
+    } catch {
+      return 1080;
+    }
+  }
+
+  private async getDockItemAtPoint(x: number, y: number): Promise<UIElement | null> {
     const script = `
       tell application "System Events"
-        try
-          -- Simple dock area detection based on coordinates only
-          if ${Math.round(y)} > 900 then
-            -- Just assume dock click for bottom area coordinates
-            return "button|Dock Icon|||Dock icon|true|false|false|${Math.round(x)},${Math.round(y)},60,60"
-          end if
-          
-          return ""
-          
-        on error errMsg
-          return "error|" & errMsg
-        end try
+        tell process "Dock"
+          set dockItems to UI elements of list 1
+          repeat with dockItem in dockItems
+            try
+              set itemPos to position of dockItem
+              set itemSize to size of dockItem
+              set itemX to item 1 of itemPos
+              set itemY to item 2 of itemPos
+              set itemW to item 1 of itemSize
+              set itemH to item 2 of itemSize
+              
+              if ${Math.round(x)} >= itemX and ${Math.round(x)} <= (itemX + itemW) and ${Math.round(y)} >= itemY and ${Math.round(y)} <= (itemY + itemH) then
+                set itemName to ""
+                set itemRole to ""
+                set itemDesc to ""
+                
+                try
+                  set itemName to name of dockItem
+                on error
+                  set itemName to ""
+                end try
+                
+                try
+                  set itemRole to role of dockItem
+                on error
+                  set itemRole to "button"
+                end try
+                
+                try
+                  set itemDesc to description of dockItem
+                on error
+                  set itemDesc to ""
+                end try
+                
+                return itemRole & "|" & itemName & "||" & itemDesc & "|" & itemName & "|true|false|false|" & itemX & "," & itemY & "," & itemW & "," & itemH
+              end if
+            end try
+          end repeat
+        end tell
       end tell
+      return ""
     `;
 
     try {
@@ -133,11 +189,11 @@ export class AccessibilityInspector {
       }
 
       const element = {
-        role: role || 'unknown',
+        role: role || 'button',
         title: title || undefined,
         value: value || undefined,
-        description: description || undefined,
-        label: label || undefined,
+        description: description || 'Dock item',
+        label: label || title || undefined,
         identifier: identifier || undefined,
         enabled: enabledStr === 'true',
         focused: focusedStr === 'true',
@@ -154,7 +210,7 @@ export class AccessibilityInspector {
       )) {
         return null;
       }
-      throw error;
+      return null;
     }
   }
 
