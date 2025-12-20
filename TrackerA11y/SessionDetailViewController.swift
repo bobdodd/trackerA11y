@@ -77,6 +77,8 @@ class SessionDetailViewController: NSViewController {
     // Events tab table view and filters
     private var eventsTableView: NSTableView?
     private var eventsCountLabel: NSTextField?
+    private var eventsDetailPanel: NSScrollView?
+    private var eventsDetailTextView: NSTextView?
     private var eventsSearchField: NSSearchField?
     private var sourceFilterPopup: NSPopUpButton?
     private var typeFilterButton: NSButton?
@@ -954,32 +956,32 @@ class SessionDetailViewController: NSViewController {
         
         let timeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("time"))
         timeColumn.title = "Time"
-        timeColumn.width = 140
-        timeColumn.minWidth = 120
+        timeColumn.width = 120
+        timeColumn.minWidth = 100
         tableView.addTableColumn(timeColumn)
         
         let sourceColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("source"))
         sourceColumn.title = "Source"
-        sourceColumn.width = 100
-        sourceColumn.minWidth = 80
+        sourceColumn.width = 90
+        sourceColumn.minWidth = 70
         tableView.addTableColumn(sourceColumn)
         
         let typeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("type"))
         typeColumn.title = "Type"
-        typeColumn.width = 150
-        typeColumn.minWidth = 100
+        typeColumn.width = 130
+        typeColumn.minWidth = 90
         tableView.addTableColumn(typeColumn)
         
         let tagsNotesColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("tagsnotes"))
         tagsNotesColumn.title = "Tags / Notes"
-        tagsNotesColumn.width = 180
-        tagsNotesColumn.minWidth = 120
+        tagsNotesColumn.width = 150
+        tagsNotesColumn.minWidth = 100
         tableView.addTableColumn(tagsNotesColumn)
         
         let detailsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("details"))
-        detailsColumn.title = "Details"
-        detailsColumn.width = 300
-        detailsColumn.minWidth = 150
+        detailsColumn.title = "Summary"
+        detailsColumn.width = 200
+        detailsColumn.minWidth = 120
         tableView.addTableColumn(detailsColumn)
         
         // Apply custom header cells for 16px font
@@ -996,14 +998,20 @@ class SessionDetailViewController: NSViewController {
         // Store reference
         self.eventsTableView = tableView
         
-        // Wrap in scroll view
-        let scrollView = NSScrollView()
-        scrollView.documentView = tableView
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = true
-        scrollView.autohidesScrollers = true
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(scrollView)
+        // Wrap table in scroll view
+        let tableScrollView = NSScrollView()
+        tableScrollView.documentView = tableView
+        tableScrollView.hasVerticalScroller = true
+        tableScrollView.hasHorizontalScroller = true
+        tableScrollView.autohidesScrollers = true
+        tableScrollView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Create details panel on right side
+        let detailPanel = createEventsDetailPanel()
+        detailPanel.translatesAutoresizingMaskIntoConstraints = false
+        
+        containerView.addSubview(tableScrollView)
+        containerView.addSubview(detailPanel)
         
         NSLayoutConstraint.activate([
             headerStack.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
@@ -1014,13 +1022,76 @@ class SessionDetailViewController: NSViewController {
             filterToolbar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             filterToolbar.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             
-            scrollView.topAnchor.constraint(equalTo: filterToolbar.bottomAnchor, constant: 12),
-            scrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            scrollView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
-            scrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
+            tableScrollView.topAnchor.constraint(equalTo: filterToolbar.bottomAnchor, constant: 12),
+            tableScrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            tableScrollView.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
+            tableScrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            
+            detailPanel.topAnchor.constraint(equalTo: filterToolbar.bottomAnchor, constant: 12),
+            detailPanel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            detailPanel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            detailPanel.widthAnchor.constraint(equalToConstant: 320)
         ])
         
         return containerView
+    }
+    
+    private func createEventsDetailPanel() -> NSView {
+        let panel = NSView()
+        panel.wantsLayer = true
+        panel.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.5).cgColor
+        panel.layer?.cornerRadius = 8
+        panel.layer?.borderWidth = 1
+        panel.layer?.borderColor = NSColor.separatorColor.cgColor
+        
+        let titleLabel = NSTextField(labelWithString: "Event Details")
+        titleLabel.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.isBordered = false
+        titleLabel.isEditable = false
+        titleLabel.backgroundColor = .clear
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        panel.addSubview(titleLabel)
+        
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let textView = NSTextView(frame: scrollView.bounds)
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.backgroundColor = .clear
+        textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.textColor = .labelColor
+        textView.string = "Select an event to view full details"
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.autoresizingMask = [.width]
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+        
+        scrollView.documentView = textView
+        panel.addSubview(scrollView)
+        
+        self.eventsDetailPanel = scrollView
+        self.eventsDetailTextView = textView
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: panel.topAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
+            
+            scrollView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            scrollView.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 4),
+            scrollView.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -4),
+            scrollView.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -8)
+        ])
+        
+        return panel
     }
     
     private func createEventsFilterToolbar() -> NSView {
@@ -5157,7 +5228,122 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         if selectedRow >= 0 && selectedRow < sourceEvents.count {
             let event = sourceEvents[selectedRow]
             updateTimelineInfo(with: event)
+            updateEventsDetailPanel(with: event, index: selectedRow)
+        } else {
+            eventsDetailTextView?.string = "Select an event to view full details"
         }
+    }
+    
+    private func updateEventsDetailPanel(with event: [String: Any], index: Int) {
+        var details = ""
+        
+        let eventType = event["type"] as? String ?? "unknown"
+        let isMarkerEvent = eventType.lowercased() == "marker"
+        
+        if isMarkerEvent {
+            details += "═══════════════════════════════\n"
+            details += "🚩 MARKER\n"
+            details += "═══════════════════════════════\n\n"
+            
+            if let markerName = event["markerName"] as? String, !markerName.isEmpty {
+                details += "Name: \(markerName)\n"
+            }
+            
+            if let timestamp = event["timestamp"] as? Double {
+                details += "Time: \(formatTimestamp(timestamp))\n"
+            }
+            
+            if let noteBase64 = event["markerNote"] as? String,
+               let noteData = Data(base64Encoded: noteBase64),
+               let noteString = extractPlainTextFromRTF(noteData) {
+                details += "\n───────────────────────────────\n"
+                details += "Note:\n\(noteString)"
+            }
+        } else {
+            details += "═══════════════════════════════\n"
+            details += "EVENT #\(index + 1)\n"
+            details += "═══════════════════════════════\n\n"
+            
+            if let timestamp = event["timestamp"] as? Double {
+                details += "Time: \(formatTimestamp(timestamp))\n"
+            }
+            
+            if let source = event["source"] as? String {
+                details += "Source: \(source.uppercased())\n"
+            }
+            
+            details += "Type: \(eventType.replacingOccurrences(of: "_", with: " "))\n"
+            
+            let originalIndex = findEventIndex(byTimestamp: event["timestamp"] as? Double ?? 0)
+            if originalIndex >= 0 {
+                let tags = eventTags[originalIndex] ?? Set<String>()
+                if !tags.isEmpty {
+                    details += "Tags: \(tags.sorted().joined(separator: ", "))\n"
+                }
+            }
+            
+            if let data = event["data"] as? [String: Any] {
+                details += "\n───────────────────────────────\n"
+                details += "DATA\n"
+                details += "───────────────────────────────\n"
+                details += formatEventDataForDetailPanel(data)
+            }
+        }
+        
+        eventsDetailTextView?.string = details
+        eventsDetailTextView?.scrollToBeginningOfDocument(nil)
+    }
+    
+    private func formatEventDataForDetailPanel(_ data: [String: Any], indent: Int = 0) -> String {
+        var result = ""
+        let indentStr = String(repeating: "  ", count: indent)
+        
+        let sortedKeys = data.keys.sorted()
+        
+        for key in sortedKeys {
+            let value = data[key]
+            let displayKey = key.replacingOccurrences(of: "_", with: " ").capitalized
+            
+            if let dictValue = value as? [String: Any] {
+                result += "\(indentStr)\(displayKey):\n"
+                result += formatEventDataForDetailPanel(dictValue, indent: indent + 1)
+            } else if let arrayValue = value as? [[String: Any]] {
+                result += "\(indentStr)\(displayKey): [\(arrayValue.count) items]\n"
+                for (i, item) in arrayValue.prefix(3).enumerated() {
+                    result += "\(indentStr)  [\(i)]:\n"
+                    result += formatEventDataForDetailPanel(item, indent: indent + 2)
+                }
+                if arrayValue.count > 3 {
+                    result += "\(indentStr)  ... and \(arrayValue.count - 3) more\n"
+                }
+            } else if let stringArray = value as? [String] {
+                if stringArray.isEmpty {
+                    result += "\(indentStr)\(displayKey): []\n"
+                } else {
+                    result += "\(indentStr)\(displayKey): \(stringArray.joined(separator: ", "))\n"
+                }
+            } else if let stringValue = value as? String {
+                if stringValue.isEmpty {
+                    result += "\(indentStr)\(displayKey): (empty)\n"
+                } else if stringValue.count > 100 {
+                    result += "\(indentStr)\(displayKey): \(stringValue.prefix(100))...\n"
+                } else {
+                    result += "\(indentStr)\(displayKey): \(stringValue)\n"
+                }
+            } else if let numberValue = value as? NSNumber {
+                if CFGetTypeID(numberValue) == CFBooleanGetTypeID() {
+                    result += "\(indentStr)\(displayKey): \(numberValue.boolValue ? "Yes" : "No")\n"
+                } else {
+                    result += "\(indentStr)\(displayKey): \(numberValue)\n"
+                }
+            } else if value is NSNull {
+                result += "\(indentStr)\(displayKey): null\n"
+            } else if let anyValue = value {
+                result += "\(indentStr)\(displayKey): \(anyValue)\n"
+            }
+        }
+        
+        return result
     }
     
     private func updateTimelineInfo(with event: [String: Any]) {

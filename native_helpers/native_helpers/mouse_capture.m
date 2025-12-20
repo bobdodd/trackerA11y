@@ -533,11 +533,6 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     break;
                 }
                 
-                // Skip Tab on key down - we'll handle it on key up when focus has actually moved
-                if (keyCode == kVK_Tab) {
-                    break;
-                }
-                
                 NSString* keyName = keyCodeToString(keyCode);
                 NSArray* modifiers = getModifierFlags(flags);
                 
@@ -548,6 +543,7 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     @"systemTimestamp": @(timestamp)
                 }];
                 
+                // Emit key_press for all keys including Tab (the user action)
                 outputEvent(@"key_press", eventData);
                 break;
             }
@@ -556,20 +552,21 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                 CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
                 CGEventFlags flags = CGEventGetFlags(event);
                 
-                // Only handle Tab on key up - focus has now moved to the new element
+                // On Tab key up, emit focus_change with the newly focused element
+                // This comes after the key_press event, showing the result of tabbing
                 if (keyCode == kVK_Tab) {
-                    NSString* keyName = keyCodeToString(keyCode);
                     NSArray* modifiers = getModifierFlags(flags);
                     
+                    // Get the now-focused element (focus has moved after Tab was processed)
+                    NSDictionary* focusedElement = getFocusedElement();
+                    
                     NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
-                        @"key": keyName,
+                        @"key": @"Tab",
                         @"keyCode": @(keyCode),
                         @"modifiers": modifiers,
                         @"systemTimestamp": @(timestamp)
                     }];
                     
-                    // Get the now-focused element (focus has moved after Tab was processed)
-                    NSDictionary* focusedElement = getFocusedElement();
                     if (focusedElement) {
                         eventData[@"focusedElement"] = focusedElement;
                     }
