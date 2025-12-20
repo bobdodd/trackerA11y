@@ -1,4 +1,5 @@
 import Cocoa
+import ObjectiveC
 
 class SessionDetailViewController: NSViewController {
     
@@ -49,11 +50,20 @@ class SessionDetailViewController: NSViewController {
     private var eventsCountLabel: NSTextField?
     private var eventsSearchField: NSSearchField?
     private var sourceFilterPopup: NSPopUpButton?
-    private var typeFilterPopup: NSPopUpButton?
-    private var tagFilterPopup: NSPopUpButton?
+    private var typeFilterButton: NSButton?
+    private var tagFilterButton: NSButton?
+    private var selectedTypes: Set<String> = []
+    private var selectedTags: Set<String> = []
     private var filteredEvents: [[String: Any]] = []
     private var eventTags: [Int: Set<String>] = [:]  // Maps event index to tags
+    private var eventNotes: [Int: Data] = [:]  // Maps event index to RTF data
     private var allTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
+    private var allTypes: Set<String> = []
+    
+    private var currentNotePanel: NSPanel?
+    private var currentNoteTextView: NSTextView?
+    private var currentNoteEventIndex: Int = -1
+    private var pendingNoteRTFData: Data?
     
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
@@ -928,6 +938,13 @@ class SessionDetailViewController: NSViewController {
         tagsColumn.minWidth = 80
         tableView.addTableColumn(tagsColumn)
         
+        let noteColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("note"))
+        noteColumn.title = "Note"
+        noteColumn.width = 40
+        noteColumn.minWidth = 40
+        noteColumn.maxWidth = 60
+        tableView.addTableColumn(noteColumn)
+        
         let detailsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("details"))
         detailsColumn.title = "Details"
         detailsColumn.width = 300
@@ -947,6 +964,23 @@ class SessionDetailViewController: NSViewController {
         
         // Store reference
         self.eventsTableView = tableView
+        
+        // Add context menu for right-click
+        let contextMenu = NSMenu()
+        let addNoteItem = NSMenuItem(title: "Add Note...", action: #selector(contextMenuAddNote(_:)), keyEquivalent: "")
+        addNoteItem.target = self
+        contextMenu.addItem(addNoteItem)
+        let editNoteItem = NSMenuItem(title: "Edit Note...", action: #selector(contextMenuEditNote(_:)), keyEquivalent: "")
+        editNoteItem.target = self
+        contextMenu.addItem(editNoteItem)
+        let deleteNoteItem = NSMenuItem(title: "Delete Note", action: #selector(contextMenuDeleteNote(_:)), keyEquivalent: "")
+        deleteNoteItem.target = self
+        contextMenu.addItem(deleteNoteItem)
+        contextMenu.addItem(NSMenuItem.separator())
+        let tagItem = NSMenuItem(title: "Tag Event...", action: #selector(contextMenuTagEvent(_:)), keyEquivalent: "")
+        tagItem.target = self
+        contextMenu.addItem(tagItem)
+        tableView.menu = contextMenu
         
         // Wrap in scroll view
         let scrollView = NSScrollView()
@@ -1007,32 +1041,19 @@ class SessionDetailViewController: NSViewController {
         self.sourceFilterPopup = sourcePopup
         toolbar.addArrangedSubview(sourcePopup)
         
-        // Type filter
-        let typeLabel = NSTextField(labelWithString: "Type:")
-        typeLabel.font = NSFont.systemFont(ofSize: 14)
-        toolbar.addArrangedSubview(typeLabel)
+        // Type filter (multi-select)
+        let typeButton = NSButton(title: "Types: All", target: self, action: #selector(showTypeFilterMenu(_:)))
+        typeButton.font = NSFont.systemFont(ofSize: 14)
+        typeButton.bezelStyle = .rounded
+        self.typeFilterButton = typeButton
+        toolbar.addArrangedSubview(typeButton)
         
-        let typePopup = NSPopUpButton()
-        typePopup.font = NSFont.systemFont(ofSize: 14)
-        typePopup.addItems(withTitles: ["All Types"])
-        typePopup.target = self
-        typePopup.action = #selector(typeFilterChanged(_:))
-        self.typeFilterPopup = typePopup
-        toolbar.addArrangedSubview(typePopup)
-        
-        // Tag filter
-        let tagLabel = NSTextField(labelWithString: "Tag:")
-        tagLabel.font = NSFont.systemFont(ofSize: 14)
-        toolbar.addArrangedSubview(tagLabel)
-        
-        let tagPopup = NSPopUpButton()
-        tagPopup.font = NSFont.systemFont(ofSize: 14)
-        tagPopup.addItems(withTitles: ["All Tags"])
-        tagPopup.addItems(withTitles: Array(allTags).sorted())
-        tagPopup.target = self
-        tagPopup.action = #selector(tagFilterChanged(_:))
-        self.tagFilterPopup = tagPopup
-        toolbar.addArrangedSubview(tagPopup)
+        // Tag filter (multi-select)
+        let tagButton = NSButton(title: "Tags: All", target: self, action: #selector(showTagFilterMenu(_:)))
+        tagButton.font = NSFont.systemFont(ofSize: 14)
+        tagButton.bezelStyle = .rounded
+        self.tagFilterButton = tagButton
+        toolbar.addArrangedSubview(tagButton)
         
         // Clear filters button
         let clearButton = NSButton(title: "Clear Filters", target: self, action: #selector(clearEventsFilters(_:)))
@@ -1041,10 +1062,10 @@ class SessionDetailViewController: NSViewController {
         toolbar.addArrangedSubview(clearButton)
         
         // Tag selected events button
-        let tagButton = NSButton(title: "Tag Selected", target: self, action: #selector(tagSelectedEvents(_:)))
-        tagButton.font = NSFont.systemFont(ofSize: 14)
-        tagButton.bezelStyle = .rounded
-        toolbar.addArrangedSubview(tagButton)
+        let tagSelectedButton = NSButton(title: "Tag Selected", target: self, action: #selector(tagSelectedEvents(_:)))
+        tagSelectedButton.font = NSFont.systemFont(ofSize: 14)
+        tagSelectedButton.bezelStyle = .rounded
+        toolbar.addArrangedSubview(tagSelectedButton)
         
         // Flexible spacer at end
         let spacer = NSView()
@@ -1062,19 +1083,107 @@ class SessionDetailViewController: NSViewController {
         applyEventsFilters()
     }
     
-    @objc private func typeFilterChanged(_ sender: NSPopUpButton) {
+    @objc private func showTypeFilterMenu(_ sender: NSButton) {
+        let menu = NSMenu(title: "Select Types")
+        
+        let allItem = NSMenuItem(title: "All Types", action: #selector(toggleAllTypes(_:)), keyEquivalent: "")
+        allItem.target = self
+        allItem.state = selectedTypes.isEmpty ? .on : .off
+        menu.addItem(allItem)
+        menu.addItem(NSMenuItem.separator())
+        
+        for type in allTypes.sorted() {
+            let item = NSMenuItem(title: type, action: #selector(toggleTypeFilter(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = type
+            item.state = selectedTypes.contains(type) ? .on : .off
+            menu.addItem(item)
+        }
+        
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func toggleAllTypes(_ sender: NSMenuItem) {
+        selectedTypes.removeAll()
+        updateTypeFilterButtonTitle()
         applyEventsFilters()
     }
     
-    @objc private func tagFilterChanged(_ sender: NSPopUpButton) {
+    @objc private func toggleTypeFilter(_ sender: NSMenuItem) {
+        guard let type = sender.representedObject as? String else { return }
+        if selectedTypes.contains(type) {
+            selectedTypes.remove(type)
+        } else {
+            selectedTypes.insert(type)
+        }
+        updateTypeFilterButtonTitle()
         applyEventsFilters()
+    }
+    
+    @objc private func showTagFilterMenu(_ sender: NSButton) {
+        let menu = NSMenu(title: "Select Tags")
+        
+        let allItem = NSMenuItem(title: "All Tags", action: #selector(toggleAllTags(_:)), keyEquivalent: "")
+        allItem.target = self
+        allItem.state = selectedTags.isEmpty ? .on : .off
+        menu.addItem(allItem)
+        menu.addItem(NSMenuItem.separator())
+        
+        for tag in allTags.sorted() {
+            let item = NSMenuItem(title: tag, action: #selector(toggleTagFilter(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = tag
+            item.state = selectedTags.contains(tag) ? .on : .off
+            menu.addItem(item)
+        }
+        
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func toggleAllTags(_ sender: NSMenuItem) {
+        selectedTags.removeAll()
+        updateTagFilterButtonTitle()
+        applyEventsFilters()
+    }
+    
+    @objc private func toggleTagFilter(_ sender: NSMenuItem) {
+        guard let tag = sender.representedObject as? String else { return }
+        if selectedTags.contains(tag) {
+            selectedTags.remove(tag)
+        } else {
+            selectedTags.insert(tag)
+        }
+        updateTagFilterButtonTitle()
+        applyEventsFilters()
+    }
+    
+    private func updateTypeFilterButtonTitle() {
+        if selectedTypes.isEmpty {
+            typeFilterButton?.title = "Types: All"
+        } else if selectedTypes.count == 1 {
+            typeFilterButton?.title = "Types: \(selectedTypes.first!)"
+        } else {
+            typeFilterButton?.title = "Types: \(selectedTypes.count) selected"
+        }
+    }
+    
+    private func updateTagFilterButtonTitle() {
+        if selectedTags.isEmpty {
+            tagFilterButton?.title = "Tags: All"
+        } else if selectedTags.count == 1 {
+            tagFilterButton?.title = "Tags: \(selectedTags.first!)"
+        } else {
+            tagFilterButton?.title = "Tags: \(selectedTags.count) selected"
+        }
     }
     
     @objc private func clearEventsFilters(_ sender: NSButton) {
         eventsSearchField?.stringValue = ""
         sourceFilterPopup?.selectItem(at: 0)
-        typeFilterPopup?.selectItem(at: 0)
-        tagFilterPopup?.selectItem(at: 0)
+        selectedTypes.removeAll()
+        selectedTags.removeAll()
+        updateTypeFilterButtonTitle()
+        updateTagFilterButtonTitle()
         applyEventsFilters()
     }
     
@@ -1108,6 +1217,405 @@ class SessionDetailViewController: NSViewController {
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
     }
     
+    @objc private func contextMenuAddNote(_ sender: NSMenuItem) {
+        guard let tableView = eventsTableView else { return }
+        let clickedRow = tableView.clickedRow
+        guard clickedRow >= 0 else { return }
+        let originalIndex = getOriginalEventIndex(for: clickedRow)
+        showNoteEditor(for: originalIndex, fromTimeline: false)
+    }
+    
+    @objc private func contextMenuEditNote(_ sender: NSMenuItem) {
+        guard let tableView = eventsTableView else { return }
+        let clickedRow = tableView.clickedRow
+        guard clickedRow >= 0 else { return }
+        let originalIndex = getOriginalEventIndex(for: clickedRow)
+        showNoteEditor(for: originalIndex, fromTimeline: false)
+    }
+    
+    @objc private func contextMenuDeleteNote(_ sender: NSMenuItem) {
+        guard let tableView = eventsTableView else { return }
+        let clickedRow = tableView.clickedRow
+        guard clickedRow >= 0 else { return }
+        let originalIndex = getOriginalEventIndex(for: clickedRow)
+        eventNotes.removeValue(forKey: originalIndex)
+        saveTags()
+        tableView.reloadData()
+    }
+    
+    @objc private func contextMenuTagEvent(_ sender: NSMenuItem) {
+        guard let tableView = eventsTableView else { return }
+        let clickedRow = tableView.clickedRow
+        guard clickedRow >= 0 else { return }
+        tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
+        
+        let menu = NSMenu(title: "Select Tag")
+        for tag in allTags.sorted() {
+            let item = NSMenuItem(title: tag, action: #selector(applyTagToSelection(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = tag
+            menu.addItem(item)
+        }
+        menu.addItem(NSMenuItem.separator())
+        let customItem = NSMenuItem(title: "Add Custom Tag...", action: #selector(addCustomTag(_:)), keyEquivalent: "")
+        customItem.target = self
+        menu.addItem(customItem)
+        
+        let rowRect = tableView.rect(ofRow: clickedRow)
+        menu.popUp(positioning: nil, at: NSPoint(x: rowRect.midX, y: rowRect.midY), in: tableView)
+    }
+    
+    @objc private func addNoteToSelectedEvent(_ sender: NSButton) {
+        guard let tableView = eventsTableView else { return }
+        let selectedRows = tableView.selectedRowIndexes
+        guard selectedRows.count == 1, let selectedRow = selectedRows.first else {
+            let alert = NSAlert()
+            alert.messageText = "Select One Event"
+            alert.informativeText = "Please select exactly one event to add or edit a note."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+        
+        let originalIndex = getOriginalEventIndex(for: selectedRow)
+        showNoteEditor(for: originalIndex, fromTimeline: false)
+    }
+    
+    private func showNoteEditor(for eventIndex: Int, fromTimeline: Bool) {
+        let event = events[eventIndex]
+        let eventType = event["type"] as? String ?? "Unknown"
+        let hasExistingNote = eventNotes[eventIndex] != nil
+        
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+                              styleMask: [.titled, .closable, .resizable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = "Note for Event: \(eventType)"
+        window.center()
+        
+        let contentView = NSView(frame: window.contentRect(forFrameRect: window.frame))
+        contentView.autoresizingMask = [.width, .height]
+        
+        let ribbonHeight: CGFloat = 36
+        let ribbon = NSStackView(frame: NSRect(x: 0, y: contentView.bounds.height - ribbonHeight, width: contentView.bounds.width, height: ribbonHeight))
+        ribbon.orientation = .horizontal
+        ribbon.spacing = 4
+        ribbon.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        ribbon.autoresizingMask = [.width, .minYMargin]
+        ribbon.wantsLayer = true
+        ribbon.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        
+        let fontPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fontPopup.addItems(withTitles: ["System", "Helvetica", "Times", "Courier", "Georgia", "Verdana"])
+        fontPopup.font = NSFont.systemFont(ofSize: 11)
+        fontPopup.target = self
+        fontPopup.action = #selector(noteFontChanged(_:))
+        ribbon.addArrangedSubview(fontPopup)
+        
+        let sizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        sizePopup.addItems(withTitles: ["10", "11", "12", "14", "16", "18", "20", "24", "28", "32", "36", "48"])
+        sizePopup.selectItem(withTitle: "14")
+        sizePopup.font = NSFont.systemFont(ofSize: 11)
+        sizePopup.target = self
+        sizePopup.action = #selector(noteSizeChanged(_:))
+        ribbon.addArrangedSubview(sizePopup)
+        
+        let sep1 = NSBox()
+        sep1.boxType = .separator
+        sep1.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep1)
+        
+        let boldBtn = NSButton(title: "B", target: self, action: #selector(noteToggleBold(_:)))
+        boldBtn.font = NSFont.boldSystemFont(ofSize: 13)
+        boldBtn.bezelStyle = .texturedRounded
+        boldBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(boldBtn)
+        
+        let italicBtn = NSButton(title: "I", target: self, action: #selector(noteToggleItalic(_:)))
+        italicBtn.font = NSFont(name: "Times-Italic", size: 13) ?? NSFont.systemFont(ofSize: 13)
+        italicBtn.bezelStyle = .texturedRounded
+        italicBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(italicBtn)
+        
+        let underlineBtn = NSButton(title: "U", target: self, action: #selector(noteToggleUnderline(_:)))
+        underlineBtn.bezelStyle = .texturedRounded
+        underlineBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(underlineBtn)
+        
+        let strikeBtn = NSButton(title: "S", target: self, action: #selector(noteToggleStrikethrough(_:)))
+        strikeBtn.bezelStyle = .texturedRounded
+        strikeBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(strikeBtn)
+        
+        let sep2 = NSBox()
+        sep2.boxType = .separator
+        sep2.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep2)
+        
+        let textColorBtn = NSButton(title: "A", target: self, action: #selector(noteTextColor(_:)))
+        textColorBtn.bezelStyle = .texturedRounded
+        textColorBtn.contentTintColor = .systemRed
+        textColorBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(textColorBtn)
+        
+        let highlightBtn = NSButton(title: "H", target: self, action: #selector(noteHighlight(_:)))
+        highlightBtn.bezelStyle = .texturedRounded
+        highlightBtn.wantsLayer = true
+        highlightBtn.layer?.backgroundColor = NSColor.systemYellow.cgColor
+        highlightBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(highlightBtn)
+        
+        let sep3 = NSBox()
+        sep3.boxType = .separator
+        sep3.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep3)
+        
+        let leftBtn = NSButton(image: NSImage(systemSymbolName: "text.alignleft", accessibilityDescription: "Left")!, target: self, action: #selector(noteAlignLeft(_:)))
+        leftBtn.bezelStyle = .texturedRounded
+        leftBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(leftBtn)
+        
+        let centerBtn = NSButton(image: NSImage(systemSymbolName: "text.aligncenter", accessibilityDescription: "Center")!, target: self, action: #selector(noteAlignCenter(_:)))
+        centerBtn.bezelStyle = .texturedRounded
+        centerBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(centerBtn)
+        
+        let rightBtn = NSButton(image: NSImage(systemSymbolName: "text.alignright", accessibilityDescription: "Right")!, target: self, action: #selector(noteAlignRight(_:)))
+        rightBtn.bezelStyle = .texturedRounded
+        rightBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(rightBtn)
+        
+        let sep4 = NSBox()
+        sep4.boxType = .separator
+        sep4.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep4)
+        
+        let bulletBtn = NSButton(image: NSImage(systemSymbolName: "list.bullet", accessibilityDescription: "Bullets")!, target: self, action: #selector(noteInsertBullet(_:)))
+        bulletBtn.bezelStyle = .texturedRounded
+        bulletBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(bulletBtn)
+        
+        let numberBtn = NSButton(image: NSImage(systemSymbolName: "list.number", accessibilityDescription: "Numbers")!, target: self, action: #selector(noteInsertNumber(_:)))
+        numberBtn.bezelStyle = .texturedRounded
+        numberBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(numberBtn)
+        
+        let ribbonSpacer = NSView()
+        ribbonSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        ribbon.addArrangedSubview(ribbonSpacer)
+        
+        contentView.addSubview(ribbon)
+        
+        let scrollView = NSScrollView(frame: NSRect(x: 12, y: 60, width: contentView.bounds.width - 24, height: contentView.bounds.height - ribbonHeight - 72))
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .bezelBorder
+        
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: scrollView.bounds.width - 20, height: scrollView.bounds.height))
+        textView.autoresizingMask = [.width]
+        textView.isRichText = true
+        textView.allowsUndo = true
+        textView.usesFontPanel = true
+        textView.font = NSFont.systemFont(ofSize: 14)
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.textContainer?.widthTracksTextView = true
+        
+        currentNoteTextView = textView
+        
+        if let existingNote = eventNotes[eventIndex] {
+            if let attrString = NSAttributedString(rtf: existingNote, documentAttributes: nil) {
+                textView.textStorage?.setAttributedString(attrString)
+            }
+        }
+        
+        scrollView.documentView = textView
+        contentView.addSubview(scrollView)
+        
+        let buttonBar = NSStackView(frame: NSRect(x: 12, y: 12, width: contentView.bounds.width - 24, height: 36))
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = 12
+        buttonBar.autoresizingMask = [.width, .maxYMargin]
+        
+        if hasExistingNote {
+            let deleteBtn = NSButton(title: "Delete Note", target: self, action: #selector(deleteNoteAction(_:)))
+            deleteBtn.bezelStyle = .rounded
+            deleteBtn.contentTintColor = .systemRed
+            buttonBar.addArrangedSubview(deleteBtn)
+        }
+        
+        let btnSpacer = NSView()
+        btnSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        buttonBar.addArrangedSubview(btnSpacer)
+        
+        let cancelBtn = NSButton(title: "Cancel", target: self, action: #selector(cancelNoteAction(_:)))
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}"
+        buttonBar.addArrangedSubview(cancelBtn)
+        
+        let saveBtn = NSButton(title: "Save", target: self, action: #selector(saveNoteAction(_:)))
+        saveBtn.bezelStyle = .rounded
+        saveBtn.keyEquivalent = "\r"
+        buttonBar.addArrangedSubview(saveBtn)
+        
+        contentView.addSubview(buttonBar)
+        window.contentView = contentView
+        
+        currentNotePanel = nil
+        currentNoteEventIndex = eventIndex
+        pendingNoteRTFData = nil
+        
+        window.makeFirstResponder(textView)
+        
+        let response = NSApp.runModal(for: window)
+        
+        window.orderOut(nil)
+        
+        if response == .OK {
+            if let rtfData = pendingNoteRTFData {
+                eventNotes[eventIndex] = rtfData
+                saveTags()
+                eventsTableView?.reloadData()
+            }
+        } else if response == .abort {
+            eventNotes.removeValue(forKey: eventIndex)
+            saveTags()
+            eventsTableView?.reloadData()
+        }
+        
+        currentNoteTextView = nil
+        pendingNoteRTFData = nil
+    }
+    
+    @objc private func noteFontChanged(_ sender: NSPopUpButton) {
+        guard let textView = currentNoteTextView, let fontName = sender.titleOfSelectedItem else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let currentFont = textView.textStorage?.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 14)
+            let newFont: NSFont
+            if fontName == "System" {
+                newFont = NSFont.systemFont(ofSize: currentFont.pointSize)
+            } else {
+                newFont = NSFont(name: fontName, size: currentFont.pointSize) ?? currentFont
+            }
+            textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+        }
+    }
+    
+    @objc private func noteSizeChanged(_ sender: NSPopUpButton) {
+        guard let textView = currentNoteTextView, let sizeStr = sender.titleOfSelectedItem, let size = Double(sizeStr) else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let currentFont = textView.textStorage?.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 14)
+            let newFont = NSFont(descriptor: currentFont.fontDescriptor, size: CGFloat(size)) ?? currentFont
+            textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+        }
+    }
+    
+    @objc private func noteToggleBold(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let currentFont = textView.textStorage?.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 14)
+            let newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: currentFont.fontDescriptor.symbolicTraits.contains(.bold) ? .unboldFontMask : .boldFontMask)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+        }
+    }
+    
+    @objc private func noteToggleItalic(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let currentFont = textView.textStorage?.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: 14)
+            let newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: currentFont.fontDescriptor.symbolicTraits.contains(.italic) ? .unitalicFontMask : .italicFontMask)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: range)
+        }
+    }
+    
+    @objc private func noteToggleUnderline(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let current = textView.textStorage?.attribute(.underlineStyle, at: range.location, effectiveRange: nil) as? Int ?? 0
+            textView.textStorage?.addAttribute(.underlineStyle, value: current == 0 ? NSUnderlineStyle.single.rawValue : 0, range: range)
+        }
+    }
+    
+    @objc private func noteToggleStrikethrough(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let current = textView.textStorage?.attribute(.strikethroughStyle, at: range.location, effectiveRange: nil) as? Int ?? 0
+            textView.textStorage?.addAttribute(.strikethroughStyle, value: current == 0 ? NSUnderlineStyle.single.rawValue : 0, range: range)
+        }
+    }
+    
+    @objc private func noteTextColor(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        NSColorPanel.shared.setTarget(self)
+        NSColorPanel.shared.setAction(#selector(noteColorPanelChanged(_:)))
+        NSColorPanel.shared.orderFront(nil)
+    }
+    
+    @objc private func noteColorPanelChanged(_ sender: NSColorPanel) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            textView.textStorage?.addAttribute(.foregroundColor, value: sender.color, range: range)
+        }
+    }
+    
+    @objc private func noteHighlight(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        if range.length > 0 {
+            let current = textView.textStorage?.attribute(.backgroundColor, at: range.location, effectiveRange: nil) as? NSColor
+            textView.textStorage?.addAttribute(.backgroundColor, value: current == nil ? NSColor.systemYellow : NSColor.clear, range: range)
+        }
+    }
+    
+    @objc private func noteAlignLeft(_ sender: NSButton) {
+        currentNoteTextView?.alignLeft(nil)
+    }
+    
+    @objc private func noteAlignCenter(_ sender: NSButton) {
+        currentNoteTextView?.alignCenter(nil)
+    }
+    
+    @objc private func noteAlignRight(_ sender: NSButton) {
+        currentNoteTextView?.alignRight(nil)
+    }
+    
+    @objc private func noteInsertBullet(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        textView.insertText("• ", replacementRange: NSRange(location: range.location, length: 0))
+    }
+    
+    @objc private func noteInsertNumber(_ sender: NSButton) {
+        guard let textView = currentNoteTextView else { return }
+        let range = textView.selectedRange()
+        textView.insertText("1. ", replacementRange: NSRange(location: range.location, length: 0))
+    }
+    
+    @objc private func saveNoteAction(_ sender: NSButton) {
+        if let textView = currentNoteTextView,
+           let storage = textView.textStorage {
+            pendingNoteRTFData = storage.rtf(from: NSRange(location: 0, length: storage.length), documentAttributes: [:])
+        }
+        NSApp.stopModal(withCode: .OK)
+    }
+    
+    @objc private func cancelNoteAction(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .cancel)
+    }
+    
+    @objc private func deleteNoteAction(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .abort)
+    }
+    
     @objc private func applyTagToSelection(_ sender: NSMenuItem) {
         guard let tag = sender.representedObject as? String,
               let tableView = eventsTableView else { return }
@@ -1119,6 +1627,7 @@ class SessionDetailViewController: NSViewController {
             }
             eventTags[originalIndex]?.insert(tag)
         }
+        saveTags()
         tableView.reloadData()
     }
     
@@ -1138,7 +1647,6 @@ class SessionDetailViewController: NSViewController {
             let newTag = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if !newTag.isEmpty {
                 allTags.insert(newTag)
-                tagFilterPopup?.addItem(withTitle: newTag)
                 
                 // Apply to selected events
                 if let tableView = eventsTableView {
@@ -1151,6 +1659,7 @@ class SessionDetailViewController: NSViewController {
                     }
                     tableView.reloadData()
                 }
+                saveTags()
             }
         }
     }
@@ -1173,8 +1682,6 @@ class SessionDetailViewController: NSViewController {
     private func applyEventsFilters() {
         let searchText = eventsSearchField?.stringValue.lowercased() ?? ""
         let sourceFilter = sourceFilterPopup?.titleOfSelectedItem ?? "All Sources"
-        let typeFilter = typeFilterPopup?.titleOfSelectedItem ?? "All Types"
-        let tagFilter = tagFilterPopup?.titleOfSelectedItem ?? "All Tags"
         
         filteredEvents = events.enumerated().filter { (index, event) in
             // Source filter
@@ -1185,18 +1692,18 @@ class SessionDetailViewController: NSViewController {
                 }
             }
             
-            // Type filter
-            if typeFilter != "All Types" {
+            // Type filter (multi-select)
+            if !selectedTypes.isEmpty {
                 let type = event["type"] as? String ?? ""
-                if type != typeFilter {
+                if !selectedTypes.contains(type) {
                     return false
                 }
             }
             
-            // Tag filter
-            if tagFilter != "All Tags" {
+            // Tag filter (multi-select)
+            if !selectedTags.isEmpty {
                 let tags = eventTags[index] ?? Set<String>()
-                if !tags.contains(tagFilter) {
+                if tags.isDisjoint(with: selectedTags) {
                     return false
                 }
             }
@@ -1228,17 +1735,18 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func populateTypeFilter() {
-        guard let popup = typeFilterPopup else { return }
-        popup.removeAllItems()
-        popup.addItem(withTitle: "All Types")
-        
-        var types = Set<String>()
+        allTypes.removeAll()
         for event in events {
             if let type = event["type"] as? String {
-                types.insert(type)
+                allTypes.insert(type)
             }
         }
-        popup.addItems(withTitles: types.sorted())
+    }
+    
+    private func populateTagFilter() {
+    }
+    
+    private func populateTimelineTagFilter() {
     }
     
     // Custom header cell for events table with 16px font - left aligned to match content
@@ -1345,25 +1853,629 @@ class SessionDetailViewController: NSViewController {
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         
-        let label = NSTextField(labelWithString: "Loading timeline...")
-        label.font = NSFont.systemFont(ofSize: 16)
-        label.textColor = .labelColor
-        label.lineBreakMode = .byWordWrapping
-        label.maximumNumberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(label)
+        // Header with title
+        let headerStack = NSStackView()
+        headerStack.orientation = .horizontal
+        headerStack.spacing = 16
+        headerStack.alignment = .centerY
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
         
-        // Store reference for updates
-        self.simpleTimelineLabel = label
-        print("✅ simpleTimelineLabel assigned")
+        let titleLabel = NSTextField(labelWithString: "📈 Event Timeline")
+        titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.isBordered = false
+        titleLabel.isEditable = false
+        titleLabel.backgroundColor = .clear
+        headerStack.addArrangedSubview(titleLabel)
+        
+        let timeRangeLabel = NSTextField(labelWithString: "")
+        timeRangeLabel.font = NSFont.systemFont(ofSize: 16)
+        timeRangeLabel.textColor = .secondaryLabelColor
+        timeRangeLabel.isBordered = false
+        timeRangeLabel.isEditable = false
+        timeRangeLabel.backgroundColor = .clear
+        headerStack.addArrangedSubview(timeRangeLabel)
+        self.timelineRangeLabel = timeRangeLabel
+        
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        headerStack.addArrangedSubview(spacer)
+        
+        containerView.addSubview(headerStack)
+        
+        // Controls toolbar
+        let controlsToolbar = createTimelineControlsToolbar()
+        containerView.addSubview(controlsToolbar)
+        
+        // Legend
+        let legendView = createTimelineLegend()
+        containerView.addSubview(legendView)
+        
+        // Timeline visualization
+        let timeline = EnhancedTimelineView(frame: .zero)
+        timeline.translatesAutoresizingMaskIntoConstraints = false
+        timeline.wantsLayer = true
+        timeline.layer?.cornerRadius = 8
+        timeline.layer?.borderWidth = 1
+        timeline.layer?.borderColor = NSColor.separatorColor.cgColor
+        timeline.onEventSelected = { [weak self] event in
+            self?.updateTimelineInfo(with: event)
+        }
+        self.timelineView = timeline
+        
+        // Wrap timeline in scroll view for horizontal scrolling
+        let timelineScrollView = NSScrollView()
+        timelineScrollView.documentView = timeline
+        timelineScrollView.hasVerticalScroller = false
+        timelineScrollView.hasHorizontalScroller = true
+        timelineScrollView.autohidesScrollers = true
+        timelineScrollView.translatesAutoresizingMaskIntoConstraints = false
+        timelineScrollView.drawsBackground = false
+        containerView.addSubview(timelineScrollView)
+        
+        // Event detail panel (right side)
+        let detailPanel = createTimelineDetailPanel()
+        containerView.addSubview(detailPanel)
         
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
-            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
+            headerStack.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
+            headerStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            headerStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            
+            controlsToolbar.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
+            controlsToolbar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            controlsToolbar.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            
+            legendView.topAnchor.constraint(equalTo: controlsToolbar.bottomAnchor, constant: 12),
+            legendView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            legendView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            legendView.heightAnchor.constraint(equalToConstant: 30),
+            
+            timelineScrollView.topAnchor.constraint(equalTo: legendView.bottomAnchor, constant: 12),
+            timelineScrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            timelineScrollView.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
+            timelineScrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            
+            timeline.widthAnchor.constraint(greaterThanOrEqualTo: timelineScrollView.widthAnchor),
+            timeline.heightAnchor.constraint(equalTo: timelineScrollView.heightAnchor),
+            
+            detailPanel.topAnchor.constraint(equalTo: legendView.bottomAnchor, constant: 12),
+            detailPanel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            detailPanel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            detailPanel.widthAnchor.constraint(equalToConstant: 280)
         ])
         
         return containerView
+    }
+    
+    private var timelineRangeLabel: NSTextField?
+    private var timelineDetailLabel: NSTextField?
+    private var timelineZoomSlider: NSSlider?
+    private var timelineSourceFilters: [String: Bool] = ["interaction": true, "focus": true, "system": true]
+    private var timelineSearchField: NSSearchField?
+    private var timelineTypeFilterButton: NSButton?
+    private var timelineTagFilterButton: NSButton?
+    private var timelineSelectedTypes: Set<String> = []
+    private var timelineSelectedTags: Set<String> = []
+    private var timelineFilteredEvents: [[String: Any]] = []
+    
+    private func createTimelineControlsToolbar() -> NSView {
+        let mainStack = NSStackView()
+        mainStack.orientation = .vertical
+        mainStack.spacing = 8
+        mainStack.alignment = .leading
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Row 1: Zoom and source filters
+        let row1 = NSStackView()
+        row1.orientation = .horizontal
+        row1.spacing = 12
+        row1.alignment = .centerY
+        
+        let zoomLabel = NSTextField(labelWithString: "Zoom:")
+        zoomLabel.font = NSFont.systemFont(ofSize: 14)
+        row1.addArrangedSubview(zoomLabel)
+        
+        let zoomOutButton = NSButton(title: "−", target: self, action: #selector(zoomTimelineOut))
+        zoomOutButton.font = NSFont.systemFont(ofSize: 16, weight: .bold)
+        zoomOutButton.bezelStyle = .rounded
+        zoomOutButton.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        row1.addArrangedSubview(zoomOutButton)
+        
+        let zoomSlider = NSSlider(value: 1.0, minValue: 0.5, maxValue: 5.0, target: self, action: #selector(timelineZoomChanged(_:)))
+        zoomSlider.widthAnchor.constraint(equalToConstant: 100).isActive = true
+        self.timelineZoomSlider = zoomSlider
+        row1.addArrangedSubview(zoomSlider)
+        
+        let zoomInButton = NSButton(title: "+", target: self, action: #selector(zoomTimelineIn))
+        zoomInButton.font = NSFont.systemFont(ofSize: 16, weight: .bold)
+        zoomInButton.bezelStyle = .rounded
+        zoomInButton.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        row1.addArrangedSubview(zoomInButton)
+        
+        let resetButton = NSButton(title: "Reset", target: self, action: #selector(resetTimelineZoom))
+        resetButton.font = NSFont.systemFont(ofSize: 14)
+        resetButton.bezelStyle = .rounded
+        row1.addArrangedSubview(resetButton)
+        
+        let sep1 = NSBox()
+        sep1.boxType = .separator
+        sep1.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        sep1.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        row1.addArrangedSubview(sep1)
+        
+        let showLabel = NSTextField(labelWithString: "Show:")
+        showLabel.font = NSFont.systemFont(ofSize: 14)
+        row1.addArrangedSubview(showLabel)
+        
+        let interactionCheck = NSButton(checkboxWithTitle: "Interaction", target: self, action: #selector(timelineFilterChanged(_:)))
+        interactionCheck.font = NSFont.systemFont(ofSize: 14)
+        interactionCheck.state = .on
+        interactionCheck.tag = 1
+        row1.addArrangedSubview(interactionCheck)
+        
+        let focusCheck = NSButton(checkboxWithTitle: "Focus", target: self, action: #selector(timelineFilterChanged(_:)))
+        focusCheck.font = NSFont.systemFont(ofSize: 14)
+        focusCheck.state = .on
+        focusCheck.tag = 2
+        row1.addArrangedSubview(focusCheck)
+        
+        let systemCheck = NSButton(checkboxWithTitle: "System", target: self, action: #selector(timelineFilterChanged(_:)))
+        systemCheck.font = NSFont.systemFont(ofSize: 14)
+        systemCheck.state = .on
+        systemCheck.tag = 3
+        row1.addArrangedSubview(systemCheck)
+        
+        let spacer1 = NSView()
+        spacer1.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        row1.addArrangedSubview(spacer1)
+        
+        mainStack.addArrangedSubview(row1)
+        
+        // Row 2: Search, type filter, tag filter, and tag button
+        let row2 = NSStackView()
+        row2.orientation = .horizontal
+        row2.spacing = 12
+        row2.alignment = .centerY
+        
+        let searchField = NSSearchField()
+        searchField.placeholderString = "Search events..."
+        searchField.font = NSFont.systemFont(ofSize: 14)
+        searchField.target = self
+        searchField.action = #selector(timelineSearchChanged(_:))
+        searchField.widthAnchor.constraint(equalToConstant: 180).isActive = true
+        self.timelineSearchField = searchField
+        row2.addArrangedSubview(searchField)
+        
+        let typeButton = NSButton(title: "Types: All", target: self, action: #selector(showTimelineTypeFilterMenu(_:)))
+        typeButton.font = NSFont.systemFont(ofSize: 14)
+        typeButton.bezelStyle = .rounded
+        self.timelineTypeFilterButton = typeButton
+        row2.addArrangedSubview(typeButton)
+        
+        let tagButton = NSButton(title: "Tags: All", target: self, action: #selector(showTimelineTagFilterMenu(_:)))
+        tagButton.font = NSFont.systemFont(ofSize: 14)
+        tagButton.bezelStyle = .rounded
+        self.timelineTagFilterButton = tagButton
+        row2.addArrangedSubview(tagButton)
+        
+        let clearButton = NSButton(title: "Clear Filters", target: self, action: #selector(clearTimelineFilters(_:)))
+        clearButton.font = NSFont.systemFont(ofSize: 14)
+        clearButton.bezelStyle = .rounded
+        row2.addArrangedSubview(clearButton)
+        
+        let sep2 = NSBox()
+        sep2.boxType = .separator
+        sep2.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        sep2.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        row2.addArrangedSubview(sep2)
+        
+        let tagSelectedButton = NSButton(title: "Tag Selected", target: self, action: #selector(tagSelectedTimelineEvent(_:)))
+        tagSelectedButton.font = NSFont.systemFont(ofSize: 14)
+        tagSelectedButton.bezelStyle = .rounded
+        row2.addArrangedSubview(tagSelectedButton)
+        
+        let spacer2 = NSView()
+        spacer2.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        row2.addArrangedSubview(spacer2)
+        
+        mainStack.addArrangedSubview(row2)
+        
+        return mainStack
+    }
+    
+    @objc private func timelineSearchChanged(_ sender: NSSearchField) {
+        applyTimelineFilters()
+    }
+    
+    @objc private func showTimelineTypeFilterMenu(_ sender: NSButton) {
+        let menu = NSMenu(title: "Select Types")
+        
+        let allItem = NSMenuItem(title: "All Types", action: #selector(toggleAllTimelineTypes(_:)), keyEquivalent: "")
+        allItem.target = self
+        allItem.state = timelineSelectedTypes.isEmpty ? .on : .off
+        menu.addItem(allItem)
+        menu.addItem(NSMenuItem.separator())
+        
+        for type in allTypes.sorted() {
+            let item = NSMenuItem(title: type, action: #selector(toggleTimelineTypeFilter(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = type
+            item.state = timelineSelectedTypes.contains(type) ? .on : .off
+            menu.addItem(item)
+        }
+        
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func toggleAllTimelineTypes(_ sender: NSMenuItem) {
+        timelineSelectedTypes.removeAll()
+        updateTimelineTypeFilterButtonTitle()
+        applyTimelineFilters()
+    }
+    
+    @objc private func toggleTimelineTypeFilter(_ sender: NSMenuItem) {
+        guard let type = sender.representedObject as? String else { return }
+        if timelineSelectedTypes.contains(type) {
+            timelineSelectedTypes.remove(type)
+        } else {
+            timelineSelectedTypes.insert(type)
+        }
+        updateTimelineTypeFilterButtonTitle()
+        applyTimelineFilters()
+    }
+    
+    @objc private func showTimelineTagFilterMenu(_ sender: NSButton) {
+        let menu = NSMenu(title: "Select Tags")
+        
+        let allItem = NSMenuItem(title: "All Tags", action: #selector(toggleAllTimelineTags(_:)), keyEquivalent: "")
+        allItem.target = self
+        allItem.state = timelineSelectedTags.isEmpty ? .on : .off
+        menu.addItem(allItem)
+        menu.addItem(NSMenuItem.separator())
+        
+        for tag in allTags.sorted() {
+            let item = NSMenuItem(title: tag, action: #selector(toggleTimelineTagFilter(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = tag
+            item.state = timelineSelectedTags.contains(tag) ? .on : .off
+            menu.addItem(item)
+        }
+        
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func toggleAllTimelineTags(_ sender: NSMenuItem) {
+        timelineSelectedTags.removeAll()
+        updateTimelineTagFilterButtonTitle()
+        applyTimelineFilters()
+    }
+    
+    @objc private func toggleTimelineTagFilter(_ sender: NSMenuItem) {
+        guard let tag = sender.representedObject as? String else { return }
+        if timelineSelectedTags.contains(tag) {
+            timelineSelectedTags.remove(tag)
+        } else {
+            timelineSelectedTags.insert(tag)
+        }
+        updateTimelineTagFilterButtonTitle()
+        applyTimelineFilters()
+    }
+    
+    private func updateTimelineTypeFilterButtonTitle() {
+        if timelineSelectedTypes.isEmpty {
+            timelineTypeFilterButton?.title = "Types: All"
+        } else if timelineSelectedTypes.count == 1 {
+            timelineTypeFilterButton?.title = "Types: \(timelineSelectedTypes.first!)"
+        } else {
+            timelineTypeFilterButton?.title = "Types: \(timelineSelectedTypes.count) selected"
+        }
+    }
+    
+    private func updateTimelineTagFilterButtonTitle() {
+        if timelineSelectedTags.isEmpty {
+            timelineTagFilterButton?.title = "Tags: All"
+        } else if timelineSelectedTags.count == 1 {
+            timelineTagFilterButton?.title = "Tags: \(timelineSelectedTags.first!)"
+        } else {
+            timelineTagFilterButton?.title = "Tags: \(timelineSelectedTags.count) selected"
+        }
+    }
+    
+    @objc private func clearTimelineFilters(_ sender: NSButton) {
+        timelineSearchField?.stringValue = ""
+        timelineSelectedTypes.removeAll()
+        timelineSelectedTags.removeAll()
+        updateTimelineTypeFilterButtonTitle()
+        updateTimelineTagFilterButtonTitle()
+        timelineSourceFilters = ["interaction": true, "focus": true, "system": true]
+        applyTimelineFilters()
+    }
+    
+    private var selectedTimelineEvent: [String: Any]?
+    
+    @objc private func tagSelectedTimelineEvent(_ sender: NSButton) {
+        guard let event = selectedTimelineEvent,
+              let timestamp = event["timestamp"] as? Double else {
+            let alert = NSAlert()
+            alert.messageText = "No Event Selected"
+            alert.informativeText = "Click on an event in the timeline to select it, then use Tag Selected."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+        
+        let menu = NSMenu(title: "Select Tag")
+        for tag in allTags.sorted() {
+            let item = NSMenuItem(title: tag, action: #selector(applyTagToTimelineEvent(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = tag
+            menu.addItem(item)
+        }
+        menu.addItem(NSMenuItem.separator())
+        let customItem = NSMenuItem(title: "Add Custom Tag...", action: #selector(addCustomTagFromTimeline(_:)), keyEquivalent: "")
+        customItem.target = self
+        menu.addItem(customItem)
+        
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func addNoteToTimelineEvent(_ sender: NSButton) {
+        guard let event = selectedTimelineEvent,
+              let timestamp = event["timestamp"] as? Double else {
+            let alert = NSAlert()
+            alert.messageText = "No Event Selected"
+            alert.informativeText = "Click on an event in the timeline to select it, then use Add Note."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+        
+        let originalIndex = findEventIndex(byTimestamp: timestamp)
+        if originalIndex >= 0 {
+            showNoteEditor(for: originalIndex, fromTimeline: true)
+        }
+    }
+    
+    @objc private func applyTagToTimelineEvent(_ sender: NSMenuItem) {
+        guard let tag = sender.representedObject as? String,
+              let event = selectedTimelineEvent,
+              let timestamp = event["timestamp"] as? Double else { return }
+        
+        let originalIndex = findEventIndex(byTimestamp: timestamp)
+        if originalIndex >= 0 {
+            if eventTags[originalIndex] == nil {
+                eventTags[originalIndex] = Set<String>()
+            }
+            eventTags[originalIndex]?.insert(tag)
+            saveTags()
+            applyTimelineFilters()
+            eventsTableView?.reloadData()
+        }
+    }
+    
+    @objc private func addCustomTagFromTimeline(_ sender: NSMenuItem) {
+        let alert = NSAlert()
+        alert.messageText = "Add Custom Tag"
+        alert.informativeText = "Enter a name for the new tag:"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Add")
+        alert.addButton(withTitle: "Cancel")
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        textField.font = NSFont.systemFont(ofSize: 14)
+        alert.accessoryView = textField
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            let newTag = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newTag.isEmpty {
+                allTags.insert(newTag)
+                
+                if let event = selectedTimelineEvent,
+                   let timestamp = event["timestamp"] as? Double {
+                    let originalIndex = findEventIndex(byTimestamp: timestamp)
+                    if originalIndex >= 0 {
+                        if eventTags[originalIndex] == nil {
+                            eventTags[originalIndex] = Set<String>()
+                        }
+                        eventTags[originalIndex]?.insert(newTag)
+                        applyTimelineFilters()
+                        eventsTableView?.reloadData()
+                    }
+                }
+                saveTags()
+            }
+        }
+    }
+    
+    private func findEventIndex(byTimestamp timestamp: Double) -> Int {
+        for (index, event) in events.enumerated() {
+            if let eventTimestamp = event["timestamp"] as? Double, eventTimestamp == timestamp {
+                return index
+            }
+        }
+        return -1
+    }
+    
+    private func applyTimelineFilters() {
+        let searchText = timelineSearchField?.stringValue.lowercased() ?? ""
+        let noTypeFilter = timelineSelectedTypes.isEmpty
+        let noTagFilter = timelineSelectedTags.isEmpty
+        
+        timelineFilteredEvents = events.enumerated().filter { (index, event) in
+            guard let source = event["source"] as? String else { return false }
+            if !(timelineSourceFilters[source] ?? true) {
+                return false
+            }
+            
+            if !noTypeFilter {
+                let type = event["type"] as? String ?? ""
+                if !timelineSelectedTypes.contains(type) {
+                    return false
+                }
+            }
+            
+            if !noTagFilter {
+                let tags = eventTags[index] ?? Set<String>()
+                if tags.isDisjoint(with: timelineSelectedTags) {
+                    return false
+                }
+            }
+            
+            if !searchText.isEmpty {
+                let type = (event["type"] as? String ?? "").lowercased()
+                let details = formatEventData(event["data"] as? [String: Any] ?? [:]).lowercased()
+                let tags = (eventTags[index] ?? Set<String>()).joined(separator: " ").lowercased()
+                
+                if !source.contains(searchText) && !type.contains(searchText) && 
+                   !details.contains(searchText) && !tags.contains(searchText) {
+                    return false
+                }
+            }
+            
+            return true
+        }.map { $0.1 }
+        
+        timelineView?.setEvents(timelineFilteredEvents.isEmpty && searchText.isEmpty && noTypeFilter && noTagFilter ? events.filter { event in
+            guard let source = event["source"] as? String else { return false }
+            return timelineSourceFilters[source] ?? true
+        } : timelineFilteredEvents)
+        
+        let total = events.count
+        let showing = timelineFilteredEvents.isEmpty && searchText.isEmpty && noTypeFilter && noTagFilter 
+            ? events.filter { event in
+                guard let source = event["source"] as? String else { return false }
+                return timelineSourceFilters[source] ?? true
+            }.count 
+            : timelineFilteredEvents.count
+        
+        if showing == total {
+            timelineRangeLabel?.stringValue = formatTimelineRangeLabel()
+        } else {
+            timelineRangeLabel?.stringValue = "\(formatTimelineRangeLabel()) - Showing \(showing) of \(total)"
+        }
+    }
+    
+    private func formatTimelineRangeLabel() -> String {
+        guard let firstTimestamp = events.first?["timestamp"] as? Double,
+              let lastTimestamp = events.last?["timestamp"] as? Double else {
+            return "No events"
+        }
+        
+        let startDate = Date(timeIntervalSince1970: firstTimestamp / 1_000_000)
+        let endDate = Date(timeIntervalSince1970: lastTimestamp / 1_000_000)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        
+        let duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+        return "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate)) (\(String(format: "%.1f", duration))s)"
+    }
+    
+    private func populateTimelineTypeFilter() {
+    }
+    
+    private func createTimelineLegend() -> NSView {
+        let legend = NSStackView()
+        legend.orientation = .horizontal
+        legend.spacing = 20
+        legend.alignment = .centerY
+        legend.translatesAutoresizingMaskIntoConstraints = false
+        
+        let sources: [(String, NSColor)] = [
+            ("Interaction", .systemGreen),
+            ("Focus", .systemBlue),
+            ("System", .systemOrange)
+        ]
+        
+        for (name, color) in sources {
+            let itemStack = NSStackView()
+            itemStack.orientation = .horizontal
+            itemStack.spacing = 6
+            
+            let colorBox = NSView()
+            colorBox.wantsLayer = true
+            colorBox.layer?.backgroundColor = color.cgColor
+            colorBox.layer?.cornerRadius = 3
+            colorBox.translatesAutoresizingMaskIntoConstraints = false
+            colorBox.widthAnchor.constraint(equalToConstant: 14).isActive = true
+            colorBox.heightAnchor.constraint(equalToConstant: 14).isActive = true
+            itemStack.addArrangedSubview(colorBox)
+            
+            let label = NSTextField(labelWithString: name)
+            label.font = NSFont.systemFont(ofSize: 14)
+            label.textColor = .secondaryLabelColor
+            itemStack.addArrangedSubview(label)
+            
+            legend.addArrangedSubview(itemStack)
+        }
+        
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        legend.addArrangedSubview(spacer)
+        
+        return legend
+    }
+    
+    private func createTimelineDetailPanel() -> NSView {
+        let panel = NSView()
+        panel.wantsLayer = true
+        panel.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.5).cgColor
+        panel.layer?.cornerRadius = 8
+        panel.layer?.borderWidth = 1
+        panel.layer?.borderColor = NSColor.separatorColor.cgColor
+        panel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = NSTextField(labelWithString: "Event Details")
+        titleLabel.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.isBordered = false
+        titleLabel.isEditable = false
+        titleLabel.backgroundColor = .clear
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        panel.addSubview(titleLabel)
+        
+        let detailLabel = NSTextField(labelWithString: "Select an event from the timeline or Events tab to view details")
+        detailLabel.font = NSFont.systemFont(ofSize: 14)
+        detailLabel.textColor = .secondaryLabelColor
+        detailLabel.isBordered = false
+        detailLabel.isEditable = false
+        detailLabel.backgroundColor = .clear
+        detailLabel.lineBreakMode = .byWordWrapping
+        detailLabel.maximumNumberOfLines = 0
+        detailLabel.translatesAutoresizingMaskIntoConstraints = false
+        panel.addSubview(detailLabel)
+        self.timelineDetailLabel = detailLabel
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: panel.topAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
+            
+            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            detailLabel.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            detailLabel.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12)
+        ])
+        
+        return panel
+    }
+    
+    @objc private func timelineZoomChanged(_ sender: NSSlider) {
+        timelineView?.setZoom(CGFloat(sender.doubleValue))
+    }
+    
+    @objc private func timelineFilterChanged(_ sender: NSButton) {
+        let sources = ["", "interaction", "focus", "system"]
+        if sender.tag > 0 && sender.tag < sources.count {
+            timelineSourceFilters[sources[sender.tag]] = sender.state == .on
+        }
+        applyTimelineFilters()
+    }
+    
+    @objc private func toggleEventDetails(_ sender: NSButton) {
+        timelineView?.showEventDetails = sender.state == .on
+        timelineView?.needsDisplay = true
     }
     
     private func createTimelineControls() -> NSView {
@@ -1522,6 +2634,72 @@ class SessionDetailViewController: NSViewController {
             } catch {
                 print("Failed to load metadata: \(error)")
             }
+        }
+        loadTags()
+    }
+    
+    private func loadTags() {
+        let tagsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/tags.json"
+        
+        if FileManager.default.fileExists(atPath: tagsPath) {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: tagsPath))
+                if let tagsDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    if let eventTagsDict = tagsDict["eventTags"] as? [String: [String]] {
+                        eventTags = [:]
+                        for (key, tags) in eventTagsDict {
+                            if let index = Int(key) {
+                                eventTags[index] = Set(tags)
+                            }
+                        }
+                    }
+                    if let customTags = tagsDict["customTags"] as? [String] {
+                        allTags = allTags.union(Set(customTags))
+                    }
+                    if let notesDict = tagsDict["eventNotes"] as? [String: String] {
+                        eventNotes = [:]
+                        for (key, base64String) in notesDict {
+                            if let index = Int(key), let noteData = Data(base64Encoded: base64String) {
+                                eventNotes[index] = noteData
+                            }
+                        }
+                    }
+                    populateTagFilter()
+                    populateTimelineTagFilter()
+                }
+            } catch {
+                print("Failed to load tags: \(error)")
+            }
+        }
+    }
+    
+    private func saveTags() {
+        let tagsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/tags.json"
+        
+        var eventTagsDict: [String: [String]] = [:]
+        for (index, tags) in eventTags {
+            eventTagsDict[String(index)] = Array(tags)
+        }
+        
+        var eventNotesDict: [String: String] = [:]
+        for (index, noteData) in eventNotes {
+            eventNotesDict[String(index)] = noteData.base64EncodedString()
+        }
+        
+        let defaultTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
+        let customTags = Array(allTags.subtracting(defaultTags))
+        
+        let tagsDict: [String: Any] = [
+            "eventTags": eventTagsDict,
+            "eventNotes": eventNotesDict,
+            "customTags": customTags
+        ]
+        
+        do {
+            let data = try JSONSerialization.data(withJSONObject: tagsDict, options: .prettyPrinted)
+            try data.write(to: URL(fileURLWithPath: tagsPath))
+        } catch {
+            print("Failed to save tags: \(error)")
         }
     }
     
@@ -1721,54 +2899,19 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func updateSimpleTimelineTab() {
-        var text = "📈 TIMELINE\n"
-        text += "═══════════════════════════════════════\n\n"
-        
-        if events.isEmpty {
-            text += "No events to display.\n"
-        } else if let firstTimestamp = events.first?["timestamp"] as? Double,
-                  let lastTimestamp = events.last?["timestamp"] as? Double {
-            
-            let startDate = Date(timeIntervalSince1970: firstTimestamp / 1_000_000)
-            let endDate = Date(timeIntervalSince1970: lastTimestamp / 1_000_000)
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss.SSS"
-            
-            text += "🕐 Start Time: \(formatter.string(from: startDate))\n"
-            text += "🕐 End Time: \(formatter.string(from: endDate))\n"
-            
-            let duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
-            text += "⏱️ Duration: \(String(format: "%.2f", duration)) seconds\n\n"
-            
-            // Group events by source for timeline visualization
-            text += "📊 EVENTS BY SOURCE OVER TIME\n"
-            text += "───────────────────────────────────────\n\n"
-            
-            var sourceEvents: [String: [(Double, String)]] = [:]
-            for event in events {
-                let source = event["source"] as? String ?? "unknown"
-                let timestamp = event["timestamp"] as? Double ?? 0
-                let type = event["type"] as? String ?? "unknown"
-                sourceEvents[source, default: []].append((timestamp, type))
-            }
-            
-            for (source, eventList) in sourceEvents.sorted(by: { $0.key < $1.key }) {
-                let emoji = source == "interaction" ? "👆" : source == "focus" ? "🎯" : source == "system" ? "⚙️" : "📌"
-                text += "\(emoji) \(source.uppercased()): \(eventList.count) events\n"
-                
-                // Show first few events of each source
-                for (ts, type) in eventList.prefix(3) {
-                    let relativeTime = (ts - firstTimestamp) / 1_000_000.0
-                    text += "   └─ +\(String(format: "%.3f", relativeTime))s: \(type)\n"
-                }
-                if eventList.count > 3 {
-                    text += "   └─ ... and \(eventList.count - 3) more\n"
-                }
-                text += "\n"
-            }
+        guard !events.isEmpty else {
+            timelineRangeLabel?.stringValue = "No events"
+            return
         }
         
-        simpleTimelineLabel?.stringValue = text
+        // Populate type filter dropdown
+        populateTimelineTypeFilter()
+        
+        // Update time range label
+        timelineRangeLabel?.stringValue = formatTimelineRangeLabel()
+        
+        // Update the visual timeline
+        timelineView?.setEvents(events)
     }
     
     private func updateOverviewTab() {
@@ -2938,18 +4081,21 @@ class SessionDetailViewController: NSViewController {
     
     @objc private func zoomTimelineIn() {
         timelineView?.zoomIn()
+        if let currentZoom = timelineView?.currentZoom {
+            timelineZoomSlider?.doubleValue = Double(currentZoom)
+        }
     }
     
     @objc private func zoomTimelineOut() {
         timelineView?.zoomOut()
+        if let currentZoom = timelineView?.currentZoom {
+            timelineZoomSlider?.doubleValue = Double(currentZoom)
+        }
     }
     
     @objc private func resetTimelineZoom() {
         timelineView?.resetZoom()
-    }
-    
-    @objc private func toggleEventDetails(_ sender: NSButton) {
-        timelineView?.showEventDetails = sender.state == .on
+        timelineZoomSlider?.doubleValue = 1.0
     }
     
     private func saveSessionMetadata() {
@@ -3034,6 +4180,15 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 textField.textColor = .systemPurple
             }
             
+        case "note":
+            let originalIndex = getOriginalEventIndex(for: row)
+            if eventNotes[originalIndex] != nil {
+                textField.stringValue = "📝"
+                textField.alignment = .center
+            } else {
+                textField.stringValue = ""
+            }
+            
         case "details":
             textField.stringValue = formatEventData(event["data"] as? [String: Any] ?? [:])
             textField.textColor = .secondaryLabelColor
@@ -3068,15 +4223,20 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
     }
     
     private func updateTimelineInfo(with event: [String: Any]) {
-        guard let timelineTab = tabView.tabViewItems.first(where: { $0.label.contains("Timeline") }),
-              let containerView = timelineTab.view,
-              let infoPanel = containerView.subviews.last,
-              let infoLabel = objc_getAssociatedObject(infoPanel, "timelineInfoLabel") as? NSTextField else { return }
+        selectedTimelineEvent = event
         
-        var infoText = "Selected Event:\n\n"
+        var infoText = ""
         
         if let timestamp = event["timestamp"] as? Double {
             infoText += "Time: \(formatTimestamp(timestamp))\n"
+            
+            let originalIndex = findEventIndex(byTimestamp: timestamp)
+            if originalIndex >= 0 {
+                let tags = eventTags[originalIndex] ?? Set<String>()
+                if !tags.isEmpty {
+                    infoText += "Tags: \(tags.sorted().joined(separator: ", "))\n"
+                }
+            }
         }
         
         if let source = event["source"] as? String {
@@ -3091,7 +4251,7 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             infoText += "\nDetails:\n\(formatEventDataDetailed(data))"
         }
         
-        infoLabel.stringValue = infoText
+        timelineDetailLabel?.stringValue = infoText
     }
     
     private func formatEventDataDetailed(_ data: [String: Any]) -> String {
@@ -3122,10 +4282,31 @@ class EnhancedTimelineView: NSView {
     private var panOffset: CGFloat = 0
     var showEventDetails = true
     
+    private var eventRects: [(rect: NSRect, event: [String: Any])] = []
+    private var hoveredEventIndex: Int? = nil
+    var onEventSelected: (([String: Any]) -> Void)?
+    
+    var currentZoom: CGFloat {
+        return zoomLevel
+    }
+    
+    func setZoom(_ level: CGFloat) {
+        zoomLevel = max(0.5, min(level, 5.0))
+        needsDisplay = true
+    }
+    
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
         layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        
+        let trackingArea = NSTrackingArea(
+            rect: bounds,
+            options: [.activeInKeyWindow, .mouseMoved, .mouseEnteredAndExited, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(trackingArea)
     }
     
     required init?(coder: NSCoder) {
@@ -3150,7 +4331,7 @@ class EnhancedTimelineView: NSView {
     }
     
     func zoomOut() {
-        zoomLevel = max(zoomLevel / 1.5, 0.1)
+        zoomLevel = max(zoomLevel / 1.5, 0.5)
         needsDisplay = true
     }
     
@@ -3160,8 +4341,52 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    override func mouseDown(with event: NSEvent) {
+        let locationInView = convert(event.locationInWindow, from: nil)
+        
+        for (index, eventRect) in eventRects.enumerated() {
+            if eventRect.rect.contains(locationInView) {
+                onEventSelected?(eventRect.event)
+                hoveredEventIndex = index
+                needsDisplay = true
+                return
+            }
+        }
+    }
+    
+    override func mouseMoved(with event: NSEvent) {
+        let locationInView = convert(event.locationInWindow, from: nil)
+        
+        var newHoveredIndex: Int? = nil
+        for (index, eventRect) in eventRects.enumerated() {
+            if eventRect.rect.contains(locationInView) {
+                newHoveredIndex = index
+                break
+            }
+        }
+        
+        if newHoveredIndex != hoveredEventIndex {
+            hoveredEventIndex = newHoveredIndex
+            needsDisplay = true
+        }
+        
+        if hoveredEventIndex != nil {
+            NSCursor.pointingHand.set()
+        } else {
+            NSCursor.arrow.set()
+        }
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        hoveredEventIndex = nil
+        NSCursor.arrow.set()
+        needsDisplay = true
+    }
+    
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        
+        eventRects.removeAll()
         
         guard !events.isEmpty else {
             drawEmptyState()
@@ -3174,6 +4399,7 @@ class EnhancedTimelineView: NSView {
         drawTimelineBackground()
         drawEventTracks()
         drawTimeAxis()
+        drawHoveredEventTooltip()
         
         context?.restoreGState()
     }
@@ -3193,12 +4419,10 @@ class EnhancedTimelineView: NSView {
         NSColor.controlBackgroundColor.setFill()
         bounds.fill()
         
-        // Draw grid lines
         NSColor.separatorColor.setStroke()
         let gridPath = NSBezierPath()
         gridPath.lineWidth = 0.5
         
-        // Vertical grid lines
         let stepCount = 10
         for i in 0...stepCount {
             let x = bounds.minX + CGFloat(i) * bounds.width / CGFloat(stepCount)
@@ -3210,100 +4434,125 @@ class EnhancedTimelineView: NSView {
     }
     
     private func drawEventTracks() {
-        let margin: CGFloat = 40
+        let leftMargin: CGFloat = 100
+        let rightMargin: CGFloat = 20
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
+        
         let timelineRect = NSRect(
-            x: margin,
-            y: margin,
-            width: (bounds.width - 2 * margin) * zoomLevel + panOffset,
-            height: bounds.height - 2 * margin
+            x: leftMargin,
+            y: bottomMargin,
+            width: (bounds.width - leftMargin - rightMargin) * zoomLevel,
+            height: bounds.height - topMargin - bottomMargin
         )
         
-        // Group events by source
-        var eventsBySource: [String: [(Double, [String: Any])]] = [:]
-        let duration = endTime - startTime
+        var eventsBySource: [String: [[String: Any]]] = [:]
+        let duration = max(endTime - startTime, 1)
         
         for event in events {
-            guard let timestamp = event["timestamp"] as? Double,
-                  let source = event["source"] as? String else { continue }
-            
+            guard let source = event["source"] as? String else { continue }
             if eventsBySource[source] == nil {
                 eventsBySource[source] = []
             }
-            eventsBySource[source]?.append((timestamp, event))
+            eventsBySource[source]?.append(event)
         }
         
-        let trackHeight = timelineRect.height / CGFloat(eventsBySource.count)
+        let sourceOrder = ["interaction", "focus", "system"]
+        let sortedSources = eventsBySource.keys.sorted { 
+            (sourceOrder.firstIndex(of: $0) ?? 99) < (sourceOrder.firstIndex(of: $1) ?? 99)
+        }
+        
+        let trackCount = max(sortedSources.count, 1)
+        let trackHeight = timelineRect.height / CGFloat(trackCount)
         var trackIndex: CGFloat = 0
         
         let colors: [String: NSColor] = [
-            "focus": .systemBlue,
             "interaction": .systemGreen,
-            "system": .systemOrange,
-            "custom": .systemPurple
+            "focus": .systemBlue,
+            "system": .systemOrange
         ]
         
-        for (source, sourceEvents) in eventsBySource {
+        for source in sortedSources {
+            guard let sourceEvents = eventsBySource[source] else { continue }
             let color = colors[source] ?? .systemGray
-            let trackY = timelineRect.minY + trackIndex * trackHeight
+            let trackY = timelineRect.minY + (CGFloat(trackCount - 1) - trackIndex) * trackHeight
             
-            // Draw track background
-            color.withAlphaComponent(0.1).setFill()
+            color.withAlphaComponent(0.15).setFill()
             NSRect(x: timelineRect.minX, y: trackY, width: timelineRect.width, height: trackHeight).fill()
             
-            // Draw events
-            for (timestamp, event) in sourceEvents {
+            NSColor.separatorColor.setStroke()
+            let separatorPath = NSBezierPath()
+            separatorPath.move(to: NSPoint(x: timelineRect.minX, y: trackY))
+            separatorPath.line(to: NSPoint(x: timelineRect.maxX, y: trackY))
+            separatorPath.lineWidth = 0.5
+            separatorPath.stroke()
+            
+            for (eventIndex, event) in sourceEvents.enumerated() {
+                guard let timestamp = event["timestamp"] as? Double else { continue }
                 let relativeTime = (timestamp - startTime) / duration
-                let x = timelineRect.minX + relativeTime * timelineRect.width
+                let x = timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
                 
-                // Event marker
-                color.setFill()
-                let markerRect = NSRect(x: x - 3, y: trackY + 5, width: 6, height: trackHeight - 10)
-                markerRect.fill()
+                let markerWidth: CGFloat = max(4, 8 * zoomLevel / 2)
+                let markerHeight = trackHeight - 16
+                let markerRect = NSRect(
+                    x: x - markerWidth / 2,
+                    y: trackY + 8,
+                    width: markerWidth,
+                    height: markerHeight
+                )
                 
-                // Event details (if enabled and zoomed in enough)
-                if showEventDetails && zoomLevel > 2.0 {
-                    if let eventType = event["type"] as? String {
-                        let labelAttributes: [NSAttributedString.Key: Any] = [
-                            .font: NSFont.systemFont(ofSize: 16),
-                            .foregroundColor: NSColor.labelColor
-                        ]
-                        let labelSize = eventType.size(withAttributes: labelAttributes)
-                        let labelPoint = NSPoint(x: x - labelSize.width/2, y: trackY + trackHeight - 15)
-                        eventType.draw(at: labelPoint, withAttributes: labelAttributes)
-                    }
+                let isHovered = hoveredEventIndex != nil && eventRects.count == hoveredEventIndex
+                
+                if isHovered {
+                    color.withAlphaComponent(1.0).setFill()
+                    NSColor.white.setStroke()
+                    let path = NSBezierPath(roundedRect: markerRect.insetBy(dx: -2, dy: -2), xRadius: 3, yRadius: 3)
+                    path.fill()
+                    path.lineWidth = 2
+                    path.stroke()
+                } else {
+                    color.withAlphaComponent(0.8).setFill()
+                    let path = NSBezierPath(roundedRect: markerRect, xRadius: 2, yRadius: 2)
+                    path.fill()
                 }
+                
+                let clickableRect = markerRect.insetBy(dx: -4, dy: -4)
+                eventRects.append((rect: clickableRect, event: event))
             }
             
-            // Draw source label
             let label = source.uppercased()
             let labelAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 16, weight: .medium),
+                .font: NSFont.systemFont(ofSize: 14, weight: .medium),
                 .foregroundColor: NSColor.labelColor
             ]
-            label.draw(at: NSPoint(x: 5, y: trackY + trackHeight/2 - 8), withAttributes: labelAttributes)
+            let labelSize = label.size(withAttributes: labelAttributes)
+            label.draw(at: NSPoint(x: 10, y: trackY + trackHeight/2 - labelSize.height/2), withAttributes: labelAttributes)
+            
+            let countLabel = "(\(sourceEvents.count))"
+            let countAttributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 12),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+            countLabel.draw(at: NSPoint(x: 10 + labelSize.width + 4, y: trackY + trackHeight/2 - 6), withAttributes: countAttributes)
             
             trackIndex += 1
         }
     }
     
     private func drawTimeAxis() {
-        let margin: CGFloat = 40
-        let timelineRect = NSRect(
-            x: margin,
-            y: margin,
-            width: (bounds.width - 2 * margin) * zoomLevel,
-            height: bounds.height - 2 * margin
-        )
+        let leftMargin: CGFloat = 100
+        let rightMargin: CGFloat = 20
+        let topMargin: CGFloat = 50
         
-        // Draw time axis line
-        NSColor.labelColor.setStroke()
-        let timePath = NSBezierPath()
-        timePath.move(to: NSPoint(x: timelineRect.minX, y: timelineRect.maxY + 20))
-        timePath.line(to: NSPoint(x: timelineRect.maxX, y: timelineRect.maxY + 20))
-        timePath.lineWidth = 1
-        timePath.stroke()
+        let axisY = bounds.height - topMargin + 10
         
-        // Draw time labels
+        NSColor.separatorColor.setStroke()
+        let axisPath = NSBezierPath()
+        axisPath.move(to: NSPoint(x: leftMargin, y: axisY))
+        axisPath.line(to: NSPoint(x: bounds.width - rightMargin, y: axisY))
+        axisPath.lineWidth = 1
+        axisPath.stroke()
+        
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm:ss"
         
@@ -3311,39 +4560,81 @@ class EnhancedTimelineView: NSView {
         let endDate = Date(timeIntervalSince1970: endTime / 1_000_000)
         
         let timeAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 16, weight: .regular),
+            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
             .foregroundColor: NSColor.secondaryLabelColor
         ]
         
         let startLabel = timeFormatter.string(from: startDate)
+        startLabel.draw(at: NSPoint(x: leftMargin, y: axisY + 5), withAttributes: timeAttributes)
+        
         let endLabel = timeFormatter.string(from: endDate)
+        let endLabelSize = endLabel.size(withAttributes: timeAttributes)
+        endLabel.draw(at: NSPoint(x: bounds.width - rightMargin - endLabelSize.width, y: axisY + 5), withAttributes: timeAttributes)
         
-        startLabel.draw(at: NSPoint(x: timelineRect.minX, y: timelineRect.maxY + 25), withAttributes: timeAttributes)
-        endLabel.draw(at: NSPoint(x: timelineRect.maxX - 60, y: timelineRect.maxY + 25), withAttributes: timeAttributes)
+        let markerCount = min(max(Int(zoomLevel * 3), 3), 8)
+        let duration = endTime - startTime
+        let timelineWidth = bounds.width - leftMargin - rightMargin
         
-        // Draw intermediate time markers if zoomed in
-        if zoomLevel > 1.5 {
-            let markerCount = min(Int(zoomLevel * 3), 10)
-            let duration = endTime - startTime
+        for i in 1..<markerCount {
+            let progress = CGFloat(i) / CGFloat(markerCount)
+            let markerX = leftMargin + progress * timelineWidth * zoomLevel
             
-            for i in 1..<markerCount {
-                let progress = CGFloat(i) / CGFloat(markerCount)
-                let markerTime = startTime + Double(progress) * duration
-                let markerDate = Date(timeIntervalSince1970: markerTime / 1_000_000)
-                let markerX = timelineRect.minX + progress * timelineRect.width
-                
-                // Draw tick mark
-                let tickPath = NSBezierPath()
-                tickPath.move(to: NSPoint(x: markerX, y: timelineRect.maxY + 15))
-                tickPath.line(to: NSPoint(x: markerX, y: timelineRect.maxY + 25))
-                tickPath.lineWidth = 0.5
-                tickPath.stroke()
-                
-                // Draw time label
-                let markerLabel = timeFormatter.string(from: markerDate)
-                markerLabel.draw(at: NSPoint(x: markerX - 25, y: timelineRect.maxY + 27), withAttributes: timeAttributes)
-            }
+            guard markerX < bounds.width - rightMargin - 40 else { continue }
+            
+            let tickPath = NSBezierPath()
+            tickPath.move(to: NSPoint(x: markerX, y: axisY - 3))
+            tickPath.line(to: NSPoint(x: markerX, y: axisY + 3))
+            tickPath.lineWidth = 1
+            tickPath.stroke()
+            
+            let markerTime = startTime + Double(progress) * duration
+            let markerDate = Date(timeIntervalSince1970: markerTime / 1_000_000)
+            let markerLabel = timeFormatter.string(from: markerDate)
+            let labelSize = markerLabel.size(withAttributes: timeAttributes)
+            markerLabel.draw(at: NSPoint(x: markerX - labelSize.width/2, y: axisY + 5), withAttributes: timeAttributes)
         }
+    }
+    
+    private func drawHoveredEventTooltip() {
+        guard let hoveredIndex = hoveredEventIndex,
+              hoveredIndex < eventRects.count else { return }
+        
+        let eventData = eventRects[hoveredIndex]
+        let event = eventData.event
+        let rect = eventData.rect
+        
+        var tooltipText = ""
+        if let type = event["type"] as? String {
+            tooltipText = type.replacingOccurrences(of: "_", with: " ")
+        }
+        if let timestamp = event["timestamp"] as? Double {
+            let date = Date(timeIntervalSince1970: timestamp / 1_000_000)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss.SSS"
+            tooltipText += "\n" + formatter.string(from: date)
+        }
+        
+        let tooltipAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12),
+            .foregroundColor: NSColor.white
+        ]
+        let tooltipSize = tooltipText.size(withAttributes: tooltipAttributes)
+        let padding: CGFloat = 8
+        let tooltipRect = NSRect(
+            x: rect.midX - tooltipSize.width/2 - padding,
+            y: rect.maxY + 5,
+            width: tooltipSize.width + padding * 2,
+            height: tooltipSize.height + padding * 2
+        )
+        
+        NSColor.black.withAlphaComponent(0.85).setFill()
+        let tooltipPath = NSBezierPath(roundedRect: tooltipRect, xRadius: 6, yRadius: 6)
+        tooltipPath.fill()
+        
+        tooltipText.draw(
+            at: NSPoint(x: tooltipRect.minX + padding, y: tooltipRect.minY + padding),
+            withAttributes: tooltipAttributes
+        )
     }
 }
 
