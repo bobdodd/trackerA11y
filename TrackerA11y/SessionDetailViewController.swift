@@ -39,6 +39,11 @@ class SessionDetailViewController: NSViewController {
     // Session Statistics
     private var sessionStats = SessionStats()
     
+    // Simple tab labels for direct data display
+    private var simpleOverviewLabel: NSTextField?
+    private var simpleEventsLabel: NSTextField?
+    private var simpleTimelineLabel: NSTextField?
+    
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
         self.sessionData = sessionData
@@ -110,96 +115,31 @@ class SessionDetailViewController: NSViewController {
     
     // Removed complex header setup - simplified approach
     
+    // MARK: - Simple Overview Tab
+    
     private func createEnhancedOverviewView() -> NSView {
         let containerView = NSView()
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         
-        // Content view that will hold all cards (no scroll view - content should fit)
-        let contentView = NSView()
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(contentView)
+        // Simple text label that will display all overview data
+        let label = NSTextField(labelWithString: "Loading session data...")
+        label.font = NSFont.systemFont(ofSize: 16)
+        label.textColor = .labelColor
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(label)
         
-        // Header with session title and quick actions
-        let headerCard = createProfessionalHeaderCard()
-        contentView.addSubview(headerCard)
+        // Store reference for updates
+        self.simpleOverviewLabel = label
+        print("✅ simpleOverviewLabel assigned")
         
-        // First row: Key metrics cards
-        let metricsCard = createKeyMetricsCard()
-        let statusCard = createSessionStatusCard()
-        contentView.addSubview(metricsCard)
-        contentView.addSubview(statusCard)
-        
-        // Second row: Detailed analytics
-        let eventAnalyticsCard = createEventAnalyticsCard()
-        let timelineCard = createTimelineOverviewCard()
-        contentView.addSubview(eventAnalyticsCard)
-        contentView.addSubview(timelineCard)
-        
-        // Third row: Full-width insights
-        let insightsCard = createSessionInsightsCard()
-        contentView.addSubview(insightsCard)
-        
-        // Action buttons card
-        let actionsCard = createSessionActionsCard()
-        contentView.addSubview(actionsCard)
-        
-        // Layout constraints - compact spacing, content fills container
         NSLayoutConstraint.activate([
-            // Content view fills container
-            contentView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            
-            // Header card
-            headerCard.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            headerCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            headerCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            headerCard.heightAnchor.constraint(equalToConstant: 90),
-            
-            // First row: Key metrics (side by side) - compact
-            metricsCard.topAnchor.constraint(equalTo: headerCard.bottomAnchor, constant: 8),
-            metricsCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            metricsCard.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.48, constant: -18),
-            metricsCard.heightAnchor.constraint(equalToConstant: 100),
-            
-            statusCard.topAnchor.constraint(equalTo: headerCard.bottomAnchor, constant: 8),
-            statusCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            statusCard.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.48, constant: -18),
-            statusCard.heightAnchor.constraint(equalToConstant: 100),
-            
-            // Second row: Analytics (side by side) - compact
-            eventAnalyticsCard.topAnchor.constraint(equalTo: metricsCard.bottomAnchor, constant: 8),
-            eventAnalyticsCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            eventAnalyticsCard.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.58, constant: -18),
-            eventAnalyticsCard.heightAnchor.constraint(equalToConstant: 140),
-            
-            timelineCard.topAnchor.constraint(equalTo: statusCard.bottomAnchor, constant: 8),
-            timelineCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            timelineCard.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.38, constant: -18),
-            timelineCard.heightAnchor.constraint(equalToConstant: 140),
-            
-            // Third row: Full-width insights - compact
-            insightsCard.topAnchor.constraint(equalTo: eventAnalyticsCard.bottomAnchor, constant: 8),
-            insightsCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            insightsCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            insightsCard.heightAnchor.constraint(equalToConstant: 100),
-            
-            // Actions card at bottom - compact
-            actionsCard.topAnchor.constraint(equalTo: insightsCard.bottomAnchor, constant: 8),
-            actionsCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            actionsCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            actionsCard.heightAnchor.constraint(equalToConstant: 60)
+            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
+            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
         ])
-        
-        // Store references for updates
-        objc_setAssociatedObject(containerView, "headerCard", headerCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(containerView, "metricsCard", metricsCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(containerView, "statusCard", statusCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(containerView, "eventAnalyticsCard", eventAnalyticsCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(containerView, "timelineCard", timelineCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(containerView, "insightsCard", insightsCard, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         
         return containerView
     }
@@ -807,23 +747,29 @@ class SessionDetailViewController: NSViewController {
         return card
     }
     
+    // MARK: - Simple Events Tab
+    
     private func createEnhancedEventsView() -> NSView {
         let containerView = NSView()
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         
-        let eventsLabel = NSTextField(labelWithString: "Events Analysis\n\nLoading event data...")
-        eventsLabel.font = NSFont.systemFont(ofSize: 16)
-        eventsLabel.textColor = .labelColor
-        eventsLabel.lineBreakMode = .byWordWrapping
-        eventsLabel.maximumNumberOfLines = 0
-        eventsLabel.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(eventsLabel)
+        let label = NSTextField(labelWithString: "Loading events...")
+        label.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        label.textColor = .labelColor
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(label)
+        
+        // Store reference for updates
+        self.simpleEventsLabel = label
+        print("✅ simpleEventsLabel assigned")
         
         NSLayoutConstraint.activate([
-            eventsLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
-            eventsLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            eventsLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
+            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
+            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
         ])
         
         return containerView
@@ -894,23 +840,29 @@ class SessionDetailViewController: NSViewController {
         return toolbar
     }
     
+    // MARK: - Simple Timeline Tab
+    
     private func createEnhancedTimelineView() -> NSView {
         let containerView = NSView()
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         
-        let timelineLabel = NSTextField(labelWithString: "Timeline Visualization\n\nEvent timeline will appear here once data is loaded.")
-        timelineLabel.font = NSFont.systemFont(ofSize: 16)
-        timelineLabel.textColor = .labelColor
-        timelineLabel.lineBreakMode = .byWordWrapping
-        timelineLabel.maximumNumberOfLines = 0
-        timelineLabel.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(timelineLabel)
+        let label = NSTextField(labelWithString: "Loading timeline...")
+        label.font = NSFont.systemFont(ofSize: 16)
+        label.textColor = .labelColor
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(label)
+        
+        // Store reference for updates
+        self.simpleTimelineLabel = label
+        print("✅ simpleTimelineLabel assigned")
         
         NSLayoutConstraint.activate([
-            timelineLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
-            timelineLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            timelineLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
+            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
+            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
         ])
         
         return containerView
@@ -1088,12 +1040,165 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func updateAllViews() {
-        updateOverviewTab()
-        updateStatsView()
-        updateEventTable()
-        updateTimeline()
-        updateNotesFromMetadata()
-        updateTagsFromMetadata()
+        updateSimpleOverviewTab()
+        updateSimpleEventsTab()
+        updateSimpleTimelineTab()
+    }
+    
+    // MARK: - Simple Tab Update Methods with Direct Data References
+    
+    private func updateSimpleOverviewTab() {
+        print("🔄 updateSimpleOverviewTab called - events count: \(events.count)")
+        print("🔄 simpleOverviewLabel is nil? \(simpleOverviewLabel == nil)")
+        
+        var text = "📊 SESSION OVERVIEW\n"
+        text += "═══════════════════════════════════════\n\n"
+        
+        text += "🆔 Session ID: \(sessionId)\n\n"
+        
+        // Status from sessionData
+        if let status = sessionData["status"] as? String {
+            let statusEmoji = status.lowercased() == "active" ? "🟢" : "🔴"
+            text += "\(statusEmoji) Status: \(status.uppercased())\n"
+        }
+        
+        // Event count - use actual events array
+        text += "📝 Total Events: \(events.count)\n"
+        
+        // Duration from events
+        if events.count > 1,
+           let firstTimestamp = events.first?["timestamp"] as? Double,
+           let lastTimestamp = events.last?["timestamp"] as? Double {
+            let duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+            text += "⏱️ Duration: \(String(format: "%.1f", duration)) seconds\n"
+            
+            let rate = Double(events.count) / max(duration, 0.1)
+            text += "⚡ Event Rate: \(String(format: "%.1f", rate)) events/sec\n"
+        }
+        
+        text += "\n📈 EVENT BREAKDOWN\n"
+        text += "───────────────────────────────────────\n"
+        
+        // Count events by type
+        var typeCounts: [String: Int] = [:]
+        for event in events {
+            let eventType = event["type"] as? String ?? "unknown"
+            typeCounts[eventType, default: 0] += 1
+        }
+        
+        // Sort by count and display
+        let sortedTypes = typeCounts.sorted { $0.value > $1.value }
+        for (type, count) in sortedTypes.prefix(10) {
+            let percentage = Double(count) / Double(max(events.count, 1)) * 100
+            text += "• \(type): \(count) (\(String(format: "%.0f", percentage))%)\n"
+        }
+        
+        text += "\n🔍 SOURCE BREAKDOWN\n"
+        text += "───────────────────────────────────────\n"
+        
+        // Count events by source
+        var sourceCounts: [String: Int] = [:]
+        for event in events {
+            let source = event["source"] as? String ?? "unknown"
+            sourceCounts[source, default: 0] += 1
+        }
+        
+        for (source, count) in sourceCounts.sorted(by: { $0.value > $1.value }) {
+            let percentage = Double(count) / Double(max(events.count, 1)) * 100
+            let emoji = source == "interaction" ? "👆" : source == "focus" ? "🎯" : source == "system" ? "⚙️" : "📌"
+            text += "\(emoji) \(source.capitalized): \(count) (\(String(format: "%.0f", percentage))%)\n"
+        }
+        
+        print("🔄 Setting simpleOverviewLabel text (\(text.count) chars)")
+        simpleOverviewLabel?.stringValue = text
+        print("🔄 simpleOverviewLabel stringValue length: \(simpleOverviewLabel?.stringValue.count ?? -1)")
+    }
+    
+    private func updateSimpleEventsTab() {
+        print("🔄 updateSimpleEventsTab called - events count: \(events.count)")
+        print("🔄 simpleEventsLabel is nil? \(simpleEventsLabel == nil)")
+        var text = "📝 EVENT LOG\n"
+        text += "═══════════════════════════════════════\n\n"
+        text += "Session: \(sessionId)\n"
+        text += "Total Events: \(events.count)\n\n"
+        
+        if events.isEmpty {
+            text += "No events recorded for this session.\n"
+        } else {
+            text += "─────────────────────────────────────────────────────────────────────────────────\n"
+            text += "#      | TIME         | SOURCE     | TYPE                 | DETAILS\n"
+            text += "─────────────────────────────────────────────────────────────────────────────────\n"
+            
+            for (index, event) in events.prefix(100).enumerated() {
+                let timestamp = event["timestamp"] as? Double ?? 0
+                let time = formatTimestamp(timestamp)
+                let source = (event["source"] as? String ?? "unknown").prefix(10)
+                let type = (event["type"] as? String ?? "unknown").prefix(20)
+                let details = formatEventData(event["data"] as? [String: Any] ?? [:]).prefix(40)
+                
+                let paddedIndex = String(format: "%04d", index + 1)
+                let paddedSource = String(source).padding(toLength: 10, withPad: " ", startingAt: 0)
+                let paddedType = String(type).padding(toLength: 20, withPad: " ", startingAt: 0)
+                text += "\(paddedIndex) | \(time) | \(paddedSource) | \(paddedType) | \(details)\n"
+            }
+            
+            if events.count > 100 {
+                text += "\n... and \(events.count - 100) more events\n"
+            }
+        }
+        
+        simpleEventsLabel?.stringValue = text
+    }
+    
+    private func updateSimpleTimelineTab() {
+        var text = "📈 TIMELINE\n"
+        text += "═══════════════════════════════════════\n\n"
+        
+        if events.isEmpty {
+            text += "No events to display.\n"
+        } else if let firstTimestamp = events.first?["timestamp"] as? Double,
+                  let lastTimestamp = events.last?["timestamp"] as? Double {
+            
+            let startDate = Date(timeIntervalSince1970: firstTimestamp / 1_000_000)
+            let endDate = Date(timeIntervalSince1970: lastTimestamp / 1_000_000)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss.SSS"
+            
+            text += "🕐 Start Time: \(formatter.string(from: startDate))\n"
+            text += "🕐 End Time: \(formatter.string(from: endDate))\n"
+            
+            let duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+            text += "⏱️ Duration: \(String(format: "%.2f", duration)) seconds\n\n"
+            
+            // Group events by source for timeline visualization
+            text += "📊 EVENTS BY SOURCE OVER TIME\n"
+            text += "───────────────────────────────────────\n\n"
+            
+            var sourceEvents: [String: [(Double, String)]] = [:]
+            for event in events {
+                let source = event["source"] as? String ?? "unknown"
+                let timestamp = event["timestamp"] as? Double ?? 0
+                let type = event["type"] as? String ?? "unknown"
+                sourceEvents[source, default: []].append((timestamp, type))
+            }
+            
+            for (source, eventList) in sourceEvents.sorted(by: { $0.key < $1.key }) {
+                let emoji = source == "interaction" ? "👆" : source == "focus" ? "🎯" : source == "system" ? "⚙️" : "📌"
+                text += "\(emoji) \(source.uppercased()): \(eventList.count) events\n"
+                
+                // Show first few events of each source
+                for (ts, type) in eventList.prefix(3) {
+                    let relativeTime = (ts - firstTimestamp) / 1_000_000.0
+                    text += "   └─ +\(String(format: "%.3f", relativeTime))s: \(type)\n"
+                }
+                if eventList.count > 3 {
+                    text += "   └─ ... and \(eventList.count - 3) more\n"
+                }
+                text += "\n"
+            }
+        }
+        
+        simpleTimelineLabel?.stringValue = text
     }
     
     private func updateOverviewTab() {
