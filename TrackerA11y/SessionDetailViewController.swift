@@ -2042,6 +2042,9 @@ class SessionDetailViewController: NSViewController {
         timeline.onEventSelected = { [weak self] event in
             self?.updateTimelineInfo(with: event)
         }
+        timeline.onEventRightClicked = { [weak self] event, eventIndex, nsEvent in
+            self?.showTimelineEventContextMenu(event: event, eventIndex: eventIndex, nsEvent: nsEvent)
+        }
         self.timelineView = timeline
         
         // Wrap timeline in scroll view for horizontal scrolling
@@ -4361,6 +4364,9 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 if !tags.isEmpty {
                     infoText += "Tags: \(tags.sorted().joined(separator: ", "))\n"
                 }
+                if eventNotes[originalIndex] != nil {
+                    infoText += "📝 Has note\n"
+                }
             }
         }
         
@@ -4377,6 +4383,14 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         }
         
         timelineDetailLabel?.stringValue = infoText
+    }
+    
+    private func showTimelineEventContextMenu(event: [String: Any], eventIndex: Int, nsEvent: NSEvent) {
+        let menu = createTagsNotesContextMenu(for: eventIndex)
+        
+        if let timelineView = self.timelineView {
+            NSMenu.popUpContextMenu(menu, with: nsEvent, for: timelineView)
+        }
     }
     
     private func formatEventDataDetailed(_ data: [String: Any]) -> String {
@@ -4407,9 +4421,10 @@ class EnhancedTimelineView: NSView {
     private var panOffset: CGFloat = 0
     var showEventDetails = true
     
-    private var eventRects: [(rect: NSRect, event: [String: Any])] = []
+    private var eventRects: [(rect: NSRect, event: [String: Any], eventIndex: Int)] = []
     private var hoveredEventIndex: Int? = nil
     var onEventSelected: (([String: Any]) -> Void)?
+    var onEventRightClicked: (([String: Any], Int, NSEvent) -> Void)?
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -4477,6 +4492,18 @@ class EnhancedTimelineView: NSView {
                 return
             }
         }
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        let locationInView = convert(event.locationInWindow, from: nil)
+        
+        for eventRect in eventRects {
+            if eventRect.rect.contains(locationInView) {
+                onEventRightClicked?(eventRect.event, eventRect.eventIndex, event)
+                return
+            }
+        }
+        super.rightMouseDown(with: event)
     }
     
     override func mouseMoved(with event: NSEvent) {
@@ -4571,15 +4598,15 @@ class EnhancedTimelineView: NSView {
             height: bounds.height - topMargin - bottomMargin
         )
         
-        var eventsBySource: [String: [[String: Any]]] = [:]
+        var eventsBySource: [String: [(event: [String: Any], originalIndex: Int)]] = [:]
         let duration = max(endTime - startTime, 1)
         
-        for event in events {
+        for (index, event) in events.enumerated() {
             guard let source = event["source"] as? String else { continue }
             if eventsBySource[source] == nil {
                 eventsBySource[source] = []
             }
-            eventsBySource[source]?.append(event)
+            eventsBySource[source]?.append((event: event, originalIndex: index))
         }
         
         let sourceOrder = ["interaction", "focus", "system"]
@@ -4612,7 +4639,9 @@ class EnhancedTimelineView: NSView {
             separatorPath.lineWidth = 0.5
             separatorPath.stroke()
             
-            for (eventIndex, event) in sourceEvents.enumerated() {
+            for eventData in sourceEvents {
+                let event = eventData.event
+                let originalIndex = eventData.originalIndex
                 guard let timestamp = event["timestamp"] as? Double else { continue }
                 let relativeTime = (timestamp - startTime) / duration
                 let x = timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
@@ -4642,7 +4671,7 @@ class EnhancedTimelineView: NSView {
                 }
                 
                 let clickableRect = markerRect.insetBy(dx: -4, dy: -4)
-                eventRects.append((rect: clickableRect, event: event))
+                eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
             }
             
             let label = source.uppercased()
