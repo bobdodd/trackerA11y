@@ -115,33 +115,86 @@ class SessionDetailViewController: NSViewController {
     
     // Removed complex header setup - simplified approach
     
-    // MARK: - Simple Overview Tab
+    // MARK: - Card-Based Overview Tab (Flexbox-style with NSStackView)
     
     private func createEnhancedOverviewView() -> NSView {
-        let containerView = NSView()
-        containerView.wantsLayer = true
-        containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        // Main vertical stack (like flex-direction: column)
+        let mainStack = NSStackView()
+        mainStack.orientation = .vertical
+        mainStack.spacing = 12
+        mainStack.alignment = .centerX
+        mainStack.distribution = .fill
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        mainStack.edgeInsets = NSEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
         
-        // Simple text label that will display all overview data
-        let label = NSTextField(labelWithString: "Loading session data...")
-        label.font = NSFont.systemFont(ofSize: 16)
-        label.textColor = .labelColor
-        label.lineBreakMode = .byWordWrapping
-        label.maximumNumberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(label)
+        // Row 1: Header (full width)
+        let headerCard = createProfessionalHeaderCard()
+        mainStack.addArrangedSubview(headerCard)
         
-        // Store reference for updates
-        self.simpleOverviewLabel = label
-        print("✅ simpleOverviewLabel assigned")
+        // Row 2: Metrics + Status (side by side)
+        let row1Stack = NSStackView()
+        row1Stack.orientation = .horizontal
+        row1Stack.spacing = 12
+        row1Stack.distribution = .fillEqually
+        row1Stack.translatesAutoresizingMaskIntoConstraints = false
         
+        let metricsCard = createKeyMetricsCard()
+        let statusCard = createSessionStatusCard()
+        row1Stack.addArrangedSubview(metricsCard)
+        row1Stack.addArrangedSubview(statusCard)
+        mainStack.addArrangedSubview(row1Stack)
+        
+        // Row 3: Event Analytics + Timeline (side by side, analytics wider)
+        let row2Stack = NSStackView()
+        row2Stack.orientation = .horizontal
+        row2Stack.spacing = 12
+        row2Stack.distribution = .fill
+        row2Stack.translatesAutoresizingMaskIntoConstraints = false
+        
+        let eventAnalyticsCard = createEventAnalyticsCard()
+        let timelineCard = createTimelineOverviewCard()
+        row2Stack.addArrangedSubview(eventAnalyticsCard)
+        row2Stack.addArrangedSubview(timelineCard)
+        mainStack.addArrangedSubview(row2Stack)
+        
+        // Row 4: AI Insights (full width)
+        let insightsCard = createSessionInsightsCard()
+        mainStack.addArrangedSubview(insightsCard)
+        
+        // Row 5: Actions (full width)
+        let actionsCard = createSessionActionsCard()
+        mainStack.addArrangedSubview(actionsCard)
+        
+        // Wrap in scroll view for smaller windows
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.backgroundColor = .controlBackgroundColor
+        scrollView.drawsBackground = true
+        
+        let clipView = NSClipView()
+        clipView.documentView = mainStack
+        clipView.drawsBackground = false
+        scrollView.contentView = clipView
+        
+        // Constraints for stack view width to match scroll view
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
-            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
+            mainStack.widthAnchor.constraint(equalTo: clipView.widthAnchor),
+            
+            // Row widths fill parent
+            row1Stack.widthAnchor.constraint(equalTo: mainStack.widthAnchor, constant: -32),
+            row2Stack.widthAnchor.constraint(equalTo: mainStack.widthAnchor, constant: -32),
+            headerCard.widthAnchor.constraint(equalTo: mainStack.widthAnchor, constant: -32),
+            insightsCard.widthAnchor.constraint(equalTo: mainStack.widthAnchor, constant: -32),
+            actionsCard.widthAnchor.constraint(equalTo: mainStack.widthAnchor, constant: -32),
+            
+            // Analytics card gets 60% width in row2
+            eventAnalyticsCard.widthAnchor.constraint(equalTo: row2Stack.widthAnchor, multiplier: 0.58)
         ])
         
-        return containerView
+        return scrollView
     }
     
     private func createStyledSessionInfoCard() -> NSView {
@@ -254,6 +307,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createProfessionalHeaderCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.controlAccentColor.withAlphaComponent(0.1))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         // Session icon and title
         let iconLabel = NSTextField(labelWithString: "📊")
@@ -278,6 +332,8 @@ class SessionDetailViewController: NSViewController {
         card.addSubview(statusIndicator)
         
         NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 90),
+            
             iconLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 24),
             iconLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
             
@@ -286,6 +342,7 @@ class SessionDetailViewController: NSViewController {
             
             subtitleLabel.leadingAnchor.constraint(equalTo: iconLabel.trailingAnchor, constant: 16),
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            subtitleLabel.bottomAnchor.constraint(lessThanOrEqualTo: card.bottomAnchor, constant: -16),
             
             statusIndicator.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -24),
             statusIndicator.centerYAnchor.constraint(equalTo: card.centerYAnchor),
@@ -298,6 +355,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createKeyMetricsCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.systemBlue.withAlphaComponent(0.05))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         let titleLabel = NSTextField(labelWithString: "📈 Key Metrics")
         titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
@@ -305,8 +363,11 @@ class SessionDetailViewController: NSViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(titleLabel)
         
-        // Metrics container
-        let metricsContainer = NSView()
+        // Metrics container using stack view for auto-sizing
+        let metricsContainer = NSStackView()
+        metricsContainer.orientation = .vertical
+        metricsContainer.spacing = 8
+        metricsContainer.alignment = .leading
         metricsContainer.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(metricsContainer)
         
@@ -314,13 +375,15 @@ class SessionDetailViewController: NSViewController {
         self.metricsCardContainer = metricsContainer
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             
-            metricsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            metricsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             metricsContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             metricsContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            metricsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20)
+            metricsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
         
         return card
@@ -328,6 +391,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createSessionStatusCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.systemGreen.withAlphaComponent(0.05))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         let titleLabel = NSTextField(labelWithString: "⚡ Session Status")
         titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
@@ -335,8 +399,11 @@ class SessionDetailViewController: NSViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(titleLabel)
         
-        // Status container
-        let statusContainer = NSView()
+        // Status container using stack view
+        let statusContainer = NSStackView()
+        statusContainer.orientation = .vertical
+        statusContainer.spacing = 8
+        statusContainer.alignment = .leading
         statusContainer.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(statusContainer)
         
@@ -344,13 +411,15 @@ class SessionDetailViewController: NSViewController {
         self.statusCardContainer = statusContainer
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             
-            statusContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            statusContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             statusContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             statusContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            statusContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20)
+            statusContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
         
         return card
@@ -358,6 +427,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createEventAnalyticsCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.systemPurple.withAlphaComponent(0.05))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         let titleLabel = NSTextField(labelWithString: "📊 Event Analytics")
         titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
@@ -365,8 +435,11 @@ class SessionDetailViewController: NSViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(titleLabel)
         
-        // Analytics container
-        let analyticsContainer = NSView()
+        // Analytics container using stack view
+        let analyticsContainer = NSStackView()
+        analyticsContainer.orientation = .vertical
+        analyticsContainer.spacing = 6
+        analyticsContainer.alignment = .leading
         analyticsContainer.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(analyticsContainer)
         
@@ -374,13 +447,15 @@ class SessionDetailViewController: NSViewController {
         self.eventAnalyticsCardContainer = analyticsContainer
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             
-            analyticsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            analyticsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             analyticsContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             analyticsContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            analyticsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20)
+            analyticsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
         
         return card
@@ -388,6 +463,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createTimelineOverviewCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.systemOrange.withAlphaComponent(0.05))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         let titleLabel = NSTextField(labelWithString: "⏱️ Timeline")
         titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
@@ -395,8 +471,11 @@ class SessionDetailViewController: NSViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(titleLabel)
         
-        // Timeline preview container
-        let timelineContainer = NSView()
+        // Timeline container using stack view
+        let timelineContainer = NSStackView()
+        timelineContainer.orientation = .vertical
+        timelineContainer.spacing = 6
+        timelineContainer.alignment = .leading
         timelineContainer.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(timelineContainer)
         
@@ -404,13 +483,15 @@ class SessionDetailViewController: NSViewController {
         self.timelineCardContainer = timelineContainer
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             
-            timelineContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            timelineContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             timelineContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             timelineContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            timelineContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20)
+            timelineContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
         
         return card
@@ -418,6 +499,7 @@ class SessionDetailViewController: NSViewController {
     
     private func createSessionInsightsCard() -> NSView {
         let card = createModernCard(bgColor: NSColor.systemTeal.withAlphaComponent(0.05))
+        card.setContentHuggingPriority(.defaultLow, for: .vertical)
         
         let titleLabel = NSTextField(labelWithString: "🧠 AI Insights")
         titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
@@ -425,8 +507,11 @@ class SessionDetailViewController: NSViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(titleLabel)
         
-        // Insights container
-        let insightsContainer = NSView()
+        // Insights container using stack view
+        let insightsContainer = NSStackView()
+        insightsContainer.orientation = .vertical
+        insightsContainer.spacing = 6
+        insightsContainer.alignment = .leading
         insightsContainer.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(insightsContainer)
         
@@ -434,13 +519,15 @@ class SessionDetailViewController: NSViewController {
         self.insightsCardContainer = insightsContainer
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             
-            insightsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            insightsContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             insightsContainer.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             insightsContainer.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            insightsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20)
+            insightsContainer.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
         
         return card
@@ -1040,63 +1127,113 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func updateAllViews() {
-        updateSimpleOverviewTab()
+        updateOverviewCards()
         updateSimpleEventsTab()
         updateSimpleTimelineTab()
     }
     
-    // MARK: - Simple Tab Update Methods with Direct Data References
+    // MARK: - Card Update Methods with Direct Data References
     
-    private func updateSimpleOverviewTab() {
-        print("🔄 updateSimpleOverviewTab called - events count: \(events.count)")
-        print("🔄 simpleOverviewLabel is nil? \(simpleOverviewLabel == nil)")
+    private func updateOverviewCards() {
+        print("🔄 updateOverviewCards called - events count: \(events.count)")
         
-        var text = "📊 SESSION OVERVIEW\n"
-        text += "═══════════════════════════════════════\n\n"
+        // Update Key Metrics Card
+        updateMetricsCard()
         
-        text += "🆔 Session ID: \(sessionId)\n\n"
+        // Update Session Status Card
+        updateStatusCard()
         
-        // Status from sessionData
-        if let status = sessionData["status"] as? String {
-            let statusEmoji = status.lowercased() == "active" ? "🟢" : "🔴"
-            text += "\(statusEmoji) Status: \(status.uppercased())\n"
-        }
+        // Update Event Analytics Card
+        updateEventAnalyticsCard()
         
-        // Event count - use actual events array
-        text += "📝 Total Events: \(events.count)\n"
+        // Update Timeline Card
+        updateTimelineCard()
         
-        // Duration from events
+        // Update Insights Card
+        updateInsightsCard()
+    }
+    
+    private func updateMetricsCard() {
+        guard let container = metricsCardContainer as? NSStackView else { return }
+        container.arrangedSubviews.forEach { container.removeArrangedSubview($0); $0.removeFromSuperview() }
+        
+        var duration = 0.0
+        var rate = 0.0
+        
         if events.count > 1,
            let firstTimestamp = events.first?["timestamp"] as? Double,
            let lastTimestamp = events.last?["timestamp"] as? Double {
-            let duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
-            text += "⏱️ Duration: \(String(format: "%.1f", duration)) seconds\n"
-            
-            let rate = Double(events.count) / max(duration, 0.1)
-            text += "⚡ Event Rate: \(String(format: "%.1f", rate)) events/sec\n"
+            duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+            rate = Double(events.count) / max(duration, 0.1)
         }
         
-        text += "\n📈 EVENT BREAKDOWN\n"
-        text += "───────────────────────────────────────\n"
+        let eventsLabel = createMetricLabel("📊 Total Events: \(events.count)", size: 18)
+        let rateLabel = createMetricLabel("⚡ Rate: \(String(format: "%.1f", rate))/sec", size: 18)
         
-        // Count events by type
+        container.addArrangedSubview(eventsLabel)
+        container.addArrangedSubview(rateLabel)
+    }
+    
+    private func updateStatusCard() {
+        guard let container = statusCardContainer as? NSStackView else { return }
+        container.arrangedSubviews.forEach { container.removeArrangedSubview($0); $0.removeFromSuperview() }
+        
+        let status = sessionData["status"] as? String ?? "Unknown"
+        var duration = 0.0
+        
+        if events.count > 1,
+           let firstTimestamp = events.first?["timestamp"] as? Double,
+           let lastTimestamp = events.last?["timestamp"] as? Double {
+            duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+        }
+        
+        // Status row with dot
+        let statusRow = NSStackView()
+        statusRow.orientation = .horizontal
+        statusRow.spacing = 8
+        statusRow.alignment = .centerY
+        
+        let statusDot = NSView()
+        statusDot.wantsLayer = true
+        statusDot.layer?.cornerRadius = 6
+        statusDot.layer?.backgroundColor = (status.lowercased() == "active" ? NSColor.systemGreen : NSColor.systemRed).cgColor
+        statusDot.translatesAutoresizingMaskIntoConstraints = false
+        statusDot.widthAnchor.constraint(equalToConstant: 12).isActive = true
+        statusDot.heightAnchor.constraint(equalToConstant: 12).isActive = true
+        
+        let statusLabel = createMetricLabel("Status: \(status.capitalized)", size: 18, color: .labelColor)
+        statusRow.addArrangedSubview(statusDot)
+        statusRow.addArrangedSubview(statusLabel)
+        
+        let durationLabel = createMetricLabel("⏱️ Duration: \(String(format: "%.1f", duration))s", size: 18, color: .labelColor)
+        
+        container.addArrangedSubview(statusRow)
+        container.addArrangedSubview(durationLabel)
+    }
+    
+    private func updateEventAnalyticsCard() {
+        guard let container = eventAnalyticsCardContainer as? NSStackView else { return }
+        container.arrangedSubviews.forEach { container.removeArrangedSubview($0); $0.removeFromSuperview() }
+        
         var typeCounts: [String: Int] = [:]
         for event in events {
             let eventType = event["type"] as? String ?? "unknown"
             typeCounts[eventType, default: 0] += 1
         }
         
-        // Sort by count and display
         let sortedTypes = typeCounts.sorted { $0.value > $1.value }
-        for (type, count) in sortedTypes.prefix(10) {
+        
+        for (type, count) in sortedTypes.prefix(5) {
             let percentage = Double(count) / Double(max(events.count, 1)) * 100
-            text += "• \(type): \(count) (\(String(format: "%.0f", percentage))%)\n"
+            let label = createMetricLabel("• \(type.capitalized): \(count) (\(String(format: "%.0f", percentage))%)", size: 16)
+            container.addArrangedSubview(label)
         }
+    }
+    
+    private func updateTimelineCard() {
+        guard let container = timelineCardContainer as? NSStackView else { return }
+        container.arrangedSubviews.forEach { container.removeArrangedSubview($0); $0.removeFromSuperview() }
         
-        text += "\n🔍 SOURCE BREAKDOWN\n"
-        text += "───────────────────────────────────────\n"
-        
-        // Count events by source
         var sourceCounts: [String: Int] = [:]
         for event in events {
             let source = event["source"] as? String ?? "unknown"
@@ -1106,12 +1243,55 @@ class SessionDetailViewController: NSViewController {
         for (source, count) in sourceCounts.sorted(by: { $0.value > $1.value }) {
             let percentage = Double(count) / Double(max(events.count, 1)) * 100
             let emoji = source == "interaction" ? "👆" : source == "focus" ? "🎯" : source == "system" ? "⚙️" : "📌"
-            text += "\(emoji) \(source.capitalized): \(count) (\(String(format: "%.0f", percentage))%)\n"
+            let label = createMetricLabel("\(emoji) \(source.capitalized): \(count) (\(String(format: "%.0f", percentage))%)", size: 16)
+            container.addArrangedSubview(label)
+        }
+    }
+    
+    private func updateInsightsCard() {
+        guard let container = insightsCardContainer as? NSStackView else { return }
+        container.arrangedSubviews.forEach { container.removeArrangedSubview($0); $0.removeFromSuperview() }
+        
+        var insights: [(String, String)] = []
+        
+        // Generate insights based on data
+        if events.count > 100 {
+            insights.append(("⚡", "High Activity - Very interactive session"))
+        } else if events.count > 50 {
+            insights.append(("📊", "Moderate Activity - Normal interaction level"))
+        } else {
+            insights.append(("🔍", "Low Activity - Limited interactions captured"))
         }
         
-        print("🔄 Setting simpleOverviewLabel text (\(text.count) chars)")
-        simpleOverviewLabel?.stringValue = text
-        print("🔄 simpleOverviewLabel stringValue length: \(simpleOverviewLabel?.stringValue.count ?? -1)")
+        var duration = 0.0
+        if events.count > 1,
+           let firstTimestamp = events.first?["timestamp"] as? Double,
+           let lastTimestamp = events.last?["timestamp"] as? Double {
+            duration = (lastTimestamp - firstTimestamp) / 1_000_000.0
+        }
+        
+        if duration < 30 {
+            insights.append(("⚡", "Quick Session - Brief duration"))
+        } else if duration > 300 {
+            insights.append(("⏱️", "Extended Session - Long duration"))
+        }
+        
+        if events.count > 50 {
+            insights.append(("📊", "Data Rich - Many events captured"))
+        }
+        
+        for (emoji, text) in insights.prefix(3) {
+            let label = createMetricLabel("\(emoji) \(text)", size: 16, color: .systemGreen)
+            container.addArrangedSubview(label)
+        }
+    }
+    
+    private func createMetricLabel(_ text: String, size: CGFloat, color: NSColor = .labelColor) -> NSTextField {
+        let label = NSTextField(labelWithString: text)
+        label.font = NSFont.systemFont(ofSize: size)
+        label.textColor = color
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }
     
     private func updateSimpleEventsTab() {
