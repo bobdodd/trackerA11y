@@ -44,6 +44,17 @@ class SessionDetailViewController: NSViewController {
     private var simpleEventsLabel: NSTextField?
     private var simpleTimelineLabel: NSTextField?
     
+    // Events tab table view and filters
+    private var eventsTableView: NSTableView?
+    private var eventsCountLabel: NSTextField?
+    private var eventsSearchField: NSSearchField?
+    private var sourceFilterPopup: NSPopUpButton?
+    private var typeFilterPopup: NSPopUpButton?
+    private var tagFilterPopup: NSPopUpButton?
+    private var filteredEvents: [[String: Any]] = []
+    private var eventTags: [Int: Set<String>] = [:]  // Maps event index to tags
+    private var allTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
+    
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
         self.sessionData = sessionData
@@ -841,25 +852,425 @@ class SessionDetailViewController: NSViewController {
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         
-        let label = NSTextField(labelWithString: "Loading events...")
-        label.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
-        label.textColor = .labelColor
-        label.lineBreakMode = .byWordWrapping
-        label.maximumNumberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(label)
+        // Header with title and count
+        let headerStack = NSStackView()
+        headerStack.orientation = .horizontal
+        headerStack.spacing = 16
+        headerStack.alignment = .centerY
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
         
-        // Store reference for updates
-        self.simpleEventsLabel = label
-        print("✅ simpleEventsLabel assigned")
+        let titleLabel = NSTextField(labelWithString: "📝 Event Log")
+        titleLabel.font = NSFont.systemFont(ofSize: 20, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.isBordered = false
+        titleLabel.isEditable = false
+        titleLabel.backgroundColor = .clear
+        headerStack.addArrangedSubview(titleLabel)
+        
+        let countLabel = NSTextField(labelWithString: "0 events")
+        countLabel.font = NSFont.systemFont(ofSize: 16)
+        countLabel.textColor = .secondaryLabelColor
+        countLabel.isBordered = false
+        countLabel.isEditable = false
+        countLabel.backgroundColor = .clear
+        headerStack.addArrangedSubview(countLabel)
+        self.eventsCountLabel = countLabel
+        
+        // Spacer
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        headerStack.addArrangedSubview(spacer)
+        
+        containerView.addSubview(headerStack)
+        
+        // Filter toolbar
+        let filterToolbar = createEventsFilterToolbar()
+        containerView.addSubview(filterToolbar)
+        
+        // Create table view
+        let tableView = NSTableView()
+        tableView.rowSizeStyle = .medium
+        tableView.rowHeight = 28
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.allowsMultipleSelection = true
+        tableView.usesAlternatingRowBackgroundColors = true
+        tableView.gridStyleMask = [.solidHorizontalGridLineMask]
+        
+        // Define columns
+        let indexColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("index"))
+        indexColumn.title = "#"
+        indexColumn.width = 50
+        indexColumn.minWidth = 40
+        tableView.addTableColumn(indexColumn)
+        
+        let timeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("time"))
+        timeColumn.title = "Time"
+        timeColumn.width = 140
+        timeColumn.minWidth = 120
+        tableView.addTableColumn(timeColumn)
+        
+        let sourceColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("source"))
+        sourceColumn.title = "Source"
+        sourceColumn.width = 100
+        sourceColumn.minWidth = 80
+        tableView.addTableColumn(sourceColumn)
+        
+        let typeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("type"))
+        typeColumn.title = "Type"
+        typeColumn.width = 150
+        typeColumn.minWidth = 100
+        tableView.addTableColumn(typeColumn)
+        
+        let tagsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("tags"))
+        tagsColumn.title = "Tags"
+        tagsColumn.width = 120
+        tagsColumn.minWidth = 80
+        tableView.addTableColumn(tagsColumn)
+        
+        let detailsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("details"))
+        detailsColumn.title = "Details"
+        detailsColumn.width = 300
+        detailsColumn.minWidth = 150
+        tableView.addTableColumn(detailsColumn)
+        
+        // Apply custom header cells for 16px font
+        for column in tableView.tableColumns {
+            let headerCell = EventsTableHeaderCell(textCell: column.title)
+            column.headerCell = headerCell
+        }
+        
+        // Set header height
+        if let headerView = tableView.headerView {
+            headerView.frame.size.height = 30
+        }
+        
+        // Store reference
+        self.eventsTableView = tableView
+        
+        // Wrap in scroll view
+        let scrollView = NSScrollView()
+        scrollView.documentView = tableView
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(scrollView)
         
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
-            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
-            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20)
+            headerStack.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
+            headerStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            headerStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            
+            filterToolbar.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
+            filterToolbar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            filterToolbar.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            
+            scrollView.topAnchor.constraint(equalTo: filterToolbar.bottomAnchor, constant: 12),
+            scrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            scrollView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            scrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
         ])
         
         return containerView
+    }
+    
+    private func createEventsFilterToolbar() -> NSView {
+        let toolbar = NSStackView()
+        toolbar.orientation = .horizontal
+        toolbar.spacing = 12
+        toolbar.alignment = .centerY
+        toolbar.distribution = .fill
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Search field
+        let searchField = NSSearchField()
+        searchField.placeholderString = "Search events..."
+        searchField.font = NSFont.systemFont(ofSize: 14)
+        searchField.target = self
+        searchField.action = #selector(eventsSearchChanged(_:))
+        searchField.translatesAutoresizingMaskIntoConstraints = false
+        searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        self.eventsSearchField = searchField
+        toolbar.addArrangedSubview(searchField)
+        
+        // Source filter
+        let sourceLabel = NSTextField(labelWithString: "Source:")
+        sourceLabel.font = NSFont.systemFont(ofSize: 14)
+        toolbar.addArrangedSubview(sourceLabel)
+        
+        let sourcePopup = NSPopUpButton()
+        sourcePopup.font = NSFont.systemFont(ofSize: 14)
+        sourcePopup.addItems(withTitles: ["All Sources", "Interaction", "Focus", "System"])
+        sourcePopup.target = self
+        sourcePopup.action = #selector(sourceFilterChanged(_:))
+        self.sourceFilterPopup = sourcePopup
+        toolbar.addArrangedSubview(sourcePopup)
+        
+        // Type filter
+        let typeLabel = NSTextField(labelWithString: "Type:")
+        typeLabel.font = NSFont.systemFont(ofSize: 14)
+        toolbar.addArrangedSubview(typeLabel)
+        
+        let typePopup = NSPopUpButton()
+        typePopup.font = NSFont.systemFont(ofSize: 14)
+        typePopup.addItems(withTitles: ["All Types"])
+        typePopup.target = self
+        typePopup.action = #selector(typeFilterChanged(_:))
+        self.typeFilterPopup = typePopup
+        toolbar.addArrangedSubview(typePopup)
+        
+        // Tag filter
+        let tagLabel = NSTextField(labelWithString: "Tag:")
+        tagLabel.font = NSFont.systemFont(ofSize: 14)
+        toolbar.addArrangedSubview(tagLabel)
+        
+        let tagPopup = NSPopUpButton()
+        tagPopup.font = NSFont.systemFont(ofSize: 14)
+        tagPopup.addItems(withTitles: ["All Tags"])
+        tagPopup.addItems(withTitles: Array(allTags).sorted())
+        tagPopup.target = self
+        tagPopup.action = #selector(tagFilterChanged(_:))
+        self.tagFilterPopup = tagPopup
+        toolbar.addArrangedSubview(tagPopup)
+        
+        // Clear filters button
+        let clearButton = NSButton(title: "Clear Filters", target: self, action: #selector(clearEventsFilters(_:)))
+        clearButton.font = NSFont.systemFont(ofSize: 14)
+        clearButton.bezelStyle = .rounded
+        toolbar.addArrangedSubview(clearButton)
+        
+        // Tag selected events button
+        let tagButton = NSButton(title: "Tag Selected", target: self, action: #selector(tagSelectedEvents(_:)))
+        tagButton.font = NSFont.systemFont(ofSize: 14)
+        tagButton.bezelStyle = .rounded
+        toolbar.addArrangedSubview(tagButton)
+        
+        // Flexible spacer at end
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        toolbar.addArrangedSubview(spacer)
+        
+        return toolbar
+    }
+    
+    @objc private func eventsSearchChanged(_ sender: NSSearchField) {
+        applyEventsFilters()
+    }
+    
+    @objc private func sourceFilterChanged(_ sender: NSPopUpButton) {
+        applyEventsFilters()
+    }
+    
+    @objc private func typeFilterChanged(_ sender: NSPopUpButton) {
+        applyEventsFilters()
+    }
+    
+    @objc private func tagFilterChanged(_ sender: NSPopUpButton) {
+        applyEventsFilters()
+    }
+    
+    @objc private func clearEventsFilters(_ sender: NSButton) {
+        eventsSearchField?.stringValue = ""
+        sourceFilterPopup?.selectItem(at: 0)
+        typeFilterPopup?.selectItem(at: 0)
+        tagFilterPopup?.selectItem(at: 0)
+        applyEventsFilters()
+    }
+    
+    @objc private func tagSelectedEvents(_ sender: NSButton) {
+        guard let tableView = eventsTableView else { return }
+        let selectedRows = tableView.selectedRowIndexes
+        guard !selectedRows.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = "No Events Selected"
+            alert.informativeText = "Please select one or more events to tag."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+        
+        // Show tag selection menu
+        let menu = NSMenu(title: "Select Tag")
+        for tag in allTags.sorted() {
+            let item = NSMenuItem(title: tag, action: #selector(applyTagToSelection(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = tag
+            menu.addItem(item)
+        }
+        menu.addItem(NSMenuItem.separator())
+        let customItem = NSMenuItem(title: "Add Custom Tag...", action: #selector(addCustomTag(_:)), keyEquivalent: "")
+        customItem.target = self
+        menu.addItem(customItem)
+        
+        // Show menu at button location
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
+    }
+    
+    @objc private func applyTagToSelection(_ sender: NSMenuItem) {
+        guard let tag = sender.representedObject as? String,
+              let tableView = eventsTableView else { return }
+        
+        for index in tableView.selectedRowIndexes {
+            let originalIndex = getOriginalEventIndex(for: index)
+            if eventTags[originalIndex] == nil {
+                eventTags[originalIndex] = Set<String>()
+            }
+            eventTags[originalIndex]?.insert(tag)
+        }
+        tableView.reloadData()
+    }
+    
+    @objc private func addCustomTag(_ sender: NSMenuItem) {
+        let alert = NSAlert()
+        alert.messageText = "Add Custom Tag"
+        alert.informativeText = "Enter a name for the new tag:"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Add")
+        alert.addButton(withTitle: "Cancel")
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        textField.font = NSFont.systemFont(ofSize: 14)
+        alert.accessoryView = textField
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            let newTag = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newTag.isEmpty {
+                allTags.insert(newTag)
+                tagFilterPopup?.addItem(withTitle: newTag)
+                
+                // Apply to selected events
+                if let tableView = eventsTableView {
+                    for index in tableView.selectedRowIndexes {
+                        let originalIndex = getOriginalEventIndex(for: index)
+                        if eventTags[originalIndex] == nil {
+                            eventTags[originalIndex] = Set<String>()
+                        }
+                        eventTags[originalIndex]?.insert(newTag)
+                    }
+                    tableView.reloadData()
+                }
+            }
+        }
+    }
+    
+    private func getOriginalEventIndex(for filteredIndex: Int) -> Int {
+        if filteredEvents.isEmpty || filteredEvents.count == events.count {
+            return filteredIndex
+        }
+        let filteredEvent = filteredEvents[filteredIndex]
+        if let timestamp = filteredEvent["timestamp"] as? Double {
+            for (index, event) in events.enumerated() {
+                if let eventTimestamp = event["timestamp"] as? Double, eventTimestamp == timestamp {
+                    return index
+                }
+            }
+        }
+        return filteredIndex
+    }
+    
+    private func applyEventsFilters() {
+        let searchText = eventsSearchField?.stringValue.lowercased() ?? ""
+        let sourceFilter = sourceFilterPopup?.titleOfSelectedItem ?? "All Sources"
+        let typeFilter = typeFilterPopup?.titleOfSelectedItem ?? "All Types"
+        let tagFilter = tagFilterPopup?.titleOfSelectedItem ?? "All Tags"
+        
+        filteredEvents = events.enumerated().filter { (index, event) in
+            // Source filter
+            if sourceFilter != "All Sources" {
+                let source = (event["source"] as? String ?? "").lowercased()
+                if source != sourceFilter.lowercased() {
+                    return false
+                }
+            }
+            
+            // Type filter
+            if typeFilter != "All Types" {
+                let type = event["type"] as? String ?? ""
+                if type != typeFilter {
+                    return false
+                }
+            }
+            
+            // Tag filter
+            if tagFilter != "All Tags" {
+                let tags = eventTags[index] ?? Set<String>()
+                if !tags.contains(tagFilter) {
+                    return false
+                }
+            }
+            
+            // Text search
+            if !searchText.isEmpty {
+                let source = (event["source"] as? String ?? "").lowercased()
+                let type = (event["type"] as? String ?? "").lowercased()
+                let details = formatEventData(event["data"] as? [String: Any] ?? [:]).lowercased()
+                let tags = (eventTags[index] ?? Set<String>()).joined(separator: " ").lowercased()
+                
+                if !source.contains(searchText) && !type.contains(searchText) && 
+                   !details.contains(searchText) && !tags.contains(searchText) {
+                    return false
+                }
+            }
+            
+            return true
+        }.map { $0.1 }
+        
+        // Update count label
+        if filteredEvents.count == events.count {
+            eventsCountLabel?.stringValue = "\(events.count) events"
+        } else {
+            eventsCountLabel?.stringValue = "\(filteredEvents.count) of \(events.count) events"
+        }
+        
+        eventsTableView?.reloadData()
+    }
+    
+    private func populateTypeFilter() {
+        guard let popup = typeFilterPopup else { return }
+        popup.removeAllItems()
+        popup.addItem(withTitle: "All Types")
+        
+        var types = Set<String>()
+        for event in events {
+            if let type = event["type"] as? String {
+                types.insert(type)
+            }
+        }
+        popup.addItems(withTitles: types.sorted())
+    }
+    
+    // Custom header cell for events table with 16px font - left aligned to match content
+    private class EventsTableHeaderCell: NSTableHeaderCell {
+        override init(textCell: String) {
+            super.init(textCell: textCell)
+            self.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            self.alignment = .left
+        }
+        
+        required init(coder: NSCoder) {
+            super.init(coder: coder)
+            self.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            self.alignment = .left
+        }
+        
+        override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+            NSColor.controlBackgroundColor.setFill()
+            cellFrame.fill()
+            
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 16, weight: .semibold),
+                .foregroundColor: NSColor.headerTextColor
+            ]
+            
+            let attributedString = NSAttributedString(string: stringValue, attributes: attributes)
+            let textSize = attributedString.size()
+            let yPosition = (cellFrame.height - textSize.height) / 2
+            // Left align with same 8px padding as content cells
+            let textRect = NSRect(x: cellFrame.origin.x + 8, y: cellFrame.origin.y + yPosition, width: cellFrame.width - 16, height: textSize.height)
+            attributedString.draw(in: textRect)
+        }
     }
     
     private func createEventsToolbar() -> NSView {
@@ -1119,6 +1530,11 @@ class SessionDetailViewController: NSViewController {
         loadingIndicator.stopAnimation(nil)
         loadingIndicator.isHidden = true
         
+        // Initialize filtered events and populate type filter
+        filteredEvents = events
+        populateTypeFilter()
+        eventsCountLabel?.stringValue = "\(events.count) events"
+        
         // Ensure stats are calculated before updating views
         calculateSessionStats()
         updateAllViews()
@@ -1296,38 +1712,12 @@ class SessionDetailViewController: NSViewController {
     
     private func updateSimpleEventsTab() {
         print("🔄 updateSimpleEventsTab called - events count: \(events.count)")
-        print("🔄 simpleEventsLabel is nil? \(simpleEventsLabel == nil)")
-        var text = "📝 EVENT LOG\n"
-        text += "═══════════════════════════════════════\n\n"
-        text += "Session: \(sessionId)\n"
-        text += "Total Events: \(events.count)\n\n"
         
-        if events.isEmpty {
-            text += "No events recorded for this session.\n"
-        } else {
-            text += "─────────────────────────────────────────────────────────────────────────────────\n"
-            text += "#      | TIME         | SOURCE     | TYPE                 | DETAILS\n"
-            text += "─────────────────────────────────────────────────────────────────────────────────\n"
-            
-            for (index, event) in events.prefix(100).enumerated() {
-                let timestamp = event["timestamp"] as? Double ?? 0
-                let time = formatTimestamp(timestamp)
-                let source = (event["source"] as? String ?? "unknown").prefix(10)
-                let type = (event["type"] as? String ?? "unknown").prefix(20)
-                let details = formatEventData(event["data"] as? [String: Any] ?? [:]).prefix(40)
-                
-                let paddedIndex = String(format: "%04d", index + 1)
-                let paddedSource = String(source).padding(toLength: 10, withPad: " ", startingAt: 0)
-                let paddedType = String(type).padding(toLength: 20, withPad: " ", startingAt: 0)
-                text += "\(paddedIndex) | \(time) | \(paddedSource) | \(paddedType) | \(details)\n"
-            }
-            
-            if events.count > 100 {
-                text += "\n... and \(events.count - 100) more events\n"
-            }
-        }
+        // Update count label
+        eventsCountLabel?.stringValue = "\(events.count) events"
         
-        simpleEventsLabel?.stringValue = text
+        // Reload table view
+        eventsTableView?.reloadData()
     }
     
     private func updateSimpleTimelineTab() {
@@ -2586,13 +2976,14 @@ struct SessionStats {
 extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegate {
     
     func numberOfRows(in tableView: NSTableView) -> Int {
-        return events.count
+        return filteredEvents.isEmpty && events.isEmpty ? 0 : (filteredEvents.isEmpty ? events.count : filteredEvents.count)
     }
     
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row < events.count else { return nil }
+        let sourceEvents = filteredEvents.isEmpty ? events : filteredEvents
+        guard row < sourceEvents.count else { return nil }
         
-        let event = events[row]
+        let event = sourceEvents[row]
         let cellView = NSTableCellView()
         
         let textField = NSTextField()
@@ -2600,23 +2991,52 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         textField.isEditable = false
         textField.backgroundColor = .clear
         textField.font = NSFont.systemFont(ofSize: 16)
+        textField.lineBreakMode = .byTruncatingTail
         
         switch tableColumn?.identifier.rawValue {
-        case "timestamp":
+        case "index":
+            textField.stringValue = "\(row + 1)"
+            textField.alignment = .left
+            
+        case "time", "timestamp":
             if let timestamp = event["timestamp"] as? Double {
                 textField.stringValue = formatTimestamp(timestamp)
-                textField.font = NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+                textField.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
             }
             
         case "source":
-            textField.stringValue = (event["source"] as? String ?? "unknown").capitalized
+            let source = event["source"] as? String ?? "unknown"
+            textField.stringValue = source.capitalized
+            
+            // Color code by source
+            switch source {
+            case "interaction":
+                textField.textColor = .systemBlue
+            case "focus":
+                textField.textColor = .systemOrange
+            case "system":
+                textField.textColor = .systemGray
+            default:
+                textField.textColor = .labelColor
+            }
             
         case "type":
-            textField.stringValue = (event["type"] as? String ?? "unknown").replacingOccurrences(of: "_", with: " ").capitalized
+            textField.stringValue = (event["type"] as? String ?? "unknown")
+            
+        case "tags":
+            let originalIndex = getOriginalEventIndex(for: row)
+            let tags = eventTags[originalIndex] ?? Set<String>()
+            if tags.isEmpty {
+                textField.stringValue = "—"
+                textField.textColor = .tertiaryLabelColor
+            } else {
+                textField.stringValue = tags.sorted().joined(separator: ", ")
+                textField.textColor = .systemPurple
+            }
             
         case "details":
             textField.stringValue = formatEventData(event["data"] as? [String: Any] ?? [:])
-            textField.lineBreakMode = .byTruncatingTail
+            textField.textColor = .secondaryLabelColor
             
         default:
             textField.stringValue = ""
@@ -2625,8 +3045,8 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         cellView.addSubview(textField)
         textField.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 5),
-            textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -5),
+            textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 8),
+            textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -8),
             textField.centerYAnchor.constraint(equalTo: cellView.centerYAnchor)
         ])
         
@@ -2638,9 +3058,11 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
     }
     
     func tableViewSelectionDidChange(_ notification: Notification) {
-        let selectedRow = eventTableView.selectedRow
-        if selectedRow >= 0 && selectedRow < events.count {
-            let event = events[selectedRow]
+        guard let tableView = notification.object as? NSTableView else { return }
+        let selectedRow = tableView.selectedRow
+        let sourceEvents = filteredEvents.isEmpty ? events : filteredEvents
+        if selectedRow >= 0 && selectedRow < sourceEvents.count {
+            let event = sourceEvents[selectedRow]
             updateTimelineInfo(with: event)
         }
     }
@@ -2986,3 +3408,4 @@ class TimelineView: NSView {
         }
     }
 }
+
