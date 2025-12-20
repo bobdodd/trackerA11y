@@ -6,15 +6,12 @@
 import { spawn, ChildProcess } from 'child_process';
 import { BaseInteractionTracker } from '../BaseInteractionTracker';
 import { InteractionEvent, InteractionConfig } from '@/types';
-import { AccessibilityInspector, AccessibilityHitTest } from '@/accessibility/AccessibilityInspector';
 import * as path from 'path';
 
 export class NativeInteractionTracker extends BaseInteractionTracker {
   private nativeProcess: ChildProcess | null = null;
   private sessionId: string = '';
   private nativeHelperPath: string;
-  private accessibilityInspector: AccessibilityInspector;
-  private lastClickTime: number = 0;
   private hoverTracker: {
     currentPosition: { x: number; y: number } | null;
     startTime: number | null;
@@ -33,7 +30,6 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
     super(config);
     this.sessionId = `native_session_${Date.now()}`;
     this.nativeHelperPath = path.resolve(__dirname, '../../../native_helpers/native_helpers/mouse_capture');
-    this.accessibilityInspector = new AccessibilityInspector();
   }
 
   async initialize(): Promise<void> {
@@ -100,26 +96,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
   }
 
   getSupportedTypes(): string[] {
-    return ['click', 'mouse_down', 'mouse_up', 'key', 'scroll', 'mouse_move', 'drag', 'hover'];
-  }
-
-  /**
-   * Get accessibility and browser element information for coordinates
-   */
-  private async getElementInfoAtCoordinates(x: number, y: number): Promise<AccessibilityHitTest | null> {
-    try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), 2000); // 2 second timeout
-      });
-      
-      const hitTestPromise = this.accessibilityInspector.hitTest(x, y);
-      
-      return await Promise.race([hitTestPromise, timeoutPromise]);
-    } catch (error) {
-      console.debug('Could not get element info:', error instanceof Error ? error.message : 'Unknown error');
-      return null;
-    }
+    return ['click', 'mouse_down', 'mouse_up', 'key', 'scroll', 'mouse_move', 'drag', 'hover', 'focus_change'];
   }
 
   private async checkNativeHelper(): Promise<void> {
@@ -221,72 +198,102 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
         case 'mouse_down':
           interactionType = nativeEvent.type === 'mouse_click' ? 'click' : 'mouse_down';
           
-          // Get accessibility information for the element
-          let accessibilityInfo: any = null;
-          try {
-            accessibilityInfo = await this.getElementInfoAtCoordinates(
-              nativeEvent.data.x, 
-              nativeEvent.data.y
-            );
-          } catch (error) {
-            // Ignore accessibility errors
-          }
+          // Use native element info if provided by mouse_capture
+          const nativeElement = nativeEvent.data.element;
+          
+          const isDockClick = nativeElement?.applicationName === 'Dock';
           
           target = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
             },
-            // Include accessibility information if available
-            ...(accessibilityInfo && {
-              element: accessibilityInfo.element,
-              applicationContext: accessibilityInfo.context
+            // Include native accessibility information if available
+            ...(nativeElement && {
+              element: {
+                role: nativeElement.role || 'unknown',
+                title: nativeElement.title,
+                label: nativeElement.label,
+                value: nativeElement.value,
+                description: isDockClick ? 'Dock item' : nativeElement.roleDescription,
+                enabled: nativeElement.enabled !== false,
+                focused: nativeElement.focused === true,
+                bounds: nativeElement.boundsX !== undefined ? {
+                  x: nativeElement.boundsX,
+                  y: nativeElement.boundsY,
+                  width: nativeElement.boundsWidth,
+                  height: nativeElement.boundsHeight
+                } : undefined
+              },
+              applicationContext: {
+                processId: nativeElement.pid || -1,
+                applicationName: nativeElement.applicationName || 'Unknown'
+              },
+              isDockItem: isDockClick
             })
           };
           inputData = {
             button: nativeEvent.data.button,
             clickCount: nativeEvent.data.clickCount || 1,
             modifiers: nativeEvent.data.modifiers || [],
-            // Add semantic context from accessibility tree
-            ...(accessibilityInfo?.element && {
-              elementRole: accessibilityInfo.element.role,
-              elementTitle: accessibilityInfo.element.title,
-              elementLabel: accessibilityInfo.element.label,
-              elementValue: accessibilityInfo.element.value
+            isDockClick,
+            // Add semantic context from native accessibility
+            ...(nativeElement && {
+              elementRole: nativeElement.role,
+              elementTitle: nativeElement.title,
+              elementLabel: nativeElement.label,
+              elementValue: nativeElement.value
             })
           };
           break;
 
         case 'mouse_up':
           // Generate both mouse_up and click events for mouse up
+          // Use native element info if provided by mouse_capture
+          const mouseUpNativeElement = nativeEvent.data.element;
           
-          // Get accessibility information for the element
-          let mouseUpAccessibilityInfo = await this.getElementInfoAtCoordinates(
-            nativeEvent.data.x, 
-            nativeEvent.data.y
-          );
+          const isUpDockClick = mouseUpNativeElement?.applicationName === 'Dock';
           
           const upTarget = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
             },
-            // Include accessibility information if available
-            ...(mouseUpAccessibilityInfo && {
-              element: mouseUpAccessibilityInfo.element,
-              applicationContext: mouseUpAccessibilityInfo.context
+            // Include native accessibility information if available
+            ...(mouseUpNativeElement && {
+              element: {
+                role: mouseUpNativeElement.role || 'unknown',
+                title: mouseUpNativeElement.title,
+                label: mouseUpNativeElement.label,
+                value: mouseUpNativeElement.value,
+                description: isUpDockClick ? 'Dock item' : mouseUpNativeElement.roleDescription,
+                enabled: mouseUpNativeElement.enabled !== false,
+                focused: mouseUpNativeElement.focused === true,
+                bounds: mouseUpNativeElement.boundsX !== undefined ? {
+                  x: mouseUpNativeElement.boundsX,
+                  y: mouseUpNativeElement.boundsY,
+                  width: mouseUpNativeElement.boundsWidth,
+                  height: mouseUpNativeElement.boundsHeight
+                } : undefined
+              },
+              applicationContext: {
+                processId: mouseUpNativeElement.pid || -1,
+                applicationName: mouseUpNativeElement.applicationName || 'Unknown'
+              },
+              isDockItem: isUpDockClick
             })
           };
           const upInputData = {
             button: nativeEvent.data.button,
             clickCount: nativeEvent.data.clickCount || 1,
             modifiers: nativeEvent.data.modifiers || [],
-            // Add semantic context from accessibility tree
-            ...(mouseUpAccessibilityInfo?.element && {
-              elementRole: mouseUpAccessibilityInfo.element.role,
-              elementTitle: mouseUpAccessibilityInfo.element.title,
-              elementLabel: mouseUpAccessibilityInfo.element.label,
-              elementValue: mouseUpAccessibilityInfo.element.value
+            isDockClick: isUpDockClick,
+            // Add semantic context from native accessibility
+            ...(mouseUpNativeElement && {
+              elementRole: mouseUpNativeElement.role,
+              elementTitle: mouseUpNativeElement.title,
+              elementLabel: mouseUpNativeElement.label,
+              elementValue: mouseUpNativeElement.value
             })
           };
 
@@ -315,81 +322,74 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
 
         case 'key_press':
           interactionType = 'key';
+          const key = nativeEvent.data.key;
+          const modifiers = nativeEvent.data.modifiers || [];
+          
           inputData = {
-            key: nativeEvent.data.key,
+            key,
             keyCode: nativeEvent.data.keyCode,
-            modifiers: nativeEvent.data.modifiers || []
+            modifiers
+          };
+          break;
+
+        case 'focus_change':
+          interactionType = 'focus_change';
+          const focusKey = nativeEvent.data.key;
+          const focusModifiers = nativeEvent.data.modifiers || [];
+          const focusedElement = nativeEvent.data.focusedElement;
+          
+          inputData = {
+            key: focusKey,
+            keyCode: nativeEvent.data.keyCode,
+            modifiers: focusModifiers,
+            ...(focusedElement && {
+              focusedElement: {
+                role: focusedElement.role,
+                subrole: focusedElement.subrole,
+                title: focusedElement.title,
+                label: focusedElement.label,
+                value: focusedElement.value,
+                roleDescription: focusedElement.roleDescription,
+                domId: focusedElement.domId,
+                domClassList: focusedElement.domClassList,
+                applicationName: focusedElement.applicationName,
+                bounds: focusedElement.boundsX !== undefined ? {
+                  x: focusedElement.boundsX,
+                  y: focusedElement.boundsY,
+                  width: focusedElement.boundsWidth,
+                  height: focusedElement.boundsHeight
+                } : undefined
+              }
+            })
           };
           break;
 
         case 'scroll':
           interactionType = 'scroll';
-          
-          // Get accessibility information for scroll location
-          let scrollAccessibilityInfo = await this.getElementInfoAtCoordinates(
-            nativeEvent.data.x, 
-            nativeEvent.data.y
-          );
-          
           target = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
-            },
-            // Include accessibility information if available
-            ...(scrollAccessibilityInfo && {
-              element: scrollAccessibilityInfo.element,
-              applicationContext: scrollAccessibilityInfo.context
-            })
+            }
           };
           inputData = {
             scrollDelta: {
               x: nativeEvent.data.deltaX,
               y: nativeEvent.data.deltaY
             },
-            modifiers: nativeEvent.data.modifiers || [],
-            // Add semantic context from accessibility tree
-            ...(scrollAccessibilityInfo?.element && {
-              elementRole: scrollAccessibilityInfo.element.role,
-              elementTitle: scrollAccessibilityInfo.element.title,
-              elementLabel: scrollAccessibilityInfo.element.label,
-              elementValue: scrollAccessibilityInfo.element.value
-            })
+            modifiers: nativeEvent.data.modifiers || []
           };
           break;
 
         case 'mouse_move':
           interactionType = 'mouse_move';
-          
-          // Get accessibility information for mouse position (lightweight for frequent events)
-          let mouseMoveAccessibilityInfo: AccessibilityHitTest | null = null;
-          if (this.config.captureLevel === 'full') {
-            mouseMoveAccessibilityInfo = await this.getElementInfoAtCoordinates(
-              nativeEvent.data.x, 
-              nativeEvent.data.y
-            );
-          }
-          
           target = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
-            },
-            // Include accessibility information if available
-            ...(mouseMoveAccessibilityInfo && {
-              element: mouseMoveAccessibilityInfo.element,
-              applicationContext: mouseMoveAccessibilityInfo.context
-            })
+            }
           };
-          inputData = {
-            // Add semantic context if available
-            ...(mouseMoveAccessibilityInfo?.element && {
-              elementRole: mouseMoveAccessibilityInfo.element.role,
-              elementTitle: mouseMoveAccessibilityInfo.element.title,
-              elementLabel: mouseMoveAccessibilityInfo.element.label,
-              elementValue: mouseMoveAccessibilityInfo.element.value
-            })
-          };
+          inputData = {};
           
           // Track hover behavior
           await this.trackHover(nativeEvent.data.x, nativeEvent.data.y, nativeEvent.data.systemTimestamp);
@@ -397,34 +397,15 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
 
         case 'mouse_drag':
           interactionType = 'drag';
-          
-          // Get accessibility information for drag location
-          let dragAccessibilityInfo = await this.getElementInfoAtCoordinates(
-            nativeEvent.data.x, 
-            nativeEvent.data.y
-          );
-          
           target = {
             coordinates: { 
               x: nativeEvent.data.x, 
               y: nativeEvent.data.y 
-            },
-            // Include accessibility information if available
-            ...(dragAccessibilityInfo && {
-              element: dragAccessibilityInfo.element,
-              applicationContext: dragAccessibilityInfo.context
-            })
+            }
           };
           inputData = {
             button: nativeEvent.data.button,
-            modifiers: nativeEvent.data.modifiers || [],
-            // Add semantic context from accessibility tree
-            ...(dragAccessibilityInfo?.element && {
-              elementRole: dragAccessibilityInfo.element.role,
-              elementTitle: dragAccessibilityInfo.element.title,
-              elementLabel: dragAccessibilityInfo.element.label,
-              elementValue: dragAccessibilityInfo.element.value
-            })
+            modifiers: nativeEvent.data.modifiers || []
           };
           break;
 
@@ -539,40 +520,24 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
       return;
     }
 
-    try {
-      // Get accessibility information for the hovered element
-      const accessibilityInfo = await this.accessibilityInspector.hitTest(
-        this.hoverTracker.currentPosition.x, 
-        this.hoverTracker.currentPosition.y
-      );
-
-      this.hoverTracker.element = accessibilityInfo;
-
-      const interactionEvent = this.createInteractionEvent(
-        'hover',
-        {
-          target: {
-            coordinates: this.hoverTracker.currentPosition,
-            ...(accessibilityInfo && {
-              element: accessibilityInfo.element,
-              applicationContext: accessibilityInfo.context
-            })
-          },
-          inputData: {
-            hoverStartTime: this.hoverTracker.startTime,
-            minHoverDuration: this.hoverTracker.minHoverTime
-          },
-          sessionId: this.sessionId,
-          confidence: 0.85
+    const interactionEvent = this.createInteractionEvent(
+      'hover',
+      {
+        target: {
+          coordinates: this.hoverTracker.currentPosition
         },
-        this.hoverTracker.startTime
-      );
+        inputData: {
+          hoverStartTime: this.hoverTracker.startTime,
+          minHoverDuration: this.hoverTracker.minHoverTime
+        },
+        sessionId: this.sessionId,
+        confidence: 0.85
+      },
+      this.hoverTracker.startTime
+    );
 
-      this.emit('interaction', interactionEvent);
-      
-    } catch (error) {
-      console.debug('Could not get accessibility info for hover:', error instanceof Error ? error.message : 'Unknown error');
-    }
+    this.hoverTracker.element = {};
+    this.emit('interaction', interactionEvent);
   }
 
   private async emitHoverEndEvent(durationMs: number): Promise<void> {
@@ -584,11 +549,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
       'hover_end',
       {
         target: {
-          coordinates: this.hoverTracker.currentPosition,
-          ...(this.hoverTracker.element && {
-            element: this.hoverTracker.element.element,
-            applicationContext: this.hoverTracker.element.context
-          })
+          coordinates: this.hoverTracker.currentPosition
         },
         inputData: {
           dwellTime: durationMs,

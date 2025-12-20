@@ -4,6 +4,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     var window: NSWindow!
     var mainViewController: MainViewController?
+    var adminWindow: NSWindow?
     
     // Menu bar status item
     var statusItem: NSStatusItem?
@@ -115,6 +116,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         sessionMenuItem.submenu = sessionMenu
         mainMenu.addItem(sessionMenuItem)
         
+        // Tools menu
+        let toolsMenuItem = NSMenuItem(title: "Tools", action: nil, keyEquivalent: "")
+        let toolsMenu = NSMenu()
+        
+        toolsMenu.addItem(withTitle: "Admin Panel...", action: #selector(showAdminPanel), keyEquivalent: "")
+        
+        toolsMenuItem.submenu = toolsMenu
+        mainMenu.addItem(toolsMenuItem)
+        
         // Window menu
         let windowMenuItem = NSMenuItem(title: "Window", action: nil, keyEquivalent: "")
         let windowMenu = NSMenu()
@@ -220,6 +230,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     @objc private func showPreferences() {
         mainViewController?.showPreferences()
+    }
+    
+    @objc private func showAdminPanel() {
+        // If admin window already exists, just bring it to front
+        if let existingWindow = adminWindow {
+            existingWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        
+        // Create admin window
+        let adminWindowInstance = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        adminWindowInstance.title = "Admin Panel - TrackerA11y"
+        adminWindowInstance.center()
+        adminWindowInstance.contentMinSize = NSSize(width: 600, height: 400)
+        adminWindowInstance.isReleasedWhenClosed = false
+        
+        let adminViewController = AdminViewController()
+        adminWindowInstance.contentViewController = adminViewController
+        
+        adminWindow = adminWindowInstance
+        adminWindowInstance.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        
+        print("🔧 Admin panel opened")
     }
     
     @objc private func startRecording() {

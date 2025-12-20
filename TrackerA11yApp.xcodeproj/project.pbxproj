@@ -15,6 +15,7 @@
 		AA1A1A1A1A1A1A1A1A1A1A27 /* TrackerBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A26 /* TrackerBridge.swift */; };
 		AA1A1A1A1A1A1A1A1A1A1A29 /* SessionListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A28 /* SessionListViewController.swift */; };
 		AA1A1A1A1A1A1A1A1A1A1A2B /* SessionDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A2A /* SessionDetailViewController.swift */; };
+		AA1A1A1A1A1A1A1A1A1A1A2D /* AdminViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A2C /* AdminViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		BB1A1A1A1A1A1A1A1A1A1A26 /* TrackerBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBridge.swift; sourceTree = "<group>"; };
 		BB1A1A1A1A1A1A1A1A1A1A28 /* SessionListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListViewController.swift; sourceTree = "<group>"; };
 		BB1A1A1A1A1A1A1A1A1A1A2A /* SessionDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailViewController.swift; sourceTree = "<group>"; };
+		BB1A1A1A1A1A1A1A1A1A1A2C /* AdminViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +68,7 @@
 				BB1A1A1A1A1A1A1A1A1A1A26 /* TrackerBridge.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A28 /* SessionListViewController.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A2A /* SessionDetailViewController.swift */,
+				BB1A1A1A1A1A1A1A1A1A1A2C /* AdminViewController.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A1B /* main.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */,
 				BB1A1A1A1A1A1A1A1A1A1A1F /* Main.storyboard */,
@@ -150,6 +153,7 @@
 				AA1A1A1A1A1A1A1A1A1A1A27 /* TrackerBridge.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A29 /* SessionListViewController.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A2B /* SessionDetailViewController.swift in Sources */,
+				AA1A1A1A1A1A1A1A1A1A1A2D /* AdminViewController.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A1C /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

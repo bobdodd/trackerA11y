@@ -31,6 +31,7 @@ export class EventRecorder extends EventEmitter {
   private eventLog: EventLog;
   private eventBuffer: RecordedEvent[] = [];
   private lastScreenshotTime = 0;
+  private finalStateCaptured = false;
 
   constructor(config: RecorderConfig) {
     super();
@@ -344,6 +345,16 @@ export class EventRecorder extends EventEmitter {
       if (data.interactionType === 'click' && data.target?.element?.role === 'button' && data.target?.element?.label === 'Dock icon') {
         return `🖱️ DOCK CLICK: ${data.target.element.title} icon`;
       }
+      // Handle focus changes with detailed element info
+      if (data.interactionType === 'focus_change') {
+        const el = data.inputData?.focusedElement;
+        if (el) {
+          const label = el.label || el.title || el.roleDescription || 'element';
+          const role = el.role?.replace('AX', '') || 'unknown';
+          return `🎯 FOCUS → ${label} [${role}]`;
+        }
+        return `🎯 FOCUS → (no element info)`;
+      }
       if (data.inputData?.key) return `Key: ${data.inputData.key}`;
       if (data.coordinates) return `Click: (${data.coordinates.x},${data.coordinates.y})`;
       return `${data.interactionType}`;
@@ -410,6 +421,11 @@ export class EventRecorder extends EventEmitter {
   }
 
   private async captureFinalState(): Promise<void> {
+    if (this.finalStateCaptured) {
+      return;
+    }
+    this.finalStateCaptured = true;
+    
     console.log('📸 Capturing final system state...');
     
     if (this.config.screenshot.enabled) {

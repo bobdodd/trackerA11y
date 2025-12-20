@@ -4630,17 +4630,78 @@ class SessionDetailViewController: NSViewController {
         if let appName = data["applicationName"] as? String {
             return "App: \(appName)"
         }
+        
         if let interactionType = data["interactionType"] as? String {
-            if let coords = data["coordinates"] as? [String: Any],
-               let x = coords["x"] as? Double,
-               let y = coords["y"] as? Double {
-                return "\(interactionType) at (\(Int(x)),\(Int(y)))"
+            // For focus change events, show the focused element details
+            if interactionType == "focus_change" {
+                if let inputData = data["inputData"] as? [String: Any],
+                   let focusedElement = inputData["focusedElement"] as? [String: Any] {
+                    let label = focusedElement["label"] as? String ?? ""
+                    let title = focusedElement["title"] as? String ?? ""
+                    let roleDesc = focusedElement["roleDescription"] as? String ?? ""
+                    let role = (focusedElement["role"] as? String ?? "").replacingOccurrences(of: "AX", with: "")
+                    let displayName = !label.isEmpty ? label : (!title.isEmpty ? title : roleDesc)
+                    if !displayName.isEmpty {
+                        return "Focus → \(displayName) [\(role)]"
+                    }
+                    return "Focus → [\(role)]"
+                }
+                return "Focus → (unknown)"
             }
+            
+            // For key events, show the key pressed
+            if interactionType == "key" {
+                if let inputData = data["inputData"] as? [String: Any],
+                   let key = inputData["key"] as? String {
+                    let modifiers = inputData["modifiers"] as? [String] ?? []
+                    if modifiers.isEmpty {
+                        return "Key: \(key)"
+                    } else {
+                        return "Key: \(modifiers.joined(separator: "+"))+\(key)"
+                    }
+                }
+                return "key"
+            }
+            
+            // For clicks and other interactions, show element info if available
+            var elementInfo = ""
+            if let target = data["target"] as? [String: Any],
+               let element = target["element"] as? [String: Any] {
+                let title = element["title"] as? String ?? ""
+                let label = element["label"] as? String ?? ""
+                elementInfo = !title.isEmpty ? title : label
+            }
+            if elementInfo.isEmpty, let inputData = data["inputData"] as? [String: Any] {
+                let elementTitle = inputData["elementTitle"] as? String ?? ""
+                let elementLabel = inputData["elementLabel"] as? String ?? ""
+                elementInfo = !elementTitle.isEmpty ? elementTitle : elementLabel
+            }
+            
+            // Return element info if we have it (before checking coordinates)
+            if !elementInfo.isEmpty {
+                return "\(interactionType): \(elementInfo)"
+            }
+            
+            // Fall back to coordinates if no element info
+            if let coords = data["coordinates"] as? [String: Any] {
+                let x = (coords["x"] as? Double) ?? Double(coords["x"] as? String ?? "") ?? 0
+                let y = (coords["y"] as? Double) ?? Double(coords["y"] as? String ?? "") ?? 0
+                if x != 0 || y != 0 {
+                    return "\(interactionType) at (\(Int(x)),\(Int(y)))"
+                }
+            }
+            
             return interactionType
         }
-        if let key = data["key"] as? String {
-            return "Key: \(key)"
+        
+        // Element focus changed events
+        if let role = data["role"] as? String {
+            let title = data["title"] as? String ?? ""
+            let desc = data["description"] as? String ?? ""
+            let elementName = !title.isEmpty ? title : (!desc.isEmpty ? desc : role)
+            return "Focus: \(elementName)"
         }
+        
         return String(describing: data).prefix(50).description
     }
     

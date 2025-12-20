@@ -7,9 +7,241 @@
 #import <Foundation/Foundation.h>
 #import <ApplicationServices/ApplicationServices.h>
 #import <Carbon/Carbon.h>
+#import <AppKit/AppKit.h>
 
 // Global flag for clean shutdown
 static volatile bool shouldContinue = true;
+
+// Get UI element information at screen coordinates using AXUIElement API
+NSDictionary* getElementAtPoint(CGFloat x, CGFloat y) {
+    AXUIElementRef systemWide = AXUIElementCreateSystemWide();
+    AXUIElementRef element = NULL;
+    
+    AXError error = AXUIElementCopyElementAtPosition(systemWide, x, y, &element);
+    CFRelease(systemWide);
+    
+    if (error != kAXErrorSuccess || element == NULL) {
+        return nil;
+    }
+    
+    NSMutableDictionary* info = [NSMutableDictionary dictionary];
+    
+    // Get role
+    CFTypeRef roleRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXRoleAttribute, &roleRef) == kAXErrorSuccess && roleRef) {
+        info[@"role"] = (__bridge_transfer NSString*)roleRef;
+    }
+    
+    // Get title
+    CFTypeRef titleRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXTitleAttribute, &titleRef) == kAXErrorSuccess && titleRef) {
+        info[@"title"] = (__bridge_transfer NSString*)titleRef;
+    }
+    
+    // Get description (accessibility label)
+    CFTypeRef descRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXDescriptionAttribute, &descRef) == kAXErrorSuccess && descRef) {
+        info[@"label"] = (__bridge_transfer NSString*)descRef;
+    }
+    
+    // Get value
+    CFTypeRef valueRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXValueAttribute, &valueRef) == kAXErrorSuccess && valueRef) {
+        if (CFGetTypeID(valueRef) == CFStringGetTypeID()) {
+            info[@"value"] = (__bridge_transfer NSString*)valueRef;
+        } else {
+            CFRelease(valueRef);
+        }
+    }
+    
+    // Get role description (human-readable role)
+    CFTypeRef roleDescRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXRoleDescriptionAttribute, &roleDescRef) == kAXErrorSuccess && roleDescRef) {
+        info[@"roleDescription"] = (__bridge_transfer NSString*)roleDescRef;
+    }
+    
+    // Get help text
+    CFTypeRef helpRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXHelpAttribute, &helpRef) == kAXErrorSuccess && helpRef) {
+        info[@"help"] = (__bridge_transfer NSString*)helpRef;
+    }
+    
+    // Get enabled state
+    CFTypeRef enabledRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXEnabledAttribute, &enabledRef) == kAXErrorSuccess && enabledRef) {
+        info[@"enabled"] = (__bridge NSNumber*)enabledRef;
+        CFRelease(enabledRef);
+    }
+    
+    // Get focused state
+    CFTypeRef focusedRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXFocusedAttribute, &focusedRef) == kAXErrorSuccess && focusedRef) {
+        info[@"focused"] = (__bridge NSNumber*)focusedRef;
+        CFRelease(focusedRef);
+    }
+    
+    // Get position and size for bounds
+    CFTypeRef posRef = NULL;
+    CFTypeRef sizeRef = NULL;
+    if (AXUIElementCopyAttributeValue(element, kAXPositionAttribute, &posRef) == kAXErrorSuccess && posRef) {
+        CGPoint pos;
+        if (AXValueGetValue(posRef, kAXValueCGPointType, &pos)) {
+            info[@"boundsX"] = @(pos.x);
+            info[@"boundsY"] = @(pos.y);
+        }
+        CFRelease(posRef);
+    }
+    if (AXUIElementCopyAttributeValue(element, kAXSizeAttribute, &sizeRef) == kAXErrorSuccess && sizeRef) {
+        CGSize size;
+        if (AXValueGetValue(sizeRef, kAXValueCGSizeType, &size)) {
+            info[@"boundsWidth"] = @(size.width);
+            info[@"boundsHeight"] = @(size.height);
+        }
+        CFRelease(sizeRef);
+    }
+    
+    // Get the owning application
+    pid_t pid = 0;
+    if (AXUIElementGetPid(element, &pid) == kAXErrorSuccess) {
+        info[@"pid"] = @(pid);
+        
+        // Get application name from pid
+        NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+        if (app.localizedName) {
+            info[@"applicationName"] = app.localizedName;
+        }
+    }
+    
+    CFRelease(element);
+    
+    // Only return if we got useful info
+    if (info[@"role"] || info[@"title"] || info[@"label"]) {
+        return info;
+    }
+    
+    return nil;
+}
+
+// Get the currently focused UI element system-wide
+NSDictionary* getFocusedElement(void) {
+    // Get the frontmost application
+    NSRunningApplication* frontApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
+    if (!frontApp) {
+        return nil;
+    }
+    
+    // Create AXUIElement for the frontmost app
+    AXUIElementRef appElement = AXUIElementCreateApplication(frontApp.processIdentifier);
+    if (!appElement) {
+        return nil;
+    }
+    
+    // Get the focused UI element
+    AXUIElementRef focusedElement = NULL;
+    AXError error = AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute, (CFTypeRef*)&focusedElement);
+    CFRelease(appElement);
+    
+    if (error != kAXErrorSuccess || !focusedElement) {
+        return nil;
+    }
+    
+    NSMutableDictionary* info = [NSMutableDictionary dictionary];
+    
+    // Get role
+    CFTypeRef roleRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXRoleAttribute, &roleRef) == kAXErrorSuccess && roleRef) {
+        info[@"role"] = (__bridge_transfer NSString*)roleRef;
+    }
+    
+    // Get subrole (important for web elements)
+    CFTypeRef subroleRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXSubroleAttribute, &subroleRef) == kAXErrorSuccess && subroleRef) {
+        info[@"subrole"] = (__bridge_transfer NSString*)subroleRef;
+    }
+    
+    // Get title
+    CFTypeRef titleRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXTitleAttribute, &titleRef) == kAXErrorSuccess && titleRef) {
+        info[@"title"] = (__bridge_transfer NSString*)titleRef;
+    }
+    
+    // Get description (accessibility label - often contains web element info)
+    CFTypeRef descRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXDescriptionAttribute, &descRef) == kAXErrorSuccess && descRef) {
+        info[@"label"] = (__bridge_transfer NSString*)descRef;
+    }
+    
+    // Get value
+    CFTypeRef valueRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute, &valueRef) == kAXErrorSuccess && valueRef) {
+        if (CFGetTypeID(valueRef) == CFStringGetTypeID()) {
+            info[@"value"] = (__bridge_transfer NSString*)valueRef;
+        } else {
+            CFRelease(valueRef);
+        }
+    }
+    
+    // Get role description
+    CFTypeRef roleDescRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXRoleDescriptionAttribute, &roleDescRef) == kAXErrorSuccess && roleDescRef) {
+        info[@"roleDescription"] = (__bridge_transfer NSString*)roleDescRef;
+    }
+    
+    // Get help text
+    CFTypeRef helpRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXHelpAttribute, &helpRef) == kAXErrorSuccess && helpRef) {
+        info[@"help"] = (__bridge_transfer NSString*)helpRef;
+    }
+    
+    // Get DOM identifier if available (Safari exposes this for web elements)
+    CFTypeRef domIdRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXDOMIdentifier"), &domIdRef) == kAXErrorSuccess && domIdRef) {
+        info[@"domId"] = (__bridge_transfer NSString*)domIdRef;
+    }
+    
+    // Get DOM class list if available
+    CFTypeRef domClassRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXDOMClassList"), &domClassRef) == kAXErrorSuccess && domClassRef) {
+        if (CFGetTypeID(domClassRef) == CFArrayGetTypeID()) {
+            info[@"domClassList"] = (__bridge_transfer NSArray*)domClassRef;
+        } else {
+            CFRelease(domClassRef);
+        }
+    }
+    
+    // Get position and size
+    CFTypeRef posRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXPositionAttribute, &posRef) == kAXErrorSuccess && posRef) {
+        CGPoint pos;
+        if (AXValueGetValue(posRef, kAXValueCGPointType, &pos)) {
+            info[@"boundsX"] = @(pos.x);
+            info[@"boundsY"] = @(pos.y);
+        }
+        CFRelease(posRef);
+    }
+    
+    CFTypeRef sizeRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXSizeAttribute, &sizeRef) == kAXErrorSuccess && sizeRef) {
+        CGSize size;
+        if (AXValueGetValue(sizeRef, kAXValueCGSizeType, &size)) {
+            info[@"boundsWidth"] = @(size.width);
+            info[@"boundsHeight"] = @(size.height);
+        }
+        CFRelease(sizeRef);
+    }
+    
+    // Add application info
+    info[@"applicationName"] = frontApp.localizedName ?: @"Unknown";
+    info[@"pid"] = @(frontApp.processIdentifier);
+    
+    CFRelease(focusedElement);
+    
+    if (info[@"role"] || info[@"title"] || info[@"label"]) {
+        return info;
+    }
+    
+    return nil;
+}
 
 // Convert key codes to readable key names
 NSString* keyCodeToString(CGKeyCode keyCode) {
@@ -150,7 +382,11 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
             case kCGEventLeftMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
                 NSArray* modifiers = getModifierFlags(flags);
-                outputEvent(@"mouse_down", @{
+                
+                // Get accessibility element info at click location
+                NSDictionary* elementInfo = getElementAtPoint(location.x, location.y);
+                
+                NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
                     @"button": @"left",
                     @"x": @(location.x),
                     @"y": @(location.y),
@@ -160,49 +396,83 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     @"sourceState": @(sourceState),
                     @"isUserEvent": @(isUserEvent),
                     @"flags": @(flags)
-                });
+                }];
+                
+                if (elementInfo) {
+                    eventData[@"element"] = elementInfo;
+                }
+                
+                outputEvent(@"mouse_down", eventData);
                 break;
             }
                 
             case kCGEventLeftMouseUp: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
                 NSArray* modifiers = getModifierFlags(flags);
-                outputEvent(@"mouse_up", @{
+                
+                // Get accessibility element info at click location
+                NSDictionary* elementInfo = getElementAtPoint(location.x, location.y);
+                
+                NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
                     @"button": @"left",
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
                     @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
-                });
+                }];
+                
+                if (elementInfo) {
+                    eventData[@"element"] = elementInfo;
+                }
+                
+                outputEvent(@"mouse_up", eventData);
                 break;
             }
                 
             case kCGEventRightMouseDown: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
                 NSArray* modifiers = getModifierFlags(flags);
-                outputEvent(@"mouse_down", @{
+                
+                NSDictionary* elementInfo = getElementAtPoint(location.x, location.y);
+                
+                NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
                     @"button": @"right", 
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
                     @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
-                });
+                }];
+                
+                if (elementInfo) {
+                    eventData[@"element"] = elementInfo;
+                }
+                
+                outputEvent(@"mouse_down", eventData);
                 break;
             }
                 
             case kCGEventRightMouseUp: {
                 int64_t clickCount = CGEventGetIntegerValueField(event, kCGMouseEventClickState);
                 NSArray* modifiers = getModifierFlags(flags);
-                outputEvent(@"mouse_up", @{
+                
+                NSDictionary* elementInfo = getElementAtPoint(location.x, location.y);
+                
+                NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
                     @"button": @"right", 
                     @"x": @(location.x),
                     @"y": @(location.y),
                     @"clickCount": @(clickCount),
                     @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
-                });
+                }];
+                
+                if (elementInfo) {
+                    eventData[@"element"] = elementInfo;
+                }
+                
+                outputEvent(@"mouse_up", eventData);
                 break;
             }
                 
@@ -263,15 +533,49 @@ CGEventRef eventCallback(CGEventTapProxy proxy __unused, CGEventType type, CGEve
                     break;
                 }
                 
+                // Skip Tab on key down - we'll handle it on key up when focus has actually moved
+                if (keyCode == kVK_Tab) {
+                    break;
+                }
+                
                 NSString* keyName = keyCodeToString(keyCode);
                 NSArray* modifiers = getModifierFlags(flags);
                 
-                outputEvent(@"key_press", @{
+                NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
                     @"key": keyName,
                     @"keyCode": @(keyCode),
                     @"modifiers": modifiers,
                     @"systemTimestamp": @(timestamp)
-                });
+                }];
+                
+                outputEvent(@"key_press", eventData);
+                break;
+            }
+            
+            case kCGEventKeyUp: {
+                CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+                CGEventFlags flags = CGEventGetFlags(event);
+                
+                // Only handle Tab on key up - focus has now moved to the new element
+                if (keyCode == kVK_Tab) {
+                    NSString* keyName = keyCodeToString(keyCode);
+                    NSArray* modifiers = getModifierFlags(flags);
+                    
+                    NSMutableDictionary* eventData = [NSMutableDictionary dictionaryWithDictionary:@{
+                        @"key": keyName,
+                        @"keyCode": @(keyCode),
+                        @"modifiers": modifiers,
+                        @"systemTimestamp": @(timestamp)
+                    }];
+                    
+                    // Get the now-focused element (focus has moved after Tab was processed)
+                    NSDictionary* focusedElement = getFocusedElement();
+                    if (focusedElement) {
+                        eventData[@"focusedElement"] = focusedElement;
+                    }
+                    
+                    outputEvent(@"focus_change", eventData);
+                }
                 break;
             }
                 
@@ -342,6 +646,7 @@ int main(int argc __unused, const char * argv[] __unused) {
             CGEventMaskBit(kCGEventOtherMouseUp) |
             CGEventMaskBit(kCGEventScrollWheel) |
             CGEventMaskBit(kCGEventKeyDown) |
+            CGEventMaskBit(kCGEventKeyUp) |
             CGEventMaskBit(kCGEventMouseMoved) |
             CGEventMaskBit(kCGEventLeftMouseDragged) |
             CGEventMaskBit(kCGEventRightMouseDragged) |
