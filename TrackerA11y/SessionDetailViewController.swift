@@ -86,9 +86,9 @@ class SessionDetailViewController: NSViewController {
     private var filteredEvents: [[String: Any]] = []
     private var eventTags: [Int: Set<String>] = [:]  // Maps event index to tags
     private var eventNotes: [Int: Data] = [:]  // Maps event index to RTF data
-    private var eventMarkers: [Int: (name: String, note: Data?)] = [:]  // Maps event index to marker
     private var allTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
     private var allTypes: Set<String> = []
+    private var pendingMarkers: [String: [String: Any]] = [:]  // Markers to insert after events load
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -1639,26 +1639,12 @@ class SessionDetailViewController: NSViewController {
         
         let tags = eventTags[eventIndex] ?? Set<String>()
         let hasNote = eventNotes[eventIndex] != nil
-        let marker = eventMarkers[eventIndex]
         
         let stackView = NSStackView()
         stackView.orientation = .horizontal
         stackView.spacing = 4
         stackView.alignment = .centerY
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        if let marker = marker {
-            let markerBadge = NSTextField(labelWithString: "🚩 \(marker.name)")
-            markerBadge.font = NSFont.systemFont(ofSize: 11, weight: .medium)
-            markerBadge.textColor = .systemRed
-            markerBadge.backgroundColor = NSColor.systemRed.withAlphaComponent(0.15)
-            markerBadge.drawsBackground = true
-            markerBadge.isBordered = false
-            markerBadge.isEditable = false
-            markerBadge.wantsLayer = true
-            markerBadge.layer?.cornerRadius = 3
-            stackView.addArrangedSubview(markerBadge)
-        }
         
         if hasNote {
             let noteLabel = NSTextField(labelWithString: "📝")
@@ -1679,7 +1665,7 @@ class SessionDetailViewController: NSViewController {
             stackView.addArrangedSubview(badge)
         }
         
-        if tags.isEmpty && !hasNote && marker == nil {
+        if tags.isEmpty && !hasNote {
             let placeholder = NSTextField(labelWithString: "—")
             placeholder.font = NSFont.systemFont(ofSize: 12)
             placeholder.textColor = .tertiaryLabelColor
@@ -1699,17 +1685,17 @@ class SessionDetailViewController: NSViewController {
     func createTagsNotesContextMenu(for eventIndex: Int) -> NSMenu {
         let tags = eventTags[eventIndex] ?? Set<String>()
         let hasNote = eventNotes[eventIndex] != nil
-        let hasMarker = eventMarkers[eventIndex] != nil
-        return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote, hasMarker: hasMarker)
+        let event = eventIndex < events.count ? events[eventIndex] : nil
+        let isMarkerEvent = event?["source"] as? String == "marker"
+        return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote, isMarkerEvent: isMarkerEvent)
     }
     
-    private func createTagsNotesContextMenuInternal(for eventIndex: Int, tags: Set<String>, hasNote: Bool, hasMarker: Bool) -> NSMenu {
+    private func createTagsNotesContextMenuInternal(for eventIndex: Int, tags: Set<String>, hasNote: Bool, isMarkerEvent: Bool) -> NSMenu {
         let menu = NSMenu()
         
-        // Marker section
-        if hasMarker {
-            let markerName = eventMarkers[eventIndex]?.name ?? "Marker"
-            let editMarkerItem = NSMenuItem(title: "Edit Marker '\(markerName)'...", action: #selector(editMarkerAction(_:)), keyEquivalent: "")
+        // Marker section - only show "Add Marker" for non-marker events
+        if isMarkerEvent {
+            let editMarkerItem = NSMenuItem(title: "Edit Marker...", action: #selector(editMarkerAction(_:)), keyEquivalent: "")
             editMarkerItem.target = self
             editMarkerItem.representedObject = eventIndex
             menu.addItem(editMarkerItem)
@@ -1862,30 +1848,45 @@ class SessionDetailViewController: NSViewController {
     
     @objc private func addMarkerAction(_ sender: NSMenuItem) {
         guard let eventIndex = sender.representedObject as? Int else { return }
-        showMarkerEditor(for: eventIndex, existingMarker: nil)
+        showMarkerEditor(for: eventIndex, existingMarkerIndex: nil)
     }
     
     @objc private func editMarkerAction(_ sender: NSMenuItem) {
         guard let eventIndex = sender.representedObject as? Int else { return }
-        let existingMarker = eventMarkers[eventIndex]
-        showMarkerEditor(for: eventIndex, existingMarker: existingMarker)
+        if events[eventIndex]["source"] as? String == "marker" {
+            showMarkerEditor(for: eventIndex, existingMarkerIndex: eventIndex)
+        }
     }
     
     @objc private func deleteMarkerAction(_ sender: NSMenuItem) {
         guard let eventIndex = sender.representedObject as? Int else { return }
-        eventMarkers.removeValue(forKey: eventIndex)
-        saveTags()
-        eventsTableView?.reloadData()
-        timelineView?.eventMarkers = eventMarkers
-        timelineView?.needsDisplay = true
+        if events[eventIndex]["source"] as? String == "marker" {
+            events.remove(at: eventIndex)
+            shiftTagsAndNotesAfterDelete(at: eventIndex)
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+        }
     }
     
-    private func showMarkerEditor(for eventIndex: Int, existingMarker: (name: String, note: Data?)?) {
+    private func showMarkerEditor(for eventIndex: Int, existingMarkerIndex: Int?) {
+        var existingName: String = ""
+        var existingNoteData: Data? = nil
+        
+        if let markerIdx = existingMarkerIndex, markerIdx < events.count {
+            let markerEvent = events[markerIdx]
+            existingName = markerEvent["markerName"] as? String ?? ""
+            if let noteBase64 = markerEvent["markerNote"] as? String {
+                existingNoteData = Data(base64Encoded: noteBase64)
+            }
+        }
+        
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
                               styleMask: [.titled, .closable, .resizable],
                               backing: .buffered,
                               defer: false)
-        window.title = existingMarker != nil ? "Edit Marker" : "Add Marker"
+        window.title = existingMarkerIndex != nil ? "Edit Marker" : "Add Marker"
         window.center()
         
         let contentView = NSView(frame: window.contentRect(forFrameRect: window.frame))
@@ -1899,7 +1900,7 @@ class SessionDetailViewController: NSViewController {
         
         let nameField = NSTextField(frame: NSRect(x: 120, y: contentView.bounds.height - 34, width: contentView.bounds.width - 132, height: 24))
         nameField.font = NSFont.systemFont(ofSize: 14)
-        nameField.stringValue = existingMarker?.name ?? ""
+        nameField.stringValue = existingName
         nameField.placeholderString = "Enter marker name..."
         nameField.autoresizingMask = [.width, .minYMargin]
         contentView.addSubview(nameField)
@@ -2038,7 +2039,7 @@ class SessionDetailViewController: NSViewController {
         
         currentNoteTextView = textView
         
-        if let existingNote = existingMarker?.note,
+        if let existingNote = existingNoteData,
            let attrString = NSAttributedString(rtf: existingNote, documentAttributes: nil) {
             textView.textStorage?.setAttributedString(attrString)
         }
@@ -2051,7 +2052,7 @@ class SessionDetailViewController: NSViewController {
         buttonBar.spacing = 12
         buttonBar.autoresizingMask = [.width, .maxYMargin]
         
-        if existingMarker != nil {
+        if existingMarkerIndex != nil {
             let deleteBtn = NSButton(title: "Delete Marker", target: self, action: #selector(deleteMarkerFromEditor(_:)))
             deleteBtn.bezelStyle = .rounded
             deleteBtn.contentTintColor = .systemRed
@@ -2087,22 +2088,43 @@ class SessionDetailViewController: NSViewController {
         if response == .OK {
             let markerName = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if !markerName.isEmpty {
-                var noteData: Data? = nil
-                if let storage = textView.textStorage, storage.length > 0 {
-                    noteData = storage.rtf(from: NSRange(location: 0, length: storage.length), documentAttributes: [:])
+                var noteBase64: String? = nil
+                if let storage = textView.textStorage, storage.length > 0,
+                   let noteData = storage.rtf(from: NSRange(location: 0, length: storage.length), documentAttributes: [:]) {
+                    noteBase64 = noteData.base64EncodedString()
                 }
-                eventMarkers[eventIndex] = (name: markerName, note: noteData)
+                
+                if let markerIdx = existingMarkerIndex {
+                    events[markerIdx]["markerName"] = markerName
+                    events[markerIdx]["markerNote"] = noteBase64 as Any
+                } else {
+                    let referenceEvent = events[eventIndex]
+                    let timestamp = referenceEvent["timestamp"] as? Double ?? 0
+                    let markerEvent: [String: Any] = [
+                        "source": "marker",
+                        "type": "marker",
+                        "timestamp": timestamp,
+                        "markerName": markerName,
+                        "markerNote": noteBase64 as Any,
+                        "referenceEventIndex": eventIndex
+                    ]
+                    events.insert(markerEvent, at: eventIndex)
+                    shiftTagsAndNotesAfterInsert(at: eventIndex)
+                }
+                applyEventsFilters()
                 saveTags()
                 eventsTableView?.reloadData()
-                timelineView?.eventMarkers = eventMarkers
-                timelineView?.needsDisplay = true
+                updateTimelineWithCurrentEvents()
             }
         } else if response == .abort {
-            eventMarkers.removeValue(forKey: eventIndex)
-            saveTags()
-            eventsTableView?.reloadData()
-            timelineView?.eventMarkers = eventMarkers
-            timelineView?.needsDisplay = true
+            if let markerIdx = existingMarkerIndex {
+                events.remove(at: markerIdx)
+                shiftTagsAndNotesAfterDelete(at: markerIdx)
+                applyEventsFilters()
+                saveTags()
+                eventsTableView?.reloadData()
+                updateTimelineWithCurrentEvents()
+            }
         }
         
         currentNoteTextView = nil
@@ -2781,12 +2803,24 @@ class SessionDetailViewController: NSViewController {
             }
             
             return true
-        }.map { $0.1 }
+        }.map { (index, event) -> [String: Any] in
+            var eventWithIndex = event
+            eventWithIndex["_originalIndex"] = index
+            return eventWithIndex
+        }
         
-        timelineView?.setEvents(timelineFilteredEvents.isEmpty && searchText.isEmpty && noTypeFilter && noTagFilter ? events.filter { event in
-            guard let source = event["source"] as? String else { return false }
-            return timelineSourceFilters[source] ?? true
-        } : timelineFilteredEvents)
+        let eventsForTimeline: [[String: Any]]
+        if timelineFilteredEvents.isEmpty && searchText.isEmpty && noTypeFilter && noTagFilter {
+            eventsForTimeline = events.enumerated().compactMap { (index, event) -> [String: Any]? in
+                guard let source = event["source"] as? String, timelineSourceFilters[source] ?? true else { return nil }
+                var eventWithIndex = event
+                eventWithIndex["_originalIndex"] = index
+                return eventWithIndex
+            }
+        } else {
+            eventsForTimeline = timelineFilteredEvents
+        }
+        timelineView?.setEvents(eventsForTimeline)
         
         let total = events.count
         let showing = timelineFilteredEvents.isEmpty && searchText.isEmpty && noTypeFilter && noTagFilter 
@@ -3110,25 +3144,71 @@ class SessionDetailViewController: NSViewController {
                         }
                     }
                     if let markersDict = tagsDict["eventMarkers"] as? [String: [String: Any]] {
-                        eventMarkers = [:]
-                        for (key, markerData) in markersDict {
-                            if let index = Int(key), let name = markerData["name"] as? String {
-                                var noteData: Data? = nil
-                                if let noteBase64 = markerData["note"] as? String {
-                                    noteData = Data(base64Encoded: noteBase64)
-                                }
-                                eventMarkers[index] = (name: name, note: noteData)
-                            }
-                        }
+                        pendingMarkers = markersDict
                     }
                     populateTagFilter()
                     populateTimelineTagFilter()
-                    timelineView?.eventMarkers = eventMarkers
                 }
             } catch {
                 print("Failed to load tags: \(error)")
             }
         }
+    }
+    
+    private func insertMarkerEvent(_ marker: [String: Any], beforeIndex index: Int) {
+        var adjustedIndex = index
+        for i in 0..<index {
+            if events[i]["source"] as? String == "marker" {
+                adjustedIndex += 1
+            }
+        }
+        if adjustedIndex > events.count {
+            adjustedIndex = events.count
+        }
+        events.insert(marker, at: adjustedIndex)
+        shiftTagsAndNotesAfterInsert(at: adjustedIndex)
+    }
+    
+    private func shiftTagsAndNotesAfterInsert(at insertIndex: Int) {
+        var newTags: [Int: Set<String>] = [:]
+        var newNotes: [Int: Data] = [:]
+        for (idx, tags) in eventTags {
+            if idx >= insertIndex {
+                newTags[idx + 1] = tags
+            } else {
+                newTags[idx] = tags
+            }
+        }
+        for (idx, note) in eventNotes {
+            if idx >= insertIndex {
+                newNotes[idx + 1] = note
+            } else {
+                newNotes[idx] = note
+            }
+        }
+        eventTags = newTags
+        eventNotes = newNotes
+    }
+    
+    private func shiftTagsAndNotesAfterDelete(at deleteIndex: Int) {
+        var newTags: [Int: Set<String>] = [:]
+        var newNotes: [Int: Data] = [:]
+        for (idx, tags) in eventTags {
+            if idx > deleteIndex {
+                newTags[idx - 1] = tags
+            } else if idx < deleteIndex {
+                newTags[idx] = tags
+            }
+        }
+        for (idx, note) in eventNotes {
+            if idx > deleteIndex {
+                newNotes[idx - 1] = note
+            } else if idx < deleteIndex {
+                newNotes[idx] = note
+            }
+        }
+        eventTags = newTags
+        eventNotes = newNotes
     }
     
     private func saveTags() {
@@ -3145,12 +3225,19 @@ class SessionDetailViewController: NSViewController {
         }
         
         var eventMarkersDict: [String: [String: Any]] = [:]
-        for (index, marker) in eventMarkers {
-            var markerData: [String: Any] = ["name": marker.name]
-            if let noteData = marker.note {
-                markerData["note"] = noteData.base64EncodedString()
+        for (index, event) in events.enumerated() {
+            if event["source"] as? String == "marker" {
+                let name = event["markerName"] as? String ?? "Marker"
+                var markerData: [String: Any] = ["name": name]
+                if let noteBase64 = event["markerNote"] as? String {
+                    markerData["note"] = noteBase64
+                }
+                if let refIndex = event["referenceEventIndex"] as? Int {
+                    eventMarkersDict[String(refIndex)] = markerData
+                } else {
+                    eventMarkersDict[String(index)] = markerData
+                }
             }
-            eventMarkersDict[String(index)] = markerData
         }
         
         let defaultTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
@@ -3171,21 +3258,69 @@ class SessionDetailViewController: NSViewController {
         }
     }
     
+    private func updateTimelineWithCurrentEvents() {
+        let eventsWithIndices = events.enumerated().map { (index, event) -> [String: Any] in
+            var eventWithIndex = event
+            eventWithIndex["_originalIndex"] = index
+            return eventWithIndex
+        }
+        timelineView?.setEvents(eventsWithIndices)
+        timelineView?.needsDisplay = true
+    }
+    
     private func finishLoading() {
         print("🔄 Finishing loading with \(events.count) events")
         loadingIndicator.stopAnimation(nil)
         loadingIndicator.isHidden = true
         
-        // Initialize filtered events and populate type filter
+        processPendingMarkers()
+        
         filteredEvents = events
         populateTypeFilter()
         eventsCountLabel?.stringValue = "\(events.count) events"
         
-        // Ensure stats are calculated before updating views
         calculateSessionStats()
         updateAllViews()
         
         print("✅ Loading complete - UI updated")
+    }
+    
+    private func processPendingMarkers() {
+        print("🔖 processPendingMarkers called - pendingMarkers count: \(pendingMarkers.count), events count: \(events.count)")
+        guard !pendingMarkers.isEmpty else { 
+            print("🔖 No pending markers to process")
+            return 
+        }
+        
+        let sortedKeys = pendingMarkers.keys.compactMap { Int($0) }.sorted()
+        print("🔖 Processing markers for indices: \(sortedKeys)")
+        for index in sortedKeys {
+            guard let markerData = pendingMarkers[String(index)],
+                  let name = markerData["name"] as? String,
+                  index < events.count else { 
+                print("🔖 Skipping marker at index \(index) - events.count=\(events.count)")
+                continue 
+            }
+            
+            let referenceEvent = events[index]
+            let timestamp = referenceEvent["timestamp"] as? Double ?? 0
+            var noteBase64: String? = nil
+            if let nb = markerData["note"] as? String {
+                noteBase64 = nb
+            }
+            let markerEvent: [String: Any] = [
+                "source": "marker",
+                "type": "marker",
+                "timestamp": timestamp,
+                "markerName": name,
+                "markerNote": noteBase64 as Any,
+                "referenceEventIndex": index
+            ]
+            print("🔖 Inserting marker '\(name)' at index \(index)")
+            insertMarkerEvent(markerEvent, beforeIndex: index)
+        }
+        print("🔖 After processing, events count: \(events.count)")
+        pendingMarkers = [:]
     }
     
     private func updateAllViews() {
@@ -3378,8 +3513,13 @@ class SessionDetailViewController: NSViewController {
         // Update time range label
         timelineRangeLabel?.stringValue = formatTimelineRangeLabel()
         
-        // Update the visual timeline
-        timelineView?.setEvents(events)
+        // Update the visual timeline with original indices
+        let eventsWithIndices = events.enumerated().map { (index, event) -> [String: Any] in
+            var eventWithIndex = event
+            eventWithIndex["_originalIndex"] = index
+            return eventWithIndex
+        }
+        timelineView?.setEvents(eventsWithIndices)
     }
     
     private func updateOverviewTab() {
@@ -4211,7 +4351,12 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func updateTimeline() {
-        timelineView?.setEvents(events)
+        let eventsWithIndices = events.enumerated().map { (index, event) -> [String: Any] in
+            var eventWithIndex = event
+            eventWithIndex["_originalIndex"] = index
+            return eventWithIndex
+        }
+        timelineView?.setEvents(eventsWithIndices)
     }
     
     private func formatTimestamp(_ timestamp: Double) -> String {
@@ -4622,7 +4767,6 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             let source = event["source"] as? String ?? "unknown"
             textField.stringValue = source.capitalized
             
-            // Color code by source
             switch source {
             case "interaction":
                 textField.textColor = .systemBlue
@@ -4630,12 +4774,23 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 textField.textColor = .systemOrange
             case "system":
                 textField.textColor = .systemGray
+            case "marker":
+                textField.textColor = .systemRed
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
             default:
                 textField.textColor = .labelColor
             }
             
         case "type":
-            textField.stringValue = (event["type"] as? String ?? "unknown")
+            let source = event["source"] as? String ?? ""
+            if source == "marker" {
+                let markerName = event["markerName"] as? String ?? "Marker"
+                textField.stringValue = markerName
+                textField.textColor = .systemRed
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            } else {
+                textField.stringValue = (event["type"] as? String ?? "unknown")
+            }
             
         case "tagsnotes":
             let originalIndex = getOriginalEventIndex(for: row)
@@ -4749,7 +4904,6 @@ class EnhancedTimelineView: NSView {
     private var hoveredEventIndex: Int? = nil
     var onEventSelected: (([String: Any]) -> Void)?
     var onEventRightClicked: (([String: Any], Int, NSEvent) -> Void)?
-    var eventMarkers: [Int: (name: String, note: Data?)] = [:]
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -4911,7 +5065,7 @@ class EnhancedTimelineView: NSView {
     }
     
     private func drawEventTracks() {
-        let leftMargin: CGFloat = 100
+        let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
         let topMargin: CGFloat = 50
         let bottomMargin: CGFloat = 20
@@ -4923,113 +5077,166 @@ class EnhancedTimelineView: NSView {
             height: bounds.height - topMargin - bottomMargin
         )
         
-        var eventsBySource: [String: [(event: [String: Any], originalIndex: Int)]] = [:]
         let duration = max(endTime - startTime, 1)
         
-        for (index, event) in events.enumerated() {
-            guard let source = event["source"] as? String else { continue }
-            if eventsBySource[source] == nil {
-                eventsBySource[source] = []
-            }
-            eventsBySource[source]?.append((event: event, originalIndex: index))
-        }
+        NSColor.windowBackgroundColor.withAlphaComponent(0.5).setFill()
+        NSRect(x: timelineRect.minX, y: timelineRect.minY, width: timelineRect.width, height: timelineRect.height).fill()
         
-        let sourceOrder = ["interaction", "focus", "system"]
-        let sortedSources = eventsBySource.keys.sorted { 
-            (sourceOrder.firstIndex(of: $0) ?? 99) < (sourceOrder.firstIndex(of: $1) ?? 99)
-        }
+        NSColor.separatorColor.setStroke()
+        let baselinePath = NSBezierPath()
+        let baselineY = timelineRect.minY + timelineRect.height * 0.5
+        baselinePath.move(to: NSPoint(x: timelineRect.minX, y: baselineY))
+        baselinePath.line(to: NSPoint(x: timelineRect.maxX, y: baselineY))
+        baselinePath.lineWidth = 1
+        baselinePath.stroke()
         
-        let trackCount = max(sortedSources.count, 1)
-        let trackHeight = timelineRect.height / CGFloat(trackCount)
-        var trackIndex: CGFloat = 0
-        
-        let colors: [String: NSColor] = [
+        let sourceColors: [String: NSColor] = [
             "interaction": .systemGreen,
             "focus": .systemBlue,
             "system": .systemOrange
         ]
         
-        for source in sortedSources {
-            guard let sourceEvents = eventsBySource[source] else { continue }
-            let color = colors[source] ?? .systemGray
-            let trackY = timelineRect.minY + (CGFloat(trackCount - 1) - trackIndex) * trackHeight
+        let typeColors: [String: NSColor] = [
+            "mousedown": .systemGreen,
+            "mouseup": .systemGreen,
+            "mousemove": NSColor.systemGreen.withAlphaComponent(0.6),
+            "click": .systemTeal,
+            "dblclick": .systemTeal,
+            "keydown": .systemIndigo,
+            "keyup": .systemIndigo,
+            "keypress": .systemIndigo,
+            "scroll": .systemMint,
+            "wheel": .systemMint,
+            "focus": .systemBlue,
+            "blur": .systemBlue,
+            "focusin": .systemBlue,
+            "focusout": .systemBlue,
+            "resize": .systemOrange,
+            "visibilitychange": .systemOrange,
+            "load": .systemYellow,
+            "unload": .systemYellow,
+            "error": .systemRed,
+            "input": .systemPurple,
+            "change": .systemPurple
+        ]
+        
+        let markerColor: NSColor = .systemRed
+        
+        let normalHeight = timelineRect.height * 0.5
+        let markerBarHeight = timelineRect.height * 0.85
+        let barWidth: CGFloat = max(3, 6 * zoomLevel / 2)
+        let spacing: CGFloat = 2
+        
+        var drawnPositions: [Double: CGFloat] = [:]
+        
+        for (index, event) in events.enumerated() {
+            guard let timestamp = event["timestamp"] as? Double else { continue }
+            let relativeTime = (timestamp - startTime) / duration
+            var baseX = timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
             
-            color.withAlphaComponent(0.15).setFill()
-            NSRect(x: timelineRect.minX, y: trackY, width: timelineRect.width, height: trackHeight).fill()
+            let originalIndex = event["_originalIndex"] as? Int ?? index
             
-            NSColor.separatorColor.setStroke()
-            let separatorPath = NSBezierPath()
-            separatorPath.move(to: NSPoint(x: timelineRect.minX, y: trackY))
-            separatorPath.line(to: NSPoint(x: timelineRect.maxX, y: trackY))
-            separatorPath.lineWidth = 0.5
-            separatorPath.stroke()
+            let source = event["source"] as? String ?? "unknown"
+            let eventType = event["type"] as? String ?? "unknown"
+            let isMarkerEvent = source == "marker"
             
-            for eventData in sourceEvents {
-                let event = eventData.event
-                let originalIndex = eventData.originalIndex
-                guard let timestamp = event["timestamp"] as? Double else { continue }
-                let relativeTime = (timestamp - startTime) / duration
-                let x = timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
-                
-                let markerWidth: CGFloat = max(4, 8 * zoomLevel / 2)
-                let markerHeight = trackHeight - 16
-                let markerRect = NSRect(
-                    x: x - markerWidth / 2,
-                    y: trackY + 8,
-                    width: markerWidth,
-                    height: markerHeight
-                )
-                
-                let isHovered = hoveredEventIndex != nil && eventRects.count == hoveredEventIndex
-                let hasMarker = eventMarkers[originalIndex] != nil
-                
-                if isHovered {
-                    color.withAlphaComponent(1.0).setFill()
-                    NSColor.white.setStroke()
-                    let path = NSBezierPath(roundedRect: markerRect.insetBy(dx: -2, dy: -2), xRadius: 3, yRadius: 3)
-                    path.fill()
-                    path.lineWidth = 2
-                    path.stroke()
-                } else {
-                    color.withAlphaComponent(0.8).setFill()
-                    let path = NSBezierPath(roundedRect: markerRect, xRadius: 2, yRadius: 2)
-                    path.fill()
-                }
-                
-                if hasMarker {
-                    let flagText = "🚩"
-                    let flagAttrs: [NSAttributedString.Key: Any] = [
-                        .font: NSFont.systemFont(ofSize: max(10, 12 * zoomLevel / 2))
-                    ]
-                    let flagSize = flagText.size(withAttributes: flagAttrs)
-                    flagText.draw(at: NSPoint(x: x - flagSize.width / 2, y: markerRect.maxY + 2), withAttributes: flagAttrs)
-                }
-                
-                let clickableRect = markerRect.insetBy(dx: -4, dy: -4)
-                eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
+            if let existingX = drawnPositions[timestamp] {
+                baseX = existingX + barWidth + spacing
+            }
+            drawnPositions[timestamp] = baseX
+            
+            let eventColor: NSColor
+            let barHeight: CGFloat
+            
+            if isMarkerEvent {
+                eventColor = markerColor
+                barHeight = markerBarHeight
+            } else if let typeColor = typeColors[eventType] {
+                eventColor = typeColor
+                barHeight = normalHeight
+            } else if let sourceColor = sourceColors[source] {
+                eventColor = sourceColor
+                barHeight = normalHeight
+            } else {
+                eventColor = .systemGray
+                barHeight = normalHeight
             }
             
-            let label = source.uppercased()
-            let labelAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 14, weight: .medium),
-                .foregroundColor: NSColor.labelColor
-            ]
-            let labelSize = label.size(withAttributes: labelAttributes)
-            label.draw(at: NSPoint(x: 10, y: trackY + trackHeight/2 - labelSize.height/2), withAttributes: labelAttributes)
+            let barRect = NSRect(
+                x: baseX - barWidth / 2,
+                y: baselineY - barHeight / 2,
+                width: barWidth,
+                height: barHeight
+            )
             
-            let countLabel = "(\(sourceEvents.count))"
-            let countAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 12),
+            let isHovered = hoveredEventIndex != nil && eventRects.count == hoveredEventIndex
+            
+            if isHovered {
+                eventColor.withAlphaComponent(1.0).setFill()
+                NSColor.white.setStroke()
+                let path = NSBezierPath(roundedRect: barRect.insetBy(dx: -2, dy: -2), xRadius: 3, yRadius: 3)
+                path.fill()
+                path.lineWidth = 2
+                path.stroke()
+            } else {
+                eventColor.withAlphaComponent(0.85).setFill()
+                let path = NSBezierPath(roundedRect: barRect, xRadius: 2, yRadius: 2)
+                path.fill()
+            }
+            
+            if isMarkerEvent, let markerName = event["markerName"] as? String {
+                let labelAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: max(9, 10 * zoomLevel / 2), weight: .medium),
+                    .foregroundColor: NSColor.white
+                ]
+                let labelSize = markerName.size(withAttributes: labelAttrs)
+                let labelRect = NSRect(
+                    x: baseX - labelSize.width / 2 - 3,
+                    y: barRect.maxY + 4,
+                    width: labelSize.width + 6,
+                    height: labelSize.height + 2
+                )
+                markerColor.withAlphaComponent(0.9).setFill()
+                NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
+                markerName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
+            }
+            
+            let clickableRect = barRect.insetBy(dx: -4, dy: -4)
+            eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
+        }
+        
+        drawLegend(in: timelineRect)
+    }
+    
+    private func drawLegend(in timelineRect: NSRect) {
+        let legendItems: [(String, NSColor)] = [
+            ("Interaction", .systemGreen),
+            ("Focus", .systemBlue),
+            ("System", .systemOrange),
+            ("Marker", .systemRed)
+        ]
+        
+        let legendY = timelineRect.maxY + 10
+        var legendX: CGFloat = timelineRect.minX
+        
+        for (label, color) in legendItems {
+            let swatchRect = NSRect(x: legendX, y: legendY, width: 12, height: 12)
+            color.setFill()
+            NSBezierPath(roundedRect: swatchRect, xRadius: 2, yRadius: 2).fill()
+            
+            let labelAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 11),
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
-            countLabel.draw(at: NSPoint(x: 10 + labelSize.width + 4, y: trackY + trackHeight/2 - 6), withAttributes: countAttributes)
+            let labelSize = label.size(withAttributes: labelAttrs)
+            label.draw(at: NSPoint(x: legendX + 16, y: legendY), withAttributes: labelAttrs)
             
-            trackIndex += 1
+            legendX += 16 + labelSize.width + 20
         }
     }
     
     private func drawTimeAxis() {
-        let leftMargin: CGFloat = 100
+        let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
         let topMargin: CGFloat = 50
         
