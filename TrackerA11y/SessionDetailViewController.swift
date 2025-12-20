@@ -1,6 +1,35 @@
 import Cocoa
 import ObjectiveC
 
+class TagsNotesCellView: NSView {
+    weak var viewController: SessionDetailViewController?
+    var eventIndex: Int = -1
+    
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        if let event = NSApp.currentEvent, event.type == .rightMouseDown {
+            return self
+        }
+        return hit
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        guard let vc = viewController, eventIndex >= 0 else {
+            super.rightMouseDown(with: event)
+            return
+        }
+        let menu = vc.createTagsNotesContextMenu(for: eventIndex)
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+    
+    override func menu(for event: NSEvent) -> NSMenu? {
+        guard let vc = viewController, eventIndex >= 0 else {
+            return super.menu(for: event)
+        }
+        return vc.createTagsNotesContextMenu(for: eventIndex)
+    }
+}
+
 class SessionDetailViewController: NSViewController {
     
     private let sessionId: String
@@ -932,18 +961,11 @@ class SessionDetailViewController: NSViewController {
         typeColumn.minWidth = 100
         tableView.addTableColumn(typeColumn)
         
-        let tagsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("tags"))
-        tagsColumn.title = "Tags"
-        tagsColumn.width = 120
-        tagsColumn.minWidth = 80
-        tableView.addTableColumn(tagsColumn)
-        
-        let noteColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("note"))
-        noteColumn.title = "Note"
-        noteColumn.width = 40
-        noteColumn.minWidth = 40
-        noteColumn.maxWidth = 60
-        tableView.addTableColumn(noteColumn)
+        let tagsNotesColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("tagsnotes"))
+        tagsNotesColumn.title = "Tags / Notes"
+        tagsNotesColumn.width = 180
+        tagsNotesColumn.minWidth = 120
+        tableView.addTableColumn(tagsNotesColumn)
         
         let detailsColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("details"))
         detailsColumn.title = "Details"
@@ -964,23 +986,6 @@ class SessionDetailViewController: NSViewController {
         
         // Store reference
         self.eventsTableView = tableView
-        
-        // Add context menu for right-click
-        let contextMenu = NSMenu()
-        let addNoteItem = NSMenuItem(title: "Add Note...", action: #selector(contextMenuAddNote(_:)), keyEquivalent: "")
-        addNoteItem.target = self
-        contextMenu.addItem(addNoteItem)
-        let editNoteItem = NSMenuItem(title: "Edit Note...", action: #selector(contextMenuEditNote(_:)), keyEquivalent: "")
-        editNoteItem.target = self
-        contextMenu.addItem(editNoteItem)
-        let deleteNoteItem = NSMenuItem(title: "Delete Note", action: #selector(contextMenuDeleteNote(_:)), keyEquivalent: "")
-        deleteNoteItem.target = self
-        contextMenu.addItem(deleteNoteItem)
-        contextMenu.addItem(NSMenuItem.separator())
-        let tagItem = NSMenuItem(title: "Tag Event...", action: #selector(contextMenuTagEvent(_:)), keyEquivalent: "")
-        tagItem.target = self
-        contextMenu.addItem(tagItem)
-        tableView.menu = contextMenu
         
         // Wrap in scroll view
         let scrollView = NSScrollView()
@@ -1060,12 +1065,6 @@ class SessionDetailViewController: NSViewController {
         clearButton.font = NSFont.systemFont(ofSize: 14)
         clearButton.bezelStyle = .rounded
         toolbar.addArrangedSubview(clearButton)
-        
-        // Tag selected events button
-        let tagSelectedButton = NSButton(title: "Tag Selected", target: self, action: #selector(tagSelectedEvents(_:)))
-        tagSelectedButton.font = NSFont.systemFont(ofSize: 14)
-        tagSelectedButton.bezelStyle = .rounded
-        toolbar.addArrangedSubview(tagSelectedButton)
         
         // Flexible spacer at end
         let spacer = NSView()
@@ -1215,54 +1214,6 @@ class SessionDetailViewController: NSViewController {
         
         // Show menu at button location
         menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
-    }
-    
-    @objc private func contextMenuAddNote(_ sender: NSMenuItem) {
-        guard let tableView = eventsTableView else { return }
-        let clickedRow = tableView.clickedRow
-        guard clickedRow >= 0 else { return }
-        let originalIndex = getOriginalEventIndex(for: clickedRow)
-        showNoteEditor(for: originalIndex, fromTimeline: false)
-    }
-    
-    @objc private func contextMenuEditNote(_ sender: NSMenuItem) {
-        guard let tableView = eventsTableView else { return }
-        let clickedRow = tableView.clickedRow
-        guard clickedRow >= 0 else { return }
-        let originalIndex = getOriginalEventIndex(for: clickedRow)
-        showNoteEditor(for: originalIndex, fromTimeline: false)
-    }
-    
-    @objc private func contextMenuDeleteNote(_ sender: NSMenuItem) {
-        guard let tableView = eventsTableView else { return }
-        let clickedRow = tableView.clickedRow
-        guard clickedRow >= 0 else { return }
-        let originalIndex = getOriginalEventIndex(for: clickedRow)
-        eventNotes.removeValue(forKey: originalIndex)
-        saveTags()
-        tableView.reloadData()
-    }
-    
-    @objc private func contextMenuTagEvent(_ sender: NSMenuItem) {
-        guard let tableView = eventsTableView else { return }
-        let clickedRow = tableView.clickedRow
-        guard clickedRow >= 0 else { return }
-        tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
-        
-        let menu = NSMenu(title: "Select Tag")
-        for tag in allTags.sorted() {
-            let item = NSMenuItem(title: tag, action: #selector(applyTagToSelection(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = tag
-            menu.addItem(item)
-        }
-        menu.addItem(NSMenuItem.separator())
-        let customItem = NSMenuItem(title: "Add Custom Tag...", action: #selector(addCustomTag(_:)), keyEquivalent: "")
-        customItem.target = self
-        menu.addItem(customItem)
-        
-        let rowRect = tableView.rect(ofRow: clickedRow)
-        menu.popUp(positioning: nil, at: NSPoint(x: rowRect.midX, y: rowRect.midY), in: tableView)
     }
     
     @objc private func addNoteToSelectedEvent(_ sender: NSButton) {
@@ -1677,6 +1628,196 @@ class SessionDetailViewController: NSViewController {
             }
         }
         return filteredIndex
+    }
+    
+    private func createTagsNotesCellView(for eventIndex: Int, row: Int) -> NSView {
+        let cellView = TagsNotesCellView()
+        cellView.eventIndex = eventIndex
+        cellView.viewController = self
+        
+        let tags = eventTags[eventIndex] ?? Set<String>()
+        let hasNote = eventNotes[eventIndex] != nil
+        
+        let stackView = NSStackView()
+        stackView.orientation = .horizontal
+        stackView.spacing = 4
+        stackView.alignment = .centerY
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        if hasNote {
+            let noteLabel = NSTextField(labelWithString: "📝")
+            noteLabel.font = NSFont.systemFont(ofSize: 12)
+            stackView.addArrangedSubview(noteLabel)
+        }
+        
+        for tag in tags.sorted() {
+            let badge = NSTextField(labelWithString: tag)
+            badge.font = NSFont.systemFont(ofSize: 11)
+            badge.textColor = .systemPurple
+            badge.backgroundColor = NSColor.systemPurple.withAlphaComponent(0.15)
+            badge.drawsBackground = true
+            badge.isBordered = false
+            badge.isEditable = false
+            badge.wantsLayer = true
+            badge.layer?.cornerRadius = 3
+            stackView.addArrangedSubview(badge)
+        }
+        
+        if tags.isEmpty && !hasNote {
+            let placeholder = NSTextField(labelWithString: "—")
+            placeholder.font = NSFont.systemFont(ofSize: 12)
+            placeholder.textColor = .tertiaryLabelColor
+            stackView.addArrangedSubview(placeholder)
+        }
+        
+        cellView.addSubview(stackView)
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 4),
+            stackView.trailingAnchor.constraint(lessThanOrEqualTo: cellView.trailingAnchor, constant: -4),
+            stackView.centerYAnchor.constraint(equalTo: cellView.centerYAnchor)
+        ])
+        
+        return cellView
+    }
+    
+    func createTagsNotesContextMenu(for eventIndex: Int) -> NSMenu {
+        let tags = eventTags[eventIndex] ?? Set<String>()
+        let hasNote = eventNotes[eventIndex] != nil
+        return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote)
+    }
+    
+    private func createTagsNotesContextMenuInternal(for eventIndex: Int, tags: Set<String>, hasNote: Bool) -> NSMenu {
+        let menu = NSMenu()
+        
+        if hasNote {
+            let editNoteItem = NSMenuItem(title: "Edit Note...", action: #selector(tagsNotesEditNote(_:)), keyEquivalent: "")
+            editNoteItem.target = self
+            editNoteItem.representedObject = eventIndex
+            menu.addItem(editNoteItem)
+            
+            let deleteNoteItem = NSMenuItem(title: "Delete Note", action: #selector(tagsNotesDeleteNote(_:)), keyEquivalent: "")
+            deleteNoteItem.target = self
+            deleteNoteItem.representedObject = eventIndex
+            menu.addItem(deleteNoteItem)
+        } else {
+            let addNoteItem = NSMenuItem(title: "Add Note...", action: #selector(tagsNotesAddNote(_:)), keyEquivalent: "")
+            addNoteItem.target = self
+            addNoteItem.representedObject = eventIndex
+            menu.addItem(addNoteItem)
+        }
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        if !tags.isEmpty {
+            let removeTagsMenu = NSMenu()
+            for tag in tags.sorted() {
+                let removeItem = NSMenuItem(title: tag, action: #selector(tagsNotesRemoveTag(_:)), keyEquivalent: "")
+                removeItem.target = self
+                removeItem.representedObject = ["tag": tag, "eventIndex": eventIndex]
+                removeTagsMenu.addItem(removeItem)
+            }
+            let removeTagsItem = NSMenuItem(title: "Remove Tag", action: nil, keyEquivalent: "")
+            removeTagsItem.submenu = removeTagsMenu
+            menu.addItem(removeTagsItem)
+        }
+        
+        let addTagMenu = NSMenu()
+        let existingTags = tags
+        var hasAvailableTags = false
+        for tag in allTags.sorted() {
+            if !existingTags.contains(tag) {
+                let item = NSMenuItem(title: tag, action: #selector(tagsNotesAddTag(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = ["tag": tag, "eventIndex": eventIndex]
+                addTagMenu.addItem(item)
+                hasAvailableTags = true
+            }
+        }
+        if !hasAvailableTags {
+            let item = NSMenuItem(title: "(All tags applied)", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            addTagMenu.addItem(item)
+        }
+        addTagMenu.addItem(NSMenuItem.separator())
+        let newTagItem = NSMenuItem(title: "New Tag...", action: #selector(tagsNotesNewTag(_:)), keyEquivalent: "")
+        newTagItem.target = self
+        newTagItem.representedObject = eventIndex
+        addTagMenu.addItem(newTagItem)
+        
+        let addTagItem = NSMenuItem(title: "Add Tag", action: nil, keyEquivalent: "")
+        addTagItem.submenu = addTagMenu
+        menu.addItem(addTagItem)
+        
+        return menu
+    }
+    
+    @objc private func tagsNotesAddNote(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        showNoteEditor(for: eventIndex, fromTimeline: false)
+    }
+    
+    @objc private func tagsNotesEditNote(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        showNoteEditor(for: eventIndex, fromTimeline: false)
+    }
+    
+    @objc private func tagsNotesDeleteNote(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        eventNotes.removeValue(forKey: eventIndex)
+        saveTags()
+        eventsTableView?.reloadData()
+    }
+    
+    @objc private func tagsNotesAddTag(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: Any],
+              let tag = info["tag"] as? String,
+              let eventIndex = info["eventIndex"] as? Int else { return }
+        
+        if eventTags[eventIndex] == nil {
+            eventTags[eventIndex] = Set<String>()
+        }
+        eventTags[eventIndex]?.insert(tag)
+        saveTags()
+        eventsTableView?.reloadData()
+    }
+    
+    @objc private func tagsNotesRemoveTag(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: Any],
+              let tag = info["tag"] as? String,
+              let eventIndex = info["eventIndex"] as? Int else { return }
+        
+        eventTags[eventIndex]?.remove(tag)
+        if eventTags[eventIndex]?.isEmpty == true {
+            eventTags.removeValue(forKey: eventIndex)
+        }
+        saveTags()
+        eventsTableView?.reloadData()
+    }
+    
+    @objc private func tagsNotesNewTag(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int else { return }
+        
+        let alert = NSAlert()
+        alert.messageText = "New Tag"
+        alert.informativeText = "Enter a name for the new tag:"
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        alert.accessoryView = textField
+        alert.addButton(withTitle: "Add")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            let newTag = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newTag.isEmpty {
+                allTags.insert(newTag)
+                if eventTags[eventIndex] == nil {
+                    eventTags[eventIndex] = Set<String>()
+                }
+                eventTags[eventIndex]?.insert(newTag)
+                saveTags()
+                eventsTableView?.reloadData()
+            }
+        }
     }
     
     private func applyEventsFilters() {
@@ -4169,25 +4310,9 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         case "type":
             textField.stringValue = (event["type"] as? String ?? "unknown")
             
-        case "tags":
+        case "tagsnotes":
             let originalIndex = getOriginalEventIndex(for: row)
-            let tags = eventTags[originalIndex] ?? Set<String>()
-            if tags.isEmpty {
-                textField.stringValue = "—"
-                textField.textColor = .tertiaryLabelColor
-            } else {
-                textField.stringValue = tags.sorted().joined(separator: ", ")
-                textField.textColor = .systemPurple
-            }
-            
-        case "note":
-            let originalIndex = getOriginalEventIndex(for: row)
-            if eventNotes[originalIndex] != nil {
-                textField.stringValue = "📝"
-                textField.alignment = .center
-            } else {
-                textField.stringValue = ""
-            }
+            return createTagsNotesCellView(for: originalIndex, row: row)
             
         case "details":
             textField.stringValue = formatEventData(event["data"] as? [String: Any] ?? [:])
