@@ -89,6 +89,7 @@ class SessionDetailViewController: NSViewController {
     private var allTags: Set<String> = ["Important", "Bug", "Question", "Follow-up", "Resolved"]
     private var allTypes: Set<String> = []
     private var pendingMarkers: [String: [String: Any]] = [:]  // Markers to insert after events load
+    private var sessionStartTimestamp: Double = 0  // First event timestamp for relative time display
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -922,6 +923,12 @@ class SessionDetailViewController: NSViewController {
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         headerStack.addArrangedSubview(spacer)
         
+        // Add Marker at Timecode button
+        let addMarkerBtn = NSButton(title: "🚩 Add Marker at Timecode...", target: self, action: #selector(showAddMarkerAtTimecodeDialog(_:)))
+        addMarkerBtn.bezelStyle = .rounded
+        addMarkerBtn.font = NSFont.systemFont(ofSize: 13)
+        headerStack.addArrangedSubview(addMarkerBtn)
+        
         containerView.addSubview(headerStack)
         
         // Filter toolbar
@@ -1686,7 +1693,7 @@ class SessionDetailViewController: NSViewController {
         let tags = eventTags[eventIndex] ?? Set<String>()
         let hasNote = eventNotes[eventIndex] != nil
         let event = eventIndex < events.count ? events[eventIndex] : nil
-        let isMarkerEvent = event?["source"] as? String == "marker"
+        let isMarkerEvent = event?["type"] as? String == "marker"
         return createTagsNotesContextMenuInternal(for: eventIndex, tags: tags, hasNote: hasNote, isMarkerEvent: isMarkerEvent)
     }
     
@@ -1853,14 +1860,14 @@ class SessionDetailViewController: NSViewController {
     
     @objc private func editMarkerAction(_ sender: NSMenuItem) {
         guard let eventIndex = sender.representedObject as? Int else { return }
-        if events[eventIndex]["source"] as? String == "marker" {
+        if events[eventIndex]["type"] as? String == "marker" {
             showMarkerEditor(for: eventIndex, existingMarkerIndex: eventIndex)
         }
     }
     
     @objc private func deleteMarkerAction(_ sender: NSMenuItem) {
         guard let eventIndex = sender.representedObject as? Int else { return }
-        if events[eventIndex]["source"] as? String == "marker" {
+        if events[eventIndex]["type"] as? String == "marker" {
             events.remove(at: eventIndex)
             shiftTagsAndNotesAfterDelete(at: eventIndex)
             applyEventsFilters()
@@ -2101,7 +2108,7 @@ class SessionDetailViewController: NSViewController {
                     let referenceEvent = events[eventIndex]
                     let timestamp = referenceEvent["timestamp"] as? Double ?? 0
                     let markerEvent: [String: Any] = [
-                        "source": "marker",
+                        "source": "editor",
                         "type": "marker",
                         "timestamp": timestamp,
                         "markerName": markerName,
@@ -2141,6 +2148,247 @@ class SessionDetailViewController: NSViewController {
     
     @objc private func markerEditorSave(_ sender: NSButton) {
         NSApp.stopModal(withCode: .OK)
+    }
+    
+    @objc private func showAddMarkerAtTimecodeDialog(_ sender: Any) {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
+                              styleMask: [.titled, .closable, .resizable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = "Add Marker at Timecode"
+        window.center()
+        
+        let contentView = NSView(frame: window.contentRect(forFrameRect: window.frame))
+        contentView.autoresizingMask = [.width, .height]
+        
+        let timecodeLabel = NSTextField(labelWithString: "Timecode (HH:MM:SS.mmm):")
+        timecodeLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        timecodeLabel.frame = NSRect(x: 12, y: contentView.bounds.height - 32, width: 180, height: 20)
+        timecodeLabel.autoresizingMask = [.minYMargin]
+        contentView.addSubview(timecodeLabel)
+        
+        let timecodeField = NSTextField(frame: NSRect(x: 200, y: contentView.bounds.height - 34, width: 150, height: 24))
+        timecodeField.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        timecodeField.placeholderString = "00:01:23.456"
+        timecodeField.autoresizingMask = [.minYMargin]
+        contentView.addSubview(timecodeField)
+        
+        let nameLabel = NSTextField(labelWithString: "Marker Name:")
+        nameLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        nameLabel.frame = NSRect(x: 12, y: contentView.bounds.height - 66, width: 180, height: 20)
+        nameLabel.autoresizingMask = [.minYMargin]
+        contentView.addSubview(nameLabel)
+        
+        let nameField = NSTextField(frame: NSRect(x: 200, y: contentView.bounds.height - 68, width: contentView.bounds.width - 212, height: 24))
+        nameField.font = NSFont.systemFont(ofSize: 14)
+        nameField.placeholderString = "Enter marker name..."
+        nameField.autoresizingMask = [.width, .minYMargin]
+        contentView.addSubview(nameField)
+        
+        let noteLabel = NSTextField(labelWithString: "Note (optional):")
+        noteLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        noteLabel.frame = NSRect(x: 12, y: contentView.bounds.height - 100, width: 150, height: 20)
+        noteLabel.autoresizingMask = [.minYMargin]
+        contentView.addSubview(noteLabel)
+        
+        let ribbonHeight: CGFloat = 36
+        let ribbon = NSStackView(frame: NSRect(x: 0, y: contentView.bounds.height - 100 - ribbonHeight - 4, width: contentView.bounds.width, height: ribbonHeight))
+        ribbon.orientation = .horizontal
+        ribbon.spacing = 4
+        ribbon.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        ribbon.autoresizingMask = [.width, .minYMargin]
+        ribbon.wantsLayer = true
+        ribbon.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        
+        let fontPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fontPopup.addItems(withTitles: ["System", "Helvetica", "Times", "Courier", "Georgia", "Verdana"])
+        fontPopup.font = NSFont.systemFont(ofSize: 11)
+        fontPopup.target = self
+        fontPopup.action = #selector(noteFontChanged(_:))
+        ribbon.addArrangedSubview(fontPopup)
+        
+        let sizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        sizePopup.addItems(withTitles: ["10", "11", "12", "14", "16", "18", "20", "24", "28", "32", "36", "48"])
+        sizePopup.selectItem(withTitle: "14")
+        sizePopup.font = NSFont.systemFont(ofSize: 11)
+        sizePopup.target = self
+        sizePopup.action = #selector(noteSizeChanged(_:))
+        ribbon.addArrangedSubview(sizePopup)
+        
+        let sep1 = NSBox()
+        sep1.boxType = .separator
+        sep1.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        ribbon.addArrangedSubview(sep1)
+        
+        let boldBtn = NSButton(title: "B", target: self, action: #selector(noteToggleBold(_:)))
+        boldBtn.font = NSFont.boldSystemFont(ofSize: 13)
+        boldBtn.bezelStyle = .texturedRounded
+        boldBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(boldBtn)
+        
+        let italicBtn = NSButton(title: "I", target: self, action: #selector(noteToggleItalic(_:)))
+        italicBtn.font = NSFont(name: "Times-Italic", size: 13) ?? NSFont.systemFont(ofSize: 13)
+        italicBtn.bezelStyle = .texturedRounded
+        italicBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(italicBtn)
+        
+        let underlineBtn = NSButton(title: "U", target: self, action: #selector(noteToggleUnderline(_:)))
+        underlineBtn.bezelStyle = .texturedRounded
+        underlineBtn.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        ribbon.addArrangedSubview(underlineBtn)
+        
+        let ribbonSpacer = NSView()
+        ribbonSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        ribbon.addArrangedSubview(ribbonSpacer)
+        
+        contentView.addSubview(ribbon)
+        
+        let scrollView = NSScrollView(frame: NSRect(x: 12, y: 60, width: contentView.bounds.width - 24, height: contentView.bounds.height - 100 - ribbonHeight - 4 - 72))
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .bezelBorder
+        
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: scrollView.bounds.width - 20, height: scrollView.bounds.height))
+        textView.autoresizingMask = [.width]
+        textView.isRichText = true
+        textView.allowsUndo = true
+        textView.font = NSFont.systemFont(ofSize: 14)
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.textContainer?.widthTracksTextView = true
+        
+        currentNoteTextView = textView
+        
+        scrollView.documentView = textView
+        contentView.addSubview(scrollView)
+        
+        let buttonBar = NSStackView(frame: NSRect(x: 12, y: 12, width: contentView.bounds.width - 24, height: 36))
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = 12
+        buttonBar.autoresizingMask = [.width, .maxYMargin]
+        
+        let btnSpacer = NSView()
+        btnSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        buttonBar.addArrangedSubview(btnSpacer)
+        
+        let cancelBtn = NSButton(title: "Cancel", target: self, action: #selector(timecodeMarkerCancel(_:)))
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}"
+        buttonBar.addArrangedSubview(cancelBtn)
+        
+        let saveBtn = NSButton(title: "Add Marker", target: self, action: #selector(timecodeMarkerSave(_:)))
+        saveBtn.bezelStyle = .rounded
+        saveBtn.keyEquivalent = "\r"
+        buttonBar.addArrangedSubview(saveBtn)
+        
+        contentView.addSubview(buttonBar)
+        window.contentView = contentView
+        
+        window.makeFirstResponder(timecodeField)
+        
+        let response = NSApp.runModal(for: window)
+        window.orderOut(nil)
+        
+        if response == .OK {
+            let timecodeStr = timecodeField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let markerName = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            guard !markerName.isEmpty else { return }
+            guard let timestamp = parseTimecode(timecodeStr) else {
+                let alert = NSAlert()
+                alert.messageText = "Invalid Timecode"
+                alert.informativeText = "Please enter timecode in format HH:MM:SS.mmm (e.g., 00:01:23.456)"
+                alert.alertStyle = .warning
+                alert.runModal()
+                return
+            }
+            
+            var noteBase64: String? = nil
+            if let storage = textView.textStorage, storage.length > 0,
+               let noteData = storage.rtf(from: NSRange(location: 0, length: storage.length), documentAttributes: [:]) {
+                noteBase64 = noteData.base64EncodedString()
+            }
+            
+            insertMarkerAtTimecode(timestamp: timestamp, name: markerName, noteBase64: noteBase64)
+        }
+        
+        currentNoteTextView = nil
+    }
+    
+    @objc private func timecodeMarkerCancel(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .cancel)
+    }
+    
+    @objc private func timecodeMarkerSave(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .OK)
+    }
+    
+    private func parseTimecode(_ timecode: String) -> Double? {
+        let parts = timecode.split(separator: ":")
+        guard parts.count == 3 else { return nil }
+        
+        guard let hours = Int(parts[0]) else { return nil }
+        guard let minutes = Int(parts[1]) else { return nil }
+        
+        let secondsParts = parts[2].split(separator: ".")
+        guard let seconds = Int(secondsParts[0]) else { return nil }
+        
+        var milliseconds = 0
+        if secondsParts.count > 1 {
+            let msStr = String(secondsParts[1])
+            let paddedMs = msStr.padding(toLength: 3, withPad: "0", startingAt: 0)
+            milliseconds = Int(paddedMs.prefix(3)) ?? 0
+        }
+        
+        guard let firstEvent = events.first,
+              let firstTimestamp = firstEvent["timestamp"] as? Double else { return nil }
+        
+        let offsetMs = Double(hours * 3600000 + minutes * 60000 + seconds * 1000 + milliseconds)
+        return firstTimestamp + (offsetMs * 1000)
+    }
+    
+    private func insertMarkerAtTimecode(timestamp: Double, name: String, noteBase64: String?) {
+        print("🚩 insertMarkerAtTimecode - timestamp: \(timestamp), name: \(name)")
+        print("🚩 events.count before: \(events.count)")
+        
+        var insertIndex = events.count
+        for (index, event) in events.enumerated() {
+            if let eventTimestamp = event["timestamp"] as? Double, eventTimestamp >= timestamp {
+                insertIndex = index
+                break
+            }
+        }
+        
+        print("🚩 Inserting at index: \(insertIndex)")
+        
+        let markerEvent: [String: Any] = [
+            "source": "editor",
+            "type": "marker",
+            "timestamp": timestamp,
+            "markerName": name,
+            "markerNote": noteBase64 as Any
+        ]
+        
+        events.insert(markerEvent, at: insertIndex)
+        shiftTagsAndNotesAfterInsert(at: insertIndex)
+        
+        print("🚩 events.count after: \(events.count)")
+        
+        filteredEvents = events
+        saveTags()
+        
+        print("🚩 filteredEvents.count: \(filteredEvents.count)")
+        print("🚩 Reloading table view... eventsTableView is \(eventsTableView == nil ? "nil" : "not nil")")
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.eventsTableView?.reloadData()
+            self.updateTimelineWithCurrentEvents()
+            self.eventsCountLabel?.stringValue = "\(self.events.count) events"
+            print("🚩 Table reloaded on main thread, rows: \(self.eventsTableView?.numberOfRows ?? -1)")
+        }
+        print("🚩 Done inserting marker")
     }
     
     private func applyEventsFilters() {
@@ -2344,6 +2592,12 @@ class SessionDetailViewController: NSViewController {
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         headerStack.addArrangedSubview(spacer)
+        
+        // Add Marker at Timecode button
+        let addMarkerBtn = NSButton(title: "🚩 Add Marker at Timecode...", target: self, action: #selector(showAddMarkerAtTimecodeDialog(_:)))
+        addMarkerBtn.bezelStyle = .rounded
+        addMarkerBtn.font = NSFont.systemFont(ofSize: 13)
+        headerStack.addArrangedSubview(addMarkerBtn)
         
         containerView.addSubview(headerStack)
         
@@ -3087,6 +3341,9 @@ class SessionDetailViewController: NSViewController {
                 
                 DispatchQueue.main.async {
                     self.events = eventsArray
+                    if let firstTimestamp = eventsArray.first?["timestamp"] as? Double {
+                        self.sessionStartTimestamp = firstTimestamp
+                    }
                     self.finishLoading()
                 }
                 
@@ -3158,7 +3415,7 @@ class SessionDetailViewController: NSViewController {
     private func insertMarkerEvent(_ marker: [String: Any], beforeIndex index: Int) {
         var adjustedIndex = index
         for i in 0..<index {
-            if events[i]["source"] as? String == "marker" {
+            if events[i]["type"] as? String == "marker" {
                 adjustedIndex += 1
             }
         }
@@ -3226,7 +3483,7 @@ class SessionDetailViewController: NSViewController {
         
         var eventMarkersDict: [String: [String: Any]] = [:]
         for (index, event) in events.enumerated() {
-            if event["source"] as? String == "marker" {
+            if event["type"] as? String == "marker" {
                 let name = event["markerName"] as? String ?? "Marker"
                 var markerData: [String: Any] = ["name": name]
                 if let noteBase64 = event["markerNote"] as? String {
@@ -3309,7 +3566,7 @@ class SessionDetailViewController: NSViewController {
                 noteBase64 = nb
             }
             let markerEvent: [String: Any] = [
-                "source": "marker",
+                "source": "editor",
                 "type": "marker",
                 "timestamp": timestamp,
                 "markerName": name,
@@ -4360,10 +4617,13 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func formatTimestamp(_ timestamp: Double) -> String {
-        let date = Date(timeIntervalSince1970: timestamp / 1_000_000)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: date)
+        let relativeMs = (timestamp - sessionStartTimestamp) / 1000.0
+        let totalSeconds = Int(relativeMs / 1000)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        let ms = Int(relativeMs.truncatingRemainder(dividingBy: 1000))
+        return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms)
     }
     
     private func formatEventData(_ data: [String: Any]) -> String {
@@ -4765,6 +5025,7 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             
         case "source":
             let source = event["source"] as? String ?? "unknown"
+            let eventType = event["type"] as? String ?? ""
             textField.stringValue = source.capitalized
             
             switch source {
@@ -4774,22 +5035,23 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 textField.textColor = .systemOrange
             case "system":
                 textField.textColor = .systemGray
-            case "marker":
-                textField.textColor = .systemRed
-                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            case "editor":
+                if eventType == "marker" {
+                    textField.textColor = .systemRed
+                    textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+                } else {
+                    textField.textColor = .systemPurple
+                }
             default:
                 textField.textColor = .labelColor
             }
             
         case "type":
-            let source = event["source"] as? String ?? ""
-            if source == "marker" {
-                let markerName = event["markerName"] as? String ?? "Marker"
-                textField.stringValue = markerName
+            let eventType = event["type"] as? String ?? "unknown"
+            textField.stringValue = eventType
+            if eventType == "marker" {
                 textField.textColor = .systemRed
                 textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
-            } else {
-                textField.stringValue = (event["type"] as? String ?? "unknown")
             }
             
         case "tagsnotes":
@@ -4797,8 +5059,16 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             return createTagsNotesCellView(for: originalIndex, row: row)
             
         case "details":
-            textField.stringValue = formatEventData(event["data"] as? [String: Any] ?? [:])
-            textField.textColor = .secondaryLabelColor
+            let eventType = event["type"] as? String ?? ""
+            if eventType == "marker" {
+                let markerName = event["markerName"] as? String ?? ""
+                textField.stringValue = markerName
+                textField.textColor = .systemRed
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            } else {
+                textField.stringValue = formatEventData(event["data"] as? [String: Any] ?? [:])
+                textField.textColor = .secondaryLabelColor
+            }
             
         default:
             textField.stringValue = ""
@@ -4833,35 +5103,65 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         selectedTimelineEvent = event
         
         var infoText = ""
+        let eventType = event["type"] as? String ?? ""
+        let isMarkerEvent = eventType.lowercased() == "marker"
         
-        if let timestamp = event["timestamp"] as? Double {
-            infoText += "Time: \(formatTimestamp(timestamp))\n"
+        print("🔍 updateTimelineInfo - eventType: '\(eventType)', isMarker: \(isMarkerEvent), keys: \(event.keys)")
+        if isMarkerEvent {
+            print("🔍 markerName: \(event["markerName"] ?? "nil"), markerNote: \(event["markerNote"] != nil)")
+            if let markerName = event["markerName"] as? String, !markerName.isEmpty {
+                infoText += "🚩 Marker: \(markerName)\n\n"
+            } else {
+                infoText += "🚩 Marker\n\n"
+            }
             
-            let originalIndex = findEventIndex(byTimestamp: timestamp)
-            if originalIndex >= 0 {
-                let tags = eventTags[originalIndex] ?? Set<String>()
-                if !tags.isEmpty {
-                    infoText += "Tags: \(tags.sorted().joined(separator: ", "))\n"
+            if let timestamp = event["timestamp"] as? Double {
+                infoText += "Time: \(formatTimestamp(timestamp))\n"
+            }
+            
+            if let noteBase64 = event["markerNote"] as? String,
+               let noteData = Data(base64Encoded: noteBase64) {
+                if let noteString = extractPlainTextFromRTF(noteData) {
+                    infoText += "\nNote:\n\(noteString)"
                 }
-                if eventNotes[originalIndex] != nil {
-                    infoText += "📝 Has note\n"
+            }
+        } else {
+            if let timestamp = event["timestamp"] as? Double {
+                infoText += "Time: \(formatTimestamp(timestamp))\n"
+                
+                let originalIndex = findEventIndex(byTimestamp: timestamp)
+                if originalIndex >= 0 {
+                    let tags = eventTags[originalIndex] ?? Set<String>()
+                    if !tags.isEmpty {
+                        infoText += "Tags: \(tags.sorted().joined(separator: ", "))\n"
+                    }
+                    if eventNotes[originalIndex] != nil {
+                        infoText += "📝 Has note\n"
+                    }
                 }
+            }
+            
+            if let source = event["source"] as? String {
+                infoText += "Source: \(source.capitalized)\n"
+            }
+            
+            if let type = event["type"] as? String {
+                infoText += "Type: \(type.replacingOccurrences(of: "_", with: " ").capitalized)\n"
+            }
+            
+            if let data = event["data"] as? [String: Any] {
+                infoText += "\nDetails:\n\(formatEventDataDetailed(data))"
             }
         }
         
-        if let source = event["source"] as? String {
-            infoText += "Source: \(source.capitalized)\n"
-        }
-        
-        if let type = event["type"] as? String {
-            infoText += "Type: \(type.replacingOccurrences(of: "_", with: " ").capitalized)\n"
-        }
-        
-        if let data = event["data"] as? [String: Any] {
-            infoText += "\nDetails:\n\(formatEventDataDetailed(data))"
-        }
-        
         timelineDetailLabel?.stringValue = infoText
+    }
+    
+    private func extractPlainTextFromRTF(_ rtfData: Data) -> String? {
+        if let attributedString = NSAttributedString(rtf: rtfData, documentAttributes: nil) {
+            return attributedString.string
+        }
+        return nil
     }
     
     private func showTimelineEventContextMenu(event: [String: Any], eventIndex: Int, nsEvent: NSEvent) {
@@ -4962,15 +5262,18 @@ class EnhancedTimelineView: NSView {
     
     override func mouseDown(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
+        print("🖱️ Timeline mouseDown at: \(locationInView), eventRects count: \(eventRects.count)")
         
         for (index, eventRect) in eventRects.enumerated() {
             if eventRect.rect.contains(locationInView) {
+                print("🖱️ Hit eventRect \(index): type=\(eventRect.event["type"] ?? "nil")")
                 onEventSelected?(eventRect.event)
                 hoveredEventIndex = index
                 needsDisplay = true
                 return
             }
         }
+        print("🖱️ No event hit")
     }
     
     override func rightMouseDown(with event: NSEvent) {
@@ -5138,7 +5441,7 @@ class EnhancedTimelineView: NSView {
             
             let source = event["source"] as? String ?? "unknown"
             let eventType = event["type"] as? String ?? "unknown"
-            let isMarkerEvent = source == "marker"
+            let isMarkerEvent = eventType == "marker"
             
             if let existingX = drawnPositions[timestamp] {
                 baseX = existingX + barWidth + spacing
