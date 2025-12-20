@@ -103,7 +103,101 @@ export class AccessibilityInspector {
       }
     }
     
+    const generalElement = await this.getGeneralElementAtPoint(x, y);
+    if (generalElement) {
+      return generalElement;
+    }
+    
     return null;
+  }
+
+  private async getGeneralElementAtPoint(x: number, y: number): Promise<UIElement | null> {
+    const script = `
+      tell application "System Events"
+        try
+          set frontApp to first process whose frontmost is true
+          set appName to name of frontApp
+          
+          set focusedElem to missing value
+          try
+            set focusedElem to focused UI element of frontApp
+          end try
+          
+          if focusedElem is not missing value then
+            set elemRole to ""
+            set elemTitle to ""
+            set elemValue to ""
+            set elemDesc to ""
+            set elemLabel to ""
+            
+            try
+              set elemRole to role of focusedElem
+            end try
+            try
+              set elemTitle to title of focusedElem
+            end try
+            try
+              set elemValue to value of focusedElem
+            end try
+            try
+              set elemDesc to description of focusedElem
+            end try
+            try
+              set elemLabel to name of focusedElem
+            end try
+            
+            return elemRole & "|" & elemTitle & "|" & elemValue & "|" & elemDesc & "|" & elemLabel & "|true|true|false|${Math.round(x)},${Math.round(y)},0,0"
+          end if
+          
+          try
+            set frontWin to front window of frontApp
+            set winTitle to title of frontWin
+            set winRole to role of frontWin
+            return winRole & "|" & winTitle & "|||" & appName & "|true|false|false|${Math.round(x)},${Math.round(y)},0,0"
+          end try
+          
+          return ""
+        on error errMsg
+          return ""
+        end try
+      end tell
+    `;
+
+    try {
+      const { stdout } = await execFileAsync(this.osascriptPath, ['-e', script], {
+        timeout: 1500
+      });
+      
+      const result = stdout.trim();
+      
+      if (!result) {
+        return null;
+      }
+
+      const [role, title, value, description, label, enabledStr, focusedStr, selectedStr, boundsStr] = result.split('|');
+      
+      let bounds = { x, y, width: 0, height: 0 };
+      if (boundsStr && boundsStr.includes(',')) {
+        const [bx, by, bw, bh] = boundsStr.split(',').map(Number);
+        if (!isNaN(bx) && !isNaN(by) && !isNaN(bw) && !isNaN(bh)) {
+          bounds = { x: bx, y: by, width: bw, height: bh };
+        }
+      }
+
+      return {
+        role: role || 'unknown',
+        title: title || undefined,
+        value: value || undefined,
+        description: description || undefined,
+        label: label || undefined,
+        enabled: enabledStr === 'true',
+        focused: focusedStr === 'true',
+        selected: selectedStr === 'true',
+        bounds
+      };
+    } catch (error) {
+      return null;
+    }
   }
 
   private async getScreenHeight(): Promise<number> {
