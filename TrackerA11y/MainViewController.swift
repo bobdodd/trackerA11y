@@ -538,10 +538,14 @@ class MainViewController: NSViewController {
     }
     
     func cleanup() {
+        print("🔧 DEBUG: MainViewController.cleanup() called, isTracking=\(isTracking), trackerBridge=\(String(describing: trackerBridge))")
         if isTracking {
             stopRecording()
         }
-        trackerBridge?.cleanup()
+        
+        // Use synchronous cleanup to ensure processes terminate before app exits
+        print("🔧 DEBUG: About to call trackerBridge?.cleanupSynchronously()")
+        trackerBridge?.cleanupSynchronously()
         
         // Close any session windows
         for window in sessionWindows {

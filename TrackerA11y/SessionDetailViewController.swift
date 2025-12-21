@@ -3906,6 +3906,7 @@ class SessionDetailViewController: NSViewController {
                 
                 // Try to get events from the JSON structure
                 var eventsArray: [[String: Any]] = []
+                var pauseGapsArray: [(start: Double, end: Double, duration: Double)] = []
                 
                 if let directEvents = sessionJson["events"] as? [[String: Any]] {
                     eventsArray = directEvents
@@ -3925,6 +3926,19 @@ class SessionDetailViewController: NSViewController {
                     }
                 }
                 
+                // Extract pause gaps from metadata
+                if let metadata = sessionJson["metadata"] as? [String: Any],
+                   let pauseGaps = metadata["pauseGaps"] as? [[String: Any]] {
+                    for gap in pauseGaps {
+                        if let start = gap["start"] as? Double,
+                           let end = gap["end"] as? Double,
+                           let duration = gap["duration"] as? Double {
+                            pauseGapsArray.append((start: start, end: end, duration: duration))
+                        }
+                    }
+                    print("✅ Found \(pauseGapsArray.count) pause gaps")
+                }
+                
                 DispatchQueue.main.async {
                     self.events = eventsArray.sorted { 
                         ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0)
@@ -3932,6 +3946,12 @@ class SessionDetailViewController: NSViewController {
                     if let firstTimestamp = self.events.first?["timestamp"] as? Double {
                         self.sessionStartTimestamp = firstTimestamp
                     }
+                    
+                    // Set pause gaps on timeline
+                    if !pauseGapsArray.isEmpty {
+                        self.timelineView?.setPauseGaps(pauseGapsArray)
+                    }
+                    
                     self.finishLoading()
                 }
                 
@@ -6435,6 +6455,9 @@ class EnhancedTimelineView: NSView {
     private var edgePanDirection: CGFloat = 0  // -1 for left, 1 for right, 0 for none
     private var edgePanStartTime: Date?
     
+    // Pause gaps - periods where recording was paused
+    private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []
+    
     var currentZoom: CGFloat {
         return zoomLevel
     }
@@ -6507,6 +6530,11 @@ class EnhancedTimelineView: NSView {
         print("🎬 EnhancedTimelineView.setVideoStartTime: \(timestamp)")
         videoStartTime = timestamp
         startTime = timestamp
+        needsDisplay = true
+    }
+    
+    func setPauseGaps(_ gaps: [(start: Double, end: Double, duration: Double)]) {
+        self.pauseGaps = gaps
         needsDisplay = true
     }
     
@@ -7007,6 +7035,60 @@ class EnhancedTimelineView: NSView {
             
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)
             eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
+        }
+        
+        drawPauseGaps(in: timelineRect, duration: duration)
+    }
+    
+    private func drawPauseGaps(in timelineRect: NSRect, duration: Double) {
+        guard !pauseGaps.isEmpty else { return }
+        
+        let baselineY = timelineRect.minY + timelineRect.height * 0.5
+        
+        for gap in pauseGaps {
+            let startRelative = (gap.start - startTime) / duration
+            let endRelative = (gap.end - startTime) / duration
+            
+            guard startRelative >= 0, endRelative <= 1 else { continue }
+            
+            let startX = timelineRect.minX + CGFloat(startRelative) * timelineRect.width
+            let endX = timelineRect.minX + CGFloat(endRelative) * timelineRect.width
+            let gapWidth = max(endX - startX, 4)
+            
+            let gapRect = NSRect(
+                x: startX,
+                y: timelineRect.minY,
+                width: gapWidth,
+                height: timelineRect.height
+            )
+            NSColor.systemGray.withAlphaComponent(0.3).setFill()
+            gapRect.fill()
+            
+            let pattern: [CGFloat] = [4, 2]
+            NSColor.systemGray.withAlphaComponent(0.6).setStroke()
+            let leftLine = NSBezierPath()
+            leftLine.move(to: NSPoint(x: startX, y: timelineRect.minY))
+            leftLine.line(to: NSPoint(x: startX, y: timelineRect.maxY))
+            leftLine.lineWidth = 1
+            leftLine.setLineDash(pattern, count: 2, phase: 0)
+            leftLine.stroke()
+            
+            let rightLine = NSBezierPath()
+            rightLine.move(to: NSPoint(x: startX + gapWidth, y: timelineRect.minY))
+            rightLine.line(to: NSPoint(x: startX + gapWidth, y: timelineRect.maxY))
+            rightLine.lineWidth = 1
+            rightLine.setLineDash(pattern, count: 2, phase: 0)
+            rightLine.stroke()
+            
+            let pauseIcon = "⏸"
+            let pauseAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 12),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+            let iconSize = pauseIcon.size(withAttributes: pauseAttrs)
+            if gapWidth > iconSize.width + 4 {
+                pauseIcon.draw(at: NSPoint(x: startX + (gapWidth - iconSize.width) / 2, y: baselineY - iconSize.height / 2), withAttributes: pauseAttrs)
+            }
         }
     }
     

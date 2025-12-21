@@ -7,6 +7,29 @@
 
 import { EventRecorder, RecorderConfig } from '../src/recorder';
 
+// Module-level recorder instance so signal handlers can access it
+let recorder: EventRecorder | null = null;
+
+// Register signal handlers IMMEDIATELY at module load time
+// This ensures they're in place before Swift sends any signals
+process.on('SIGUSR1', () => {
+  console.log('\n⏸️ Received SIGUSR1 - Pausing recording...');
+  if (recorder) {
+    recorder.pauseRecording();
+  } else {
+    console.log('⚠️ Recorder not initialized yet');
+  }
+});
+
+process.on('SIGUSR2', () => {
+  console.log('\n▶️ Received SIGUSR2 - Resuming recording...');
+  if (recorder) {
+    recorder.resumeRecording();
+  } else {
+    console.log('⚠️ Recorder not initialized yet');
+  }
+});
+
 async function runEventRecorderDemo() {
   console.log('🎥 TrackerA11y Comprehensive Event Recorder');
   console.log('📊 Records everything: interactions, focus, DOM, screenshots');
@@ -48,7 +71,7 @@ async function runEventRecorderDemo() {
     flushInterval: 10000 // Flush to disk every 10 seconds
   };
 
-  const recorder = new EventRecorder(config);
+  recorder = new EventRecorder(config);
 
   // Event listeners for monitoring
   recorder.on('recordingStarted', (info) => {
@@ -83,7 +106,7 @@ async function runEventRecorderDemo() {
   let isShuttingDown = false;
   
   async function gracefulShutdown() {
-    if (isShuttingDown) return;
+    if (isShuttingDown || !recorder) return;
     isShuttingDown = true;
     
     console.log('\n\n🛑 Stopping recording...');

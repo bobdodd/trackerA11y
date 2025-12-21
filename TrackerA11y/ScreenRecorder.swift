@@ -36,7 +36,7 @@ class ScreenRecorder: NSObject {
     private(set) var state: ScreenRecorderState = .idle
     private var outputURL: URL?
     private var startTime: CMTime?
-    private var pauseStartTime: CMTime?
+    private var lastFrameTime: CMTime?
     private var totalPausedDuration: CMTime = .zero
     private var sessionStartTimestamp: Double = 0
     
@@ -95,6 +95,7 @@ class ScreenRecorder: NSObject {
         
         state = .recording
         startTime = nil
+        lastFrameTime = nil
         totalPausedDuration = .zero
         frameCount = 0
         
@@ -109,7 +110,6 @@ class ScreenRecorder: NSObject {
         guard state == .recording else { return }
         
         state = .paused
-        pauseStartTime = CMClockGetTime(CMClockGetHostTimeClock())
         
         DispatchQueue.main.async {
             self.delegate?.screenRecorderDidPauseRecording()
@@ -121,13 +121,7 @@ class ScreenRecorder: NSObject {
     func resumeRecording() {
         guard state == .paused else { return }
         
-        if let pauseStart = pauseStartTime {
-            let pauseDuration = CMTimeSubtract(CMClockGetTime(CMClockGetHostTimeClock()), pauseStart)
-            totalPausedDuration = CMTimeAdd(totalPausedDuration, pauseDuration)
-        }
-        
         state = .recording
-        pauseStartTime = nil
         
         DispatchQueue.main.async {
             self.delegate?.screenRecorderDidResumeRecording()
@@ -286,17 +280,24 @@ class ScreenRecorder: NSObject {
     }
     
     private func appendVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        let currentTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        
+        if state == .paused {
+            lastFrameTime = currentTime
+            return 
+        }
+        
         guard state == .recording else { return }
         guard let writer = assetWriter, let input = videoInput else { return }
+        guard writer.status != .failed else { return }
         
-        // Get the pixel buffer from the sample buffer
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             return
         }
         
         if writer.status == .unknown {
-            let sourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-            startTime = sourceTime
+            startTime = currentTime
+            lastFrameTime = currentTime
             writer.startWriting()
             writer.startSession(atSourceTime: .zero)
             print("🎬 Asset writer started")
@@ -311,17 +312,23 @@ class ScreenRecorder: NSObject {
         guard input.isReadyForMoreMediaData else { return }
         guard let start = startTime else { return }
         
-        let originalTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        var adjustedTime = CMTimeSubtract(originalTime, start)
+        if let lastTime = lastFrameTime {
+            let gap = CMTimeSubtract(currentTime, lastTime)
+            if gap.seconds > 0.5 {
+                totalPausedDuration = CMTimeAdd(totalPausedDuration, CMTimeSubtract(gap, CMTimeMake(value: 1, timescale: 30)))
+                print("🎬 Detected pause gap of \(gap.seconds)s, adjusted totalPausedDuration")
+            }
+        }
+        lastFrameTime = currentTime
+        
+        var adjustedTime = CMTimeSubtract(currentTime, start)
         adjustedTime = CMTimeSubtract(adjustedTime, totalPausedDuration)
         
         if adjustedTime.seconds < 0 { return }
         
-        // Use pixel buffer adaptor for better compatibility
         if let adaptor = pixelBufferAdaptor {
             adaptor.append(imageBuffer, withPresentationTime: adjustedTime)
         } else {
-            // Fallback to direct sample buffer append
             if let adjustedBuffer = createAdjustedSampleBuffer(sampleBuffer, newTime: adjustedTime) {
                 input.append(adjustedBuffer)
             }

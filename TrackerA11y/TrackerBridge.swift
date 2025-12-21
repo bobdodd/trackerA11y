@@ -113,7 +113,14 @@ class TrackerBridge: NSObject {
         // Pause event simulation
         pauseEventSimulation()
         
-        // TODO: Send pause signal to TrackerA11y Core
+        // Send SIGUSR1 to the node process running event-recorder-demo
+        if let pid = findNodeProcessByPattern("event-recorder-demo") {
+            kill(pid, SIGUSR1)
+            print("⏸ Sent SIGUSR1 (pause) to node process (PID: \(pid))")
+        } else {
+            print("⚠️ Could not find node process to pause")
+        }
+        
         print("⏸ TrackerA11y Core paused")
     }
     
@@ -125,9 +132,45 @@ class TrackerBridge: NSObject {
         // Resume event simulation
         resumeEventSimulation()
         
-        // TODO: Send resume signal to TrackerA11y Core
+        // Send SIGUSR2 to the node process running event-recorder-demo
+        if let pid = findNodeProcessByPattern("event-recorder-demo") {
+            kill(pid, SIGUSR2)
+            print("▶️ Sent SIGUSR2 (resume) to node process (PID: \(pid))")
+        } else {
+            print("⚠️ Could not find node process to resume")
+        }
+        
         print("▶️ TrackerA11y Core resumed")
     }
+    
+    private func findNodeProcessByPattern(_ pattern: String) -> Int32? {
+        // Use pgrep to quickly find the node process - this is fast and non-blocking
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        task.arguments = ["-f", pattern]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                // pgrep returns PIDs one per line, take the first one
+                let pids = output.split(separator: "\n").compactMap { Int32($0) }
+                if let pid = pids.first {
+                    return pid
+                }
+            }
+        } catch {
+            print("⚠️ pgrep failed: \(error)")
+        }
+        return nil
+    }
+    
     
     private func startTrackerCore() {
         print("🔧 DEBUG: startTrackerCore() called")
@@ -160,6 +203,9 @@ class TrackerBridge: NSObject {
             self.nodeProcess?.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/npm")
             self.nodeProcess?.arguments = ["run", "demo:recorder"]
             self.nodeProcess?.currentDirectoryURL = URL(fileURLWithPath: projectPath)
+            
+            // Start the process in its own process group so we can kill all children
+            self.nodeProcess?.qualityOfService = .userInitiated
             
             // Pass session ID to Node.js recorder via environment
             var env = ProcessInfo.processInfo.environment
@@ -207,47 +253,132 @@ class TrackerBridge: NSObject {
     
     private func stopTrackerCore() {
         print("🔧 DEBUG: stopTrackerCore() called")
-        
+        killNodeProcess(synchronous: false)
+    }
+    
+    private func killNodeProcess(synchronous: Bool) {
         guard let process = nodeProcess else {
             print("⚠️ DEBUG: No recording process to stop")
             return
         }
         
-        print("🛑 DEBUG: Stopping TrackerA11y recording process (PID: \(process.processIdentifier))...")
+        let pid = process.processIdentifier
+        print("🛑 DEBUG: Stopping TrackerA11y recording process (PID: \(pid))...")
         print("🔍 DEBUG: Process is running: \(process.isRunning)")
         
-        // Send SIGINT (Ctrl+C) to allow graceful shutdown
-        print("📤 DEBUG: Sending SIGINT for graceful shutdown...")
-        process.interrupt()
-        print("✅ DEBUG: SIGINT sent successfully")
+        // Kill child processes first (node spawned by npm)
+        killChildProcesses(parentPid: pid, signal: SIGINT)
         
-        // Wait a moment for graceful shutdown
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            // Check if it's still running after 3 seconds
+        // Send SIGINT to the main process
+        print("📤 DEBUG: Sending SIGINT to npm process...")
+        kill(pid, SIGINT)
+        
+        if synchronous {
+            // For app termination, wait synchronously
+            var waitCount = 0
+            while process.isRunning && waitCount < 30 {
+                Thread.sleep(forTimeInterval: 0.1)
+                waitCount += 1
+            }
+            
             if process.isRunning {
-                print("⚠️ Process still running, force terminating...")
-                process.terminate()
-                
-                // Wait a bit more for force termination
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    if process.isRunning {
-                        print("❌ Failed to terminate recording process")
-                    } else {
+                print("⚠️ Process still running after 3s, sending SIGKILL...")
+                killChildProcesses(parentPid: pid, signal: SIGKILL)
+                kill(pid, SIGKILL)
+                Thread.sleep(forTimeInterval: 0.5)
+            }
+            
+            // Final cleanup: kill any remaining node processes from our session
+            killTrackerNodeProcesses()
+            
+            print("✅ Recording process terminated (synchronous)")
+            nodeProcess = nil
+        } else {
+            // Non-blocking termination with fallback
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                if process.isRunning {
+                    print("⚠️ Process still running, sending SIGTERM...")
+                    self.killChildProcesses(parentPid: pid, signal: SIGTERM)
+                    kill(pid, SIGTERM)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        if process.isRunning {
+                            print("⚠️ Process still running, sending SIGKILL...")
+                            self.killChildProcesses(parentPid: pid, signal: SIGKILL)
+                            kill(pid, SIGKILL)
+                        }
+                        // Final cleanup of any orphaned processes
+                        self.killTrackerNodeProcesses()
+                        self.nodeProcess = nil
                         print("✅ Recording process terminated")
                     }
+                } else {
+                    // Still clean up any orphaned helpers
+                    self.killTrackerNodeProcesses()
+                    print("✅ Recording process stopped gracefully")
                     self.nodeProcess = nil
                 }
-            } else {
-                print("✅ Recording process stopped gracefully")
-                self.nodeProcess = nil
+            }
+            
+            // Notify about session creation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                print("✅ Recording stopped - new session should be created in recordings/ directory")
+                print("💡 Tip: Click 'View Sessions' to see the new recording session")
             }
         }
+    }
+    
+    private func killChildProcesses(parentPid: Int32, signal: Int32) {
+        // Use pgrep to find child processes
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        task.arguments = ["-P", String(parentPid)]
         
-        // Notify about session creation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            print("✅ Recording stopped - new session should be created in recordings/ directory")
-            print("💡 Tip: Click 'View Sessions' to see the new recording session")
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8) {
+                let childPids = output.split(separator: "\n").compactMap { Int32($0) }
+                for childPid in childPids {
+                    print("📤 Sending signal \(signal) to child process \(childPid)")
+                    // Recursively kill grandchildren first
+                    killChildProcesses(parentPid: childPid, signal: signal)
+                    kill(childPid, signal)
+                }
+            }
+        } catch {
+            print("⚠️ Failed to find child processes: \(error)")
         }
+    }
+    
+    private func killTrackerNodeProcesses() {
+        // Kill any orphaned processes from our recording session
+        let processPatterns = [
+            "event-recorder-demo",  // ts-node recorder
+            "mouse_capture"         // native mouse capture helper
+        ]
+        
+        for pattern in processPatterns {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+            task.arguments = ["-f", pattern]
+            task.standardOutput = FileHandle.nullDevice
+            task.standardError = FileHandle.nullDevice
+            
+            do {
+                try task.run()
+                task.waitUntilExit()
+            } catch {
+                // Ignore errors - process may not exist
+            }
+        }
+        print("🧹 Cleaned up any orphaned tracker processes")
     }
     
     private func findProjectPath() -> String? {
@@ -303,8 +434,21 @@ class TrackerBridge: NSObject {
     }
     
     func cleanup() {
+        print("🔧 DEBUG: TrackerBridge.cleanup() called (async version)")
         stopTracking()
         stopTrackerCore()
+    }
+    
+    func cleanupSynchronously() {
+        print("🔧 DEBUG: cleanupSynchronously() called")
+        stopEventSimulation()
+        isTracking = false
+        isPaused = false
+        currentSessionId = nil
+        killNodeProcess(synchronous: true)
+        // Always clean up orphaned processes even if nodeProcess was already nil
+        killTrackerNodeProcesses()
+        print("🔧 DEBUG: cleanupSynchronously() completed")
     }
 }
 

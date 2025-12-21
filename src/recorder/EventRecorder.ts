@@ -26,12 +26,17 @@ export class EventRecorder extends EventEmitter {
   private mongoStore: SimpleMongoStore;
   
   private isRecording = false;
+  private isPaused = false;
   private sessionId: string;
   private outputDir: string;
   private eventLog: EventLog;
   private eventBuffer: RecordedEvent[] = [];
   private lastScreenshotTime = 0;
   private finalStateCaptured = false;
+  
+  private pauseStartTimestamp: number = 0;
+  private totalPausedDuration: number = 0;
+  private pauseGaps: Array<{ start: number; end: number; duration: number }> = [];
 
   constructor(config: RecorderConfig) {
     super();
@@ -162,6 +167,10 @@ export class EventRecorder extends EventEmitter {
       // Finalize event log
       this.eventLog.endTime = this.timeSync.now();
       this.eventLog.events = this.eventBuffer;
+      
+      // Add pause gap information to metadata
+      (this.eventLog.metadata as any).pauseGaps = this.pauseGaps;
+      (this.eventLog.metadata as any).totalPausedDuration = this.totalPausedDuration;
 
       // Complete MongoDB session
       try {
@@ -202,6 +211,84 @@ export class EventRecorder extends EventEmitter {
   }
 
   /**
+   * Pause recording - creates a pause event and stops capturing
+   */
+  pauseRecording(): void {
+    if (!this.isRecording || this.isPaused) return;
+
+    this.isPaused = true;
+    this.pauseStartTimestamp = this.timeSync.now();
+
+    const pauseEvent = this.createRecordedEvent('system', 'recording_paused', {
+      reason: 'user_requested',
+      pauseTimestamp: this.pauseStartTimestamp
+    });
+    this.addEvent(pauseEvent);
+
+    console.log('⏸️ Recording paused');
+    this.emit('recordingPaused', { 
+      sessionId: this.sessionId,
+      pauseTimestamp: this.pauseStartTimestamp
+    });
+  }
+
+  /**
+   * Resume recording - creates a resume event and tracks the gap
+   */
+  resumeRecording(): void {
+    if (!this.isRecording || !this.isPaused) return;
+
+    const resumeTimestamp = this.timeSync.now();
+    const pauseDuration = resumeTimestamp - this.pauseStartTimestamp;
+    
+    this.pauseGaps.push({
+      start: this.pauseStartTimestamp,
+      end: resumeTimestamp,
+      duration: pauseDuration
+    });
+    this.totalPausedDuration += pauseDuration;
+
+    const resumeEvent = this.createRecordedEvent('system', 'recording_resumed', {
+      pauseStart: this.pauseStartTimestamp,
+      resumeTimestamp: resumeTimestamp,
+      pauseDuration: pauseDuration,
+      totalPausedDuration: this.totalPausedDuration
+    });
+    this.addEvent(resumeEvent);
+
+    this.isPaused = false;
+    this.pauseStartTimestamp = 0;
+
+    console.log(`▶️ Recording resumed (paused for ${(pauseDuration / 1000000).toFixed(2)}s)`);
+    this.emit('recordingResumed', { 
+      sessionId: this.sessionId,
+      resumeTimestamp: resumeTimestamp,
+      pauseDuration: pauseDuration
+    });
+  }
+
+  /**
+   * Get pause gaps for timeline rendering
+   */
+  getPauseGaps(): Array<{ start: number; end: number; duration: number }> {
+    return [...this.pauseGaps];
+  }
+
+  /**
+   * Get total paused duration in microseconds
+   */
+  getTotalPausedDuration(): number {
+    return this.totalPausedDuration;
+  }
+
+  /**
+   * Check if recording is currently paused
+   */
+  getIsPaused(): boolean {
+    return this.isPaused;
+  }
+
+  /**
    * Record a custom event
    */
   recordCustomEvent(type: string, data: any): void {
@@ -228,6 +315,8 @@ export class EventRecorder extends EventEmitter {
   private setupEventHandlers(): void {
     // Focus change events
     this.focusManager.on('focusChanged', async (event) => {
+      if (this.isPaused) return;
+      
       const recordedEvent = this.createRecordedEvent('focus', 'application_focus_changed', {
         applicationName: event.data.applicationName,
         windowTitle: event.data.windowTitle,
@@ -250,6 +339,8 @@ export class EventRecorder extends EventEmitter {
 
     // Element focus change events (keyboard navigation)
     this.focusManager.on('elementFocusChanged', async (event) => {
+      if (this.isPaused) return;
+      
       const recordedEvent = this.createRecordedEvent('focus', 'element_focus_changed', {
         element: event.element,
         role: event.element.role,
@@ -265,6 +356,8 @@ export class EventRecorder extends EventEmitter {
 
     // Interaction events
     this.interactionManager.on('interaction', async (event) => {
+      if (this.isPaused) return;
+      
       const recordedEvent = this.createRecordedEvent('interaction', event.data.interactionType, {
         interactionType: event.data.interactionType,
         target: event.data.target,
