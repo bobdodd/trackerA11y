@@ -96,6 +96,21 @@ export interface BrowserFocusEvent {
   frameId?: number;
 }
 
+export interface BrowserElementEvent {
+  type: 'mouse_down' | 'mouse_up' | 'click' | 'hover';
+  element: BrowserElementDetails;
+  url: string;
+  title: string;
+  button?: number;
+  clientX?: number;
+  clientY?: number;
+  screenX?: number;
+  screenY?: number;
+  tabId?: number;
+  tabUrl?: string;
+  frameId?: number;
+}
+
 export class BrowserExtensionBridge extends EventEmitter {
   private wss: WebSocketServer | null = null;
   private httpServer: ReturnType<typeof createServer> | null = null;
@@ -164,7 +179,7 @@ export class BrowserExtensionBridge extends EventEmitter {
           return;
         }
 
-        if (req.method === 'POST' && req.url === '/focus') {
+        if (req.method === 'POST' && (req.url === '/focus' || req.url === '/element')) {
           let body = '';
           req.on('data', chunk => { body += chunk; });
           req.on('end', () => {
@@ -196,13 +211,19 @@ export class BrowserExtensionBridge extends EventEmitter {
   }
 
   private handleMessage(message: any): void {
-    if (message.type === 'focus_change') {
-      const signature = this.createSignature(message);
-      if (signature === this.lastEventSignature) {
-        return;
-      }
-      this.lastEventSignature = signature;
+    const validTypes = ['focus_change', 'mouse_down', 'mouse_up', 'click', 'hover'];
+    if (!validTypes.includes(message.type)) {
+      return;
+    }
 
+    const signature = this.createSignature(message);
+    if (signature === this.lastEventSignature) {
+      return;
+    }
+    this.lastEventSignature = signature;
+
+    if (message.type === 'focus_change') {
+      console.log(`🌐 Bridge: focus_change on <${message.element?.tagName}> id=${message.element?.id || ''}`);
       const event: BrowserFocusEvent = {
         type: 'focus_change',
         trigger: message.trigger || 'focusin',
@@ -213,8 +234,24 @@ export class BrowserExtensionBridge extends EventEmitter {
         tabUrl: message.tabUrl,
         frameId: message.frameId
       };
-
       this.emit('browserFocus', event);
+    } else {
+      console.log(`🌐 Bridge: ${message.type} on <${message.element?.tagName}> id=${message.element?.id || ''} xpath=${message.element?.xpath || ''}`);
+      const event: BrowserElementEvent = {
+        type: message.type,
+        element: message.element,
+        url: message.url,
+        title: message.title,
+        button: message.button,
+        clientX: message.clientX,
+        clientY: message.clientY,
+        screenX: message.screenX,
+        screenY: message.screenY,
+        tabId: message.tabId,
+        tabUrl: message.tabUrl,
+        frameId: message.frameId
+      };
+      this.emit('browserElement', event);
     }
   }
 

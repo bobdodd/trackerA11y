@@ -7,7 +7,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { BaseInteractionTracker } from '../BaseInteractionTracker';
 import { InteractionEvent, InteractionConfig } from '@/types';
 import * as path from 'path';
-import { BrowserExtensionBridge, BrowserFocusEvent } from '../BrowserExtensionBridge';
+import { BrowserExtensionBridge, BrowserFocusEvent, BrowserElementEvent } from '../BrowserExtensionBridge';
 
 // Helper to extract all focused element properties from native event
 function extractFocusedElementData(focusedElement: any) {
@@ -68,7 +68,9 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
   private sessionId: string = '';
   private nativeHelperPath: string;
   private browserBridge: BrowserExtensionBridge;
-  private latestBrowserElement: BrowserFocusEvent | null = null;
+  private latestBrowserFocus: BrowserFocusEvent | null = null;
+  private latestBrowserElement: BrowserElementEvent | null = null;
+  private browserFocusTimestamp: number = 0;
   private browserElementTimestamp: number = 0;
   private hoverTracker: {
     currentPosition: { x: number; y: number } | null;
@@ -174,6 +176,11 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
       await this.browserBridge.start();
       
       this.browserBridge.on('browserFocus', (event: BrowserFocusEvent) => {
+        this.latestBrowserFocus = event;
+        this.browserFocusTimestamp = Date.now();
+      });
+      
+      this.browserBridge.on('browserElement', (event: BrowserElementEvent) => {
         this.latestBrowserElement = event;
         this.browserElementTimestamp = Date.now();
       });
@@ -182,12 +189,53 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
     }
   }
 
-  private getBrowserElementIfRecent(): BrowserFocusEvent | null {
+  private getBrowserFocusIfRecent(): BrowserFocusEvent | null {
+    const age = Date.now() - this.browserFocusTimestamp;
+    if (age < 500 && this.latestBrowserFocus) {
+      return this.latestBrowserFocus;
+    }
+    return null;
+  }
+
+  private getBrowserElementIfRecent(): BrowserElementEvent | null {
     const age = Date.now() - this.browserElementTimestamp;
-    if (age < 500 && this.latestBrowserElement) {
+    if (age < 2000 && this.latestBrowserElement) {
       return this.latestBrowserElement;
     }
     return null;
+  }
+  
+  private getBrowserFocusOrElementIfRecent(): BrowserFocusEvent | BrowserElementEvent | null {
+    const focusAge = Date.now() - this.browserFocusTimestamp;
+    const elementAge = Date.now() - this.browserElementTimestamp;
+    
+    if (elementAge < 2000 && this.latestBrowserElement) {
+      return this.latestBrowserElement;
+    }
+    if (focusAge < 2000 && this.latestBrowserFocus) {
+      return this.latestBrowserFocus;
+    }
+    return null;
+  }
+  
+  private async waitForBrowserElement(timeoutMs: number = 200): Promise<BrowserElementEvent | BrowserFocusEvent | null> {
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const startTime = Date.now();
+    const startElementTimestamp = this.browserElementTimestamp;
+    const startFocusTimestamp = this.browserFocusTimestamp;
+    
+    while (Date.now() - startTime < timeoutMs) {
+      if (this.browserElementTimestamp > startElementTimestamp && this.latestBrowserElement) {
+        return this.latestBrowserElement;
+      }
+      if (this.browserFocusTimestamp > startFocusTimestamp && this.latestBrowserFocus) {
+        return this.latestBrowserFocus;
+      }
+      await new Promise(resolve => setTimeout(resolve, 15));
+    }
+    
+    return this.getBrowserFocusOrElementIfRecent();
   }
 
   private async startNativeCapture(): Promise<void> {
@@ -283,6 +331,12 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           const nativeElement = nativeEvent.data.element;
           
           const isDockClick = nativeElement?.applicationName === 'Dock';
+          const isMouseDownBrowser = ['Safari', 'Google Chrome', 'Firefox', 'Microsoft Edge', 'Arc', 'Brave Browser', 'Opera'].includes(nativeElement?.applicationName || '');
+          let mouseDownBrowserData = null;
+          if (isMouseDownBrowser) {
+            mouseDownBrowserData = await this.waitForBrowserElement(250);
+            console.log(`🖱️ mouse_down in ${nativeElement?.applicationName}: browserData=${mouseDownBrowserData ? 'YES' : 'NO'}`);
+          }
           
           target = {
             coordinates: { 
@@ -324,6 +378,24 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
               elementTitle: nativeElement.title,
               elementLabel: nativeElement.label,
               elementValue: nativeElement.value
+            }),
+            ...(isMouseDownBrowser && mouseDownBrowserData && {
+              browserElement: {
+                tagName: mouseDownBrowserData.element.tagName,
+                id: mouseDownBrowserData.element.id,
+                className: mouseDownBrowserData.element.className,
+                xpath: mouseDownBrowserData.element.xpath,
+                allAttributes: mouseDownBrowserData.element.allAttributes,
+                computedStyles: mouseDownBrowserData.element.computedStyles,
+                role: mouseDownBrowserData.element.role,
+                ariaLabel: mouseDownBrowserData.element.ariaLabel,
+                textContent: mouseDownBrowserData.element.textContent,
+                href: mouseDownBrowserData.element.href,
+                outerHTML: mouseDownBrowserData.element.outerHTML,
+                bounds: mouseDownBrowserData.element.bounds,
+                parentURL: mouseDownBrowserData.url,
+                pageTitle: mouseDownBrowserData.title
+              }
             })
           };
           break;
@@ -334,6 +406,12 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           const mouseUpNativeElement = nativeEvent.data.element;
           
           const isUpDockClick = mouseUpNativeElement?.applicationName === 'Dock';
+          const isMouseUpBrowser = ['Safari', 'Google Chrome', 'Firefox', 'Microsoft Edge', 'Arc', 'Brave Browser', 'Opera'].includes(mouseUpNativeElement?.applicationName || '');
+          let mouseUpBrowserData = null;
+          if (isMouseUpBrowser) {
+            mouseUpBrowserData = await this.waitForBrowserElement(250);
+            console.log(`🖱️ mouse_up in ${mouseUpNativeElement?.applicationName}: browserData=${mouseUpBrowserData ? 'YES' : 'NO'}`);
+          }
           
           const upTarget = {
             coordinates: { 
@@ -375,6 +453,24 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
               elementTitle: mouseUpNativeElement.title,
               elementLabel: mouseUpNativeElement.label,
               elementValue: mouseUpNativeElement.value
+            }),
+            ...(isMouseUpBrowser && mouseUpBrowserData && {
+              browserElement: {
+                tagName: mouseUpBrowserData.element.tagName,
+                id: mouseUpBrowserData.element.id,
+                className: mouseUpBrowserData.element.className,
+                xpath: mouseUpBrowserData.element.xpath,
+                allAttributes: mouseUpBrowserData.element.allAttributes,
+                computedStyles: mouseUpBrowserData.element.computedStyles,
+                role: mouseUpBrowserData.element.role,
+                ariaLabel: mouseUpBrowserData.element.ariaLabel,
+                textContent: mouseUpBrowserData.element.textContent,
+                href: mouseUpBrowserData.element.href,
+                outerHTML: mouseUpBrowserData.element.outerHTML,
+                bounds: mouseUpBrowserData.element.bounds,
+                parentURL: mouseUpBrowserData.url,
+                pageTitle: mouseUpBrowserData.title
+              }
             })
           };
 
@@ -419,10 +515,14 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           const focusTrigger = nativeEvent.data.trigger || 'keyboard';
           const extractedElement = extractFocusedElementData(focusedElement);
           
-          const browserData = this.getBrowserElementIfRecent();
+          const browserData = this.getBrowserFocusIfRecent();
           const isBrowser = focusedElement?.applicationName === 'Safari' || 
                            focusedElement?.applicationName === 'Google Chrome' ||
-                           focusedElement?.applicationName === 'Firefox';
+                           focusedElement?.applicationName === 'Firefox' ||
+                           focusedElement?.applicationName === 'Microsoft Edge' ||
+                           focusedElement?.applicationName === 'Arc' ||
+                           focusedElement?.applicationName === 'Brave Browser' ||
+                           focusedElement?.applicationName === 'Opera';
           
           if (focusTrigger === 'click' || focusTrigger === 'programmatic') {
             target = {

@@ -245,17 +245,98 @@
     }
   }
 
+  let lastMouseSignature = '';
+  let lastHoverElement = null;
+
+  function sendElementEvent(element, eventType, extraData = {}) {
+    const details = getElementDetails(element);
+    if (!details) return;
+
+    console.log('TrackerA11y CONTENT:', eventType, 'on', element.tagName, element.id || element.className);
+
+    const message = {
+      type: eventType,
+      element: details,
+      url: window.location.href,
+      title: document.title,
+      ...extraData
+    };
+
+    const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+    try {
+      browserAPI.runtime.sendMessage(message);
+    } catch (e) {
+      console.log('TrackerA11y CONTENT: Failed to send message', e);
+    }
+  }
+
   document.addEventListener('focusin', (event) => {
     sendFocusEvent(event.target, 'focusin');
   }, true);
 
+  document.addEventListener('mousedown', (event) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    if (element && element !== document.body && element !== document.documentElement) {
+      sendElementEvent(element, 'mouse_down', {
+        button: event.button,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        screenX: event.screenX,
+        screenY: event.screenY
+      });
+    }
+  }, true);
+
+  document.addEventListener('mouseup', (event) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    if (element && element !== document.body && element !== document.documentElement) {
+      sendElementEvent(element, 'mouse_up', {
+        button: event.button,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        screenX: event.screenX,
+        screenY: event.screenY
+      });
+    }
+  }, true);
+
   document.addEventListener('click', (event) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    if (element && element !== document.body && element !== document.documentElement) {
+      sendElementEvent(element, 'click', {
+        button: event.button,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        screenX: event.screenX,
+        screenY: event.screenY
+      });
+    }
+    
     setTimeout(() => {
       const focused = document.activeElement;
       if (focused && focused !== document.body) {
         sendFocusEvent(focused, 'click');
       }
     }, 50);
+  }, true);
+
+  document.addEventListener('mousemove', (event) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    if (!element || element === document.body || element === document.documentElement) {
+      lastHoverElement = null;
+      return;
+    }
+    
+    const signature = createSignature(element);
+    if (signature !== lastMouseSignature) {
+      lastMouseSignature = signature;
+      lastHoverElement = element;
+      
+      sendElementEvent(element, 'hover', {
+        clientX: event.clientX,
+        clientY: event.clientY
+      });
+    }
   }, true);
 
   document.addEventListener('keydown', (event) => {

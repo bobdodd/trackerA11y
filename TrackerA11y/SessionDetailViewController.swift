@@ -5444,20 +5444,29 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         let inputData = data["inputData"] as? [String: Any]
         let browserElement = inputData?["browserElement"] as? [String: Any]
         let focusedElement = inputData?["focusedElement"] as? [String: Any]
-        let isFocusChange = (data["interactionType"] as? String) == "focus_change"
+        let interactionType = data["interactionType"] as? String ?? ""
+        let isFocusChange = interactionType == "focus_change"
+        let isMouseEvent = ["click", "mouse_down", "mouse_up", "hover", "hover_end"].contains(interactionType)
         
-        if isFocusChange && (browserElement != nil || focusedElement != nil) {
-            let (elementCard, elementContent) = createDetailCard(title: "Element", icon: "🎯")
+        if browserElement != nil {
+            let (elementCard, elementContent) = createDetailCard(title: "Browser Element", icon: "🌐")
             
-            let trigger = inputData?["trigger"] as? String ?? "unknown"
-            let key = inputData?["key"] as? String
-            let modifiers = inputData?["modifiers"] as? [String] ?? []
-            
-            if let key = key {
-                let modStr = modifiers.isEmpty ? "" : "\(modifiers.joined(separator: "+"))+"
-                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: "\(trigger) (\(modStr)\(key))", valueColor: .systemOrange))
-            } else {
-                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: trigger))
+            if isFocusChange {
+                let trigger = inputData?["trigger"] as? String ?? "unknown"
+                let key = inputData?["key"] as? String
+                let modifiers = inputData?["modifiers"] as? [String] ?? []
+                
+                if let key = key {
+                    let modStr = modifiers.isEmpty ? "" : "\(modifiers.joined(separator: "+"))+"
+                    elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: "\(trigger) (\(modStr)\(key))", valueColor: .systemOrange))
+                } else {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: trigger))
+                }
+            } else if isMouseEvent {
+                let button = inputData?["button"] as? Int ?? 0
+                let clickCount = inputData?["clickCount"] as? Int ?? 1
+                let buttonName = button == 0 ? "Left" : button == 1 ? "Right" : "Middle"
+                elementContent.addArrangedSubview(createDetailRow(label: "Button", value: "\(buttonName) (\(clickCount)x)", valueColor: .systemOrange))
             }
             
             if let browser = browserElement {
@@ -5551,46 +5560,60 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                         stylesCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
                     }
                 }
-            } else if let native = focusedElement {
-                let role = native["role"] as? String ?? ""
-                let cleanRole = role.replacingOccurrences(of: "AX", with: "")
-                let label = native["label"] as? String ?? native["title"] as? String ?? ""
-                elementContent.addArrangedSubview(createDetailRow(label: "Element", value: label.isEmpty ? "(no label)" : label))
-                elementContent.addArrangedSubview(createDetailRow(label: "Role", value: cleanRole, valueColor: .systemPurple))
-                
-                if let domId = native["domId"] as? String, !domId.isEmpty {
-                    elementContent.addArrangedSubview(createDetailRow(label: "ID", value: "#\(domId)", valueColor: .systemBlue, monospace: true))
+            }
+            return
+        } else if isFocusChange, let native = focusedElement {
+            let (elementCard, elementContent) = createDetailCard(title: "Native Element", icon: "🎯")
+            
+            let trigger = inputData?["trigger"] as? String ?? "unknown"
+            let key = inputData?["key"] as? String
+            let modifiers = inputData?["modifiers"] as? [String] ?? []
+            
+            if let key = key {
+                let modStr = modifiers.isEmpty ? "" : "\(modifiers.joined(separator: "+"))+"
+                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: "\(trigger) (\(modStr)\(key))", valueColor: .systemOrange))
+            } else {
+                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: trigger))
+            }
+            
+            let role = native["role"] as? String ?? ""
+            let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+            let label = native["label"] as? String ?? native["title"] as? String ?? ""
+            elementContent.addArrangedSubview(createDetailRow(label: "Element", value: label.isEmpty ? "(no label)" : label))
+            elementContent.addArrangedSubview(createDetailRow(label: "Role", value: cleanRole, valueColor: .systemPurple))
+            
+            if let domId = native["domId"] as? String, !domId.isEmpty {
+                elementContent.addArrangedSubview(createDetailRow(label: "ID", value: "#\(domId)", valueColor: .systemBlue, monospace: true))
+            }
+            if let domClassList = native["domClassList"] as? String, !domClassList.isEmpty {
+                elementContent.addArrangedSubview(createDetailRow(label: "Class", value: ".\(domClassList.replacingOccurrences(of: " ", with: " ."))", valueColor: .systemGreen, monospace: true))
+            }
+            if let roleDesc = native["roleDescription"] as? String, !roleDesc.isEmpty {
+                elementContent.addArrangedSubview(createDetailRow(label: "Role Description", value: roleDesc))
+            }
+            
+            if let bounds = native["bounds"] as? [String: Any] {
+                let x = bounds["x"] as? Int ?? 0
+                let y = bounds["y"] as? Int ?? 0
+                let w = bounds["width"] as? Int ?? 0
+                let h = bounds["height"] as? Int ?? 0
+                elementContent.addArrangedSubview(createDetailRow(label: "Position", value: "(\(x), \(y))  \(w) × \(h)", monospace: true))
+            }
+            
+            stackView.addArrangedSubview(elementCard)
+            elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            
+            if let docTitle = native["documentTitle"] as? String, !docTitle.isEmpty {
+                let (pageCard, pageContent) = createDetailCard(title: "Page", icon: "🌐")
+                pageContent.addArrangedSubview(createDetailRow(label: "Title", value: docTitle))
+                if let docURL = native["documentURL"] as? String, !docURL.isEmpty {
+                    pageContent.addArrangedSubview(createDetailRow(label: "URL", value: docURL, valueColor: .linkColor, monospace: true))
                 }
-                if let domClassList = native["domClassList"] as? String, !domClassList.isEmpty {
-                    elementContent.addArrangedSubview(createDetailRow(label: "Class", value: ".\(domClassList.replacingOccurrences(of: " ", with: " ."))", valueColor: .systemGreen, monospace: true))
+                if let appName = native["applicationName"] as? String, !appName.isEmpty {
+                    pageContent.addArrangedSubview(createDetailRow(label: "App", value: appName))
                 }
-                if let roleDesc = native["roleDescription"] as? String, !roleDesc.isEmpty {
-                    elementContent.addArrangedSubview(createDetailRow(label: "Role Description", value: roleDesc))
-                }
-                
-                if let bounds = native["bounds"] as? [String: Any] {
-                    let x = bounds["x"] as? Int ?? 0
-                    let y = bounds["y"] as? Int ?? 0
-                    let w = bounds["width"] as? Int ?? 0
-                    let h = bounds["height"] as? Int ?? 0
-                    elementContent.addArrangedSubview(createDetailRow(label: "Position", value: "(\(x), \(y))  \(w) × \(h)", monospace: true))
-                }
-                
-                stackView.addArrangedSubview(elementCard)
-                elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
-                
-                if let docTitle = native["documentTitle"] as? String, !docTitle.isEmpty {
-                    let (pageCard, pageContent) = createDetailCard(title: "Page", icon: "🌐")
-                    pageContent.addArrangedSubview(createDetailRow(label: "Title", value: docTitle))
-                    if let docURL = native["documentURL"] as? String, !docURL.isEmpty {
-                        pageContent.addArrangedSubview(createDetailRow(label: "URL", value: docURL, valueColor: .linkColor, monospace: true))
-                    }
-                    if let appName = native["applicationName"] as? String, !appName.isEmpty {
-                        pageContent.addArrangedSubview(createDetailRow(label: "App", value: appName))
-                    }
-                    stackView.addArrangedSubview(pageCard)
-                    pageCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
-                }
+                stackView.addArrangedSubview(pageCard)
+                pageCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
             }
             return
         }

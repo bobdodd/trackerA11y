@@ -1,4 +1,4 @@
-const HTTP_URL = 'http://localhost:9877/focus';
+const HTTP_URL = 'http://localhost:9877/element';
 
 function sendMessage(message) {
   fetch(HTTP_URL, {
@@ -7,7 +7,7 @@ function sendMessage(message) {
     body: JSON.stringify(message)
   }).then(response => {
     if (response.ok) {
-      console.log('TrackerA11y: Sent to bridge');
+      console.log('TrackerA11y: Sent', message.type, 'to bridge');
     }
   }).catch(() => {});
 }
@@ -15,8 +15,9 @@ function sendMessage(message) {
 const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
 browserAPI.runtime.onMessage.addListener((message, sender) => {
-  if (message.type === 'focus_change') {
-    console.log('TrackerA11y FOCUS:', message.element?.tagName, message.element?.id || '', message.trigger);
+  const validTypes = ['focus_change', 'mouse_down', 'mouse_up', 'click', 'hover'];
+  if (validTypes.includes(message.type)) {
+    console.log('TrackerA11y:', message.type, message.element?.tagName, message.element?.id || '');
     message.tabId = sender.tab?.id;
     message.tabUrl = sender.tab?.url;
     message.frameId = sender.frameId;
