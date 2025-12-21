@@ -79,6 +79,7 @@ class SessionDetailViewController: NSViewController {
     private var eventsCountLabel: NSTextField?
     private var eventsDetailPanel: NSScrollView?
     private var eventsDetailTextView: NSTextView?
+    private var eventsDetailStackView: NSStackView?
     private var eventsSearchField: NSSearchField?
     private var sourceFilterPopup: NSPopUpButton?
     private var typeFilterButton: NSButton?
@@ -1045,7 +1046,7 @@ class SessionDetailViewController: NSViewController {
         panel.layer?.borderColor = NSColor.separatorColor.cgColor
         
         let titleLabel = NSTextField(labelWithString: "Event Details")
-        titleLabel.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.font = NSFont.systemFont(ofSize: 18, weight: .bold)
         titleLabel.textColor = .labelColor
         titleLabel.isBordered = false
         titleLabel.isEditable = false
@@ -1056,29 +1057,33 @@ class SessionDetailViewController: NSViewController {
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
+        scrollView.autohidesScrollers = false
         scrollView.drawsBackground = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.contentView.drawsBackground = false
         
-        let textView = NSTextView(frame: scrollView.bounds)
-        textView.isEditable = false
-        textView.isSelectable = true
-        textView.backgroundColor = .clear
-        textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        textView.textColor = .labelColor
-        textView.string = "Select an event to view full details"
-        textView.textContainerInset = NSSize(width: 8, height: 8)
-        textView.autoresizingMask = [.width]
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
-        textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
-        textView.textContainer?.widthTracksTextView = true
+        let stackView = NSStackView()
+        stackView.orientation = .vertical
+        stackView.alignment = .leading
+        stackView.spacing = 16
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.edgeInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         
-        scrollView.documentView = textView
+        let clipView = NSClipView()
+        clipView.documentView = stackView
+        clipView.drawsBackground = false
+        scrollView.contentView = clipView
+        scrollView.documentView = stackView
+        
         panel.addSubview(scrollView)
         
         self.eventsDetailPanel = scrollView
-        self.eventsDetailTextView = textView
+        self.eventsDetailStackView = stackView
+        
+        let placeholderLabel = NSTextField(labelWithString: "Select an event to view details")
+        placeholderLabel.font = NSFont.systemFont(ofSize: 16)
+        placeholderLabel.textColor = .secondaryLabelColor
+        stackView.addArrangedSubview(placeholderLabel)
         
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: panel.topAnchor, constant: 12),
@@ -1088,10 +1093,119 @@ class SessionDetailViewController: NSViewController {
             scrollView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 4),
             scrollView.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -4),
-            scrollView.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -8)
+            scrollView.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -8),
+            
+            stackView.topAnchor.constraint(equalTo: clipView.topAnchor),
+            stackView.leadingAnchor.constraint(equalTo: clipView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -20)
         ])
         
         return panel
+    }
+    
+    private func createDetailCard(title: String, icon: String? = nil) -> (container: NSView, contentStack: NSStackView) {
+        let card = NSView()
+        card.wantsLayer = true
+        card.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        card.layer?.cornerRadius = 10
+        card.layer?.borderWidth = 1
+        card.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.5).cgColor
+        card.translatesAutoresizingMaskIntoConstraints = false
+        
+        let headerStack = NSStackView()
+        headerStack.orientation = .horizontal
+        headerStack.spacing = 8
+        headerStack.alignment = .centerY
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        if let iconStr = icon {
+            let iconLabel = NSTextField(labelWithString: iconStr)
+            iconLabel.font = NSFont.systemFont(ofSize: 18)
+            headerStack.addArrangedSubview(iconLabel)
+        }
+        
+        let titleField = NSTextField(labelWithString: title)
+        titleField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+        titleField.textColor = .labelColor
+        headerStack.addArrangedSubview(titleField)
+        
+        card.addSubview(headerStack)
+        
+        let separator = NSBox()
+        separator.boxType = .separator
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(separator)
+        
+        let contentStack = NSStackView()
+        contentStack.orientation = .vertical
+        contentStack.alignment = .leading
+        contentStack.spacing = 8
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(contentStack)
+        
+        NSLayoutConstraint.activate([
+            headerStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            headerStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            headerStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            
+            separator.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 10),
+            separator.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            separator.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            
+            contentStack.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 12),
+            contentStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            contentStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+            contentStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
+        ])
+        
+        return (card, contentStack)
+    }
+    
+    private func createDetailRow(label: String, value: String, valueColor: NSColor = .labelColor, monospace: Bool = false) -> NSView {
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.alignment = .firstBaseline
+        row.spacing = 8
+        row.translatesAutoresizingMaskIntoConstraints = false
+        
+        let labelField = NSTextField(labelWithString: label + ":")
+        labelField.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+        labelField.textColor = .secondaryLabelColor
+        labelField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        labelField.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        row.addArrangedSubview(labelField)
+        
+        let valueField = NSTextField(wrappingLabelWithString: value)
+        valueField.font = monospace ? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular) : NSFont.systemFont(ofSize: 16)
+        valueField.textColor = valueColor
+        valueField.lineBreakMode = .byWordWrapping
+        valueField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        row.addArrangedSubview(valueField)
+        
+        return row
+    }
+    
+    private func createTagPill(text: String, color: NSColor) -> NSView {
+        let pill = NSView()
+        pill.wantsLayer = true
+        pill.layer?.backgroundColor = color.withAlphaComponent(0.2).cgColor
+        pill.layer?.cornerRadius = 12
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        
+        let label = NSTextField(labelWithString: text)
+        label.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        label.textColor = color
+        label.translatesAutoresizingMaskIntoConstraints = false
+        pill.addSubview(label)
+        
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: pill.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: pill.centerYAnchor),
+            pill.widthAnchor.constraint(equalTo: label.widthAnchor, constant: 20),
+            pill.heightAnchor.constraint(equalToConstant: 24)
+        ])
+        
+        return pill
     }
     
     private func createEventsFilterToolbar() -> NSView {
@@ -5230,83 +5344,476 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             updateTimelineInfo(with: event)
             updateEventsDetailPanel(with: event, index: selectedRow)
         } else {
-            eventsDetailTextView?.string = "Select an event to view full details"
+            clearEventsDetailPanel()
         }
     }
     
+    private func clearEventsDetailPanel() {
+        guard let stackView = eventsDetailStackView else { return }
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        let placeholderLabel = NSTextField(labelWithString: "Select an event to view details")
+        placeholderLabel.font = NSFont.systemFont(ofSize: 16)
+        placeholderLabel.textColor = .secondaryLabelColor
+        stackView.addArrangedSubview(placeholderLabel)
+    }
+    
     private func updateEventsDetailPanel(with event: [String: Any], index: Int) {
-        var details = ""
+        guard let stackView = eventsDetailStackView else { return }
+        
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         let eventType = event["type"] as? String ?? "unknown"
         let isMarkerEvent = eventType.lowercased() == "marker"
         
         if isMarkerEvent {
-            details += "═══════════════════════════════\n"
-            details += "🚩 MARKER\n"
-            details += "═══════════════════════════════\n\n"
+            let (markerCard, markerContent) = createDetailCard(title: "Marker", icon: "🚩")
             
             if let markerName = event["markerName"] as? String, !markerName.isEmpty {
-                details += "Name: \(markerName)\n"
+                markerContent.addArrangedSubview(createDetailRow(label: "Name", value: markerName, valueColor: .systemOrange))
             }
             
             if let timestamp = event["timestamp"] as? Double {
-                details += "Time: \(formatTimestamp(timestamp))\n"
+                markerContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp)))
             }
             
             if let noteBase64 = event["markerNote"] as? String,
                let noteData = Data(base64Encoded: noteBase64),
                let noteString = extractPlainTextFromRTF(noteData) {
-                details += "\n───────────────────────────────\n"
-                details += "Note:\n\(noteString)"
+                let noteLabel = NSTextField(labelWithString: "Note:")
+                noteLabel.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+                noteLabel.textColor = .secondaryLabelColor
+                markerContent.addArrangedSubview(noteLabel)
+                
+                let noteValue = NSTextField(wrappingLabelWithString: noteString)
+                noteValue.font = NSFont.systemFont(ofSize: 16)
+                noteValue.textColor = .labelColor
+                markerContent.addArrangedSubview(noteValue)
             }
+            
+            stackView.addArrangedSubview(markerCard)
+            markerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
         } else {
-            details += "═══════════════════════════════\n"
-            details += "EVENT #\(index + 1)\n"
-            details += "═══════════════════════════════\n\n"
+            let (headerCard, headerContent) = createDetailCard(title: "Event #\(index + 1)", icon: "📋")
             
             if let timestamp = event["timestamp"] as? Double {
-                details += "Time: \(formatTimestamp(timestamp))\n"
+                headerContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp), valueColor: .systemBlue))
             }
             
             if let source = event["source"] as? String {
-                details += "Source: \(source.uppercased())\n"
+                let sourceColor: NSColor = source.lowercased() == "interaction" ? .systemGreen : .systemPurple
+                headerContent.addArrangedSubview(createDetailRow(label: "Source", value: source.uppercased(), valueColor: sourceColor))
             }
             
-            details += "Type: \(eventType.replacingOccurrences(of: "_", with: " "))\n"
+            let displayType = eventType.replacingOccurrences(of: "_", with: " ").capitalized
+            headerContent.addArrangedSubview(createDetailRow(label: "Type", value: displayType))
             
             let originalIndex = findEventIndex(byTimestamp: event["timestamp"] as? Double ?? 0)
             if originalIndex >= 0 {
                 let tags = eventTags[originalIndex] ?? Set<String>()
                 if !tags.isEmpty {
-                    details += "Tags: \(tags.sorted().joined(separator: ", "))\n"
+                    let tagsRow = NSStackView()
+                    tagsRow.orientation = .horizontal
+                    tagsRow.spacing = 6
+                    tagsRow.alignment = .centerY
+                    
+                    let tagsLabel = NSTextField(labelWithString: "Tags:")
+                    tagsLabel.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+                    tagsLabel.textColor = .secondaryLabelColor
+                    tagsRow.addArrangedSubview(tagsLabel)
+                    
+                    for tag in tags.sorted() {
+                        tagsRow.addArrangedSubview(createTagPill(text: tag, color: .systemTeal))
+                    }
+                    headerContent.addArrangedSubview(tagsRow)
                 }
             }
             
+            stackView.addArrangedSubview(headerCard)
+            headerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            
             if let data = event["data"] as? [String: Any] {
-                details += "\n───────────────────────────────\n"
-                details += "DATA\n"
-                details += "───────────────────────────────\n"
-                details += formatEventDataForDetailPanel(data)
+                buildFocusEventCards(data, into: stackView)
             }
         }
         
-        eventsDetailTextView?.string = details
-        eventsDetailTextView?.scrollToBeginningOfDocument(nil)
+        eventsDetailPanel?.documentView?.scroll(.zero)
+    }
+    
+    private func buildFocusEventCards(_ data: [String: Any], into stackView: NSStackView) {
+        let inputData = data["inputData"] as? [String: Any]
+        let browserElement = inputData?["browserElement"] as? [String: Any]
+        let focusedElement = inputData?["focusedElement"] as? [String: Any]
+        let isFocusChange = (data["interactionType"] as? String) == "focus_change"
+        
+        if isFocusChange && (browserElement != nil || focusedElement != nil) {
+            let (elementCard, elementContent) = createDetailCard(title: "Element", icon: "🎯")
+            
+            let trigger = inputData?["trigger"] as? String ?? "unknown"
+            let key = inputData?["key"] as? String
+            let modifiers = inputData?["modifiers"] as? [String] ?? []
+            
+            if let key = key {
+                let modStr = modifiers.isEmpty ? "" : "\(modifiers.joined(separator: "+"))+"
+                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: "\(trigger) (\(modStr)\(key))", valueColor: .systemOrange))
+            } else {
+                elementContent.addArrangedSubview(createDetailRow(label: "Trigger", value: trigger))
+            }
+            
+            if let browser = browserElement {
+                let tagName = browser["tagName"] as? String ?? ""
+                let role = browser["role"] as? String ?? focusedElement?["role"] as? String ?? ""
+                let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                elementContent.addArrangedSubview(createDetailRow(label: "Element", value: "<\(tagName.lowercased())> [\(cleanRole)]", monospace: true))
+                
+                if let id = browser["id"] as? String, !id.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "ID", value: "#\(id)", valueColor: .systemBlue, monospace: true))
+                }
+                if let className = browser["className"] as? String, !className.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Class", value: ".\(className.replacingOccurrences(of: " ", with: " ."))", valueColor: .systemGreen, monospace: true))
+                }
+                if let xpath = browser["xpath"] as? String, !xpath.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "XPath", value: xpath, monospace: true))
+                }
+                if let ariaLabel = browser["ariaLabel"] as? String, !ariaLabel.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "ARIA Label", value: ariaLabel))
+                }
+                if let textContent = browser["textContent"] as? String, !textContent.isEmpty {
+                    let truncated = textContent.count > 80 ? String(textContent.prefix(80)) + "..." : textContent
+                    elementContent.addArrangedSubview(createDetailRow(label: "Text", value: truncated))
+                }
+                if let href = browser["href"] as? String, !href.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Link", value: href, valueColor: .linkColor, monospace: true))
+                }
+                
+                if let bounds = browser["bounds"] as? [String: Any] {
+                    let x = bounds["screenX"] as? Int ?? bounds["x"] as? Int ?? 0
+                    let y = bounds["screenY"] as? Int ?? bounds["y"] as? Int ?? 0
+                    let w = bounds["width"] as? Int ?? 0
+                    let h = bounds["height"] as? Int ?? 0
+                    elementContent.addArrangedSubview(createDetailRow(label: "Position", value: "(\(x), \(y))  \(w) × \(h)", monospace: true))
+                }
+                
+                stackView.addArrangedSubview(elementCard)
+                elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                
+                if let pageTitle = browser["pageTitle"] as? String, !pageTitle.isEmpty,
+                   let parentURL = browser["parentURL"] as? String {
+                    let (pageCard, pageContent) = createDetailCard(title: "Page", icon: "🌐")
+                    pageContent.addArrangedSubview(createDetailRow(label: "Title", value: pageTitle))
+                    pageContent.addArrangedSubview(createDetailRow(label: "URL", value: parentURL, valueColor: .linkColor, monospace: true))
+                    stackView.addArrangedSubview(pageCard)
+                    pageCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                }
+                
+                if let allAttrs = browser["allAttributes"] as? [String: Any], !allAttrs.isEmpty {
+                    let keyAttrs = ["tabindex", "aria-label", "aria-labelledby", "aria-describedby", "role"]
+                    let keyAttrValues = keyAttrs.compactMap { key -> (String, String)? in
+                        guard let val = allAttrs[key] as? String, !val.isEmpty else { return nil }
+                        return (key, val)
+                    }
+                    if !keyAttrValues.isEmpty {
+                        let (keyAttrsCard, keyAttrsContent) = createDetailCard(title: "Key Attributes", icon: "♿")
+                        for (key, val) in keyAttrValues {
+                            keyAttrsContent.addArrangedSubview(createDetailRow(label: key, value: val, monospace: true))
+                        }
+                        stackView.addArrangedSubview(keyAttrsCard)
+                        keyAttrsCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                    }
+                    
+                    let skipKeys = Set(["id", "class", "role", "tabindex", "aria-label", "aria-labelledby", "aria-describedby"])
+                    let filteredAttrs = allAttrs.filter { !skipKeys.contains($0.key.lowercased()) && ($0.value as? String)?.isEmpty == false }
+                    if !filteredAttrs.isEmpty {
+                        let (attrsCard, attrsContent) = createDetailCard(title: "Other Attributes", icon: "📝")
+                        for (key, value) in filteredAttrs.sorted(by: { $0.key < $1.key }) {
+                            if let strVal = value as? String, !strVal.isEmpty {
+                                attrsContent.addArrangedSubview(createDetailRow(label: key, value: strVal, monospace: true))
+                            }
+                        }
+                        stackView.addArrangedSubview(attrsCard)
+                        attrsCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                    }
+                }
+                
+                if let styles = browser["computedStyles"] as? [String: Any], !styles.isEmpty {
+                    let keyStyles = ["display", "color", "backgroundColor", "fontSize", "fontWeight",
+                                     "border", "outline", "cursor", "opacity", "position", "zIndex"]
+                    let filteredStyles = keyStyles.compactMap { key -> (String, String)? in
+                        guard let val = styles[key] as? String, !val.isEmpty, val != "none", val != "normal", val != "auto" else { return nil }
+                        return (key, val)
+                    }
+                    if !filteredStyles.isEmpty {
+                        let (stylesCard, stylesContent) = createDetailCard(title: "Key Styles", icon: "🎨")
+                        for (key, val) in filteredStyles {
+                            stylesContent.addArrangedSubview(createDetailRow(label: key, value: val, monospace: true))
+                        }
+                        stackView.addArrangedSubview(stylesCard)
+                        stylesCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                    }
+                }
+            } else if let native = focusedElement {
+                let role = native["role"] as? String ?? ""
+                let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                let label = native["label"] as? String ?? native["title"] as? String ?? ""
+                elementContent.addArrangedSubview(createDetailRow(label: "Element", value: label.isEmpty ? "(no label)" : label))
+                elementContent.addArrangedSubview(createDetailRow(label: "Role", value: cleanRole, valueColor: .systemPurple))
+                
+                if let domId = native["domId"] as? String, !domId.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "ID", value: "#\(domId)", valueColor: .systemBlue, monospace: true))
+                }
+                if let domClassList = native["domClassList"] as? String, !domClassList.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Class", value: ".\(domClassList.replacingOccurrences(of: " ", with: " ."))", valueColor: .systemGreen, monospace: true))
+                }
+                if let roleDesc = native["roleDescription"] as? String, !roleDesc.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Role Description", value: roleDesc))
+                }
+                
+                if let bounds = native["bounds"] as? [String: Any] {
+                    let x = bounds["x"] as? Int ?? 0
+                    let y = bounds["y"] as? Int ?? 0
+                    let w = bounds["width"] as? Int ?? 0
+                    let h = bounds["height"] as? Int ?? 0
+                    elementContent.addArrangedSubview(createDetailRow(label: "Position", value: "(\(x), \(y))  \(w) × \(h)", monospace: true))
+                }
+                
+                stackView.addArrangedSubview(elementCard)
+                elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                
+                if let docTitle = native["documentTitle"] as? String, !docTitle.isEmpty {
+                    let (pageCard, pageContent) = createDetailCard(title: "Page", icon: "🌐")
+                    pageContent.addArrangedSubview(createDetailRow(label: "Title", value: docTitle))
+                    if let docURL = native["documentURL"] as? String, !docURL.isEmpty {
+                        pageContent.addArrangedSubview(createDetailRow(label: "URL", value: docURL, valueColor: .linkColor, monospace: true))
+                    }
+                    if let appName = native["applicationName"] as? String, !appName.isEmpty {
+                        pageContent.addArrangedSubview(createDetailRow(label: "App", value: appName))
+                    }
+                    stackView.addArrangedSubview(pageCard)
+                    pageCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                }
+            }
+            return
+        }
+        
+        let (dataCard, dataContent) = createDetailCard(title: "Data", icon: "📊")
+        buildGenericDataRows(data, into: dataContent, skipKeys: ["browserElement", "focusedElement"])
+        stackView.addArrangedSubview(dataCard)
+        dataCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+    }
+    
+    private func buildGenericDataRows(_ data: [String: Any], into stack: NSStackView, skipKeys: Set<String> = [], indent: Int = 0) {
+        let sortedKeys = data.keys.sorted()
+        
+        for key in sortedKeys {
+            if skipKeys.contains(key) { continue }
+            
+            let value = data[key]
+            let displayKey = key.replacingOccurrences(of: "_", with: " ").capitalized
+            
+            if let dictValue = value as? [String: Any] {
+                if key == "inputData" {
+                    buildGenericDataRows(dictValue, into: stack, skipKeys: skipKeys, indent: indent)
+                } else {
+                    let sectionLabel = NSTextField(labelWithString: displayKey)
+                    sectionLabel.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+                    sectionLabel.textColor = .secondaryLabelColor
+                    stack.addArrangedSubview(sectionLabel)
+                    buildGenericDataRows(dictValue, into: stack, indent: indent + 1)
+                }
+            } else if let arrayValue = value as? [[String: Any]] {
+                stack.addArrangedSubview(createDetailRow(label: displayKey, value: "[\(arrayValue.count) items]"))
+            } else if let stringArray = value as? [String], !stringArray.isEmpty {
+                stack.addArrangedSubview(createDetailRow(label: displayKey, value: stringArray.joined(separator: ", ")))
+            } else if let stringValue = value as? String, !stringValue.isEmpty {
+                let truncated = stringValue.count > 100 ? String(stringValue.prefix(100)) + "..." : stringValue
+                stack.addArrangedSubview(createDetailRow(label: displayKey, value: truncated))
+            } else if let numberValue = value as? NSNumber {
+                if CFGetTypeID(numberValue) == CFBooleanGetTypeID() {
+                    stack.addArrangedSubview(createDetailRow(label: displayKey, value: numberValue.boolValue ? "Yes" : "No", valueColor: numberValue.boolValue ? .systemGreen : .systemRed))
+                } else {
+                    stack.addArrangedSubview(createDetailRow(label: displayKey, value: "\(numberValue)"))
+                }
+            }
+        }
+    }
+    
+    private func formatFocusEventData(_ data: [String: Any]) -> String {
+        var result = ""
+        let inputData = data["inputData"] as? [String: Any]
+        let browserElement = inputData?["browserElement"] as? [String: Any]
+        let focusedElement = inputData?["focusedElement"] as? [String: Any]
+        let isFocusChange = (data["interactionType"] as? String) == "focus_change"
+        
+        if isFocusChange && (browserElement != nil || focusedElement != nil) {
+            result += "\n───────────────────────────────\n"
+            result += "ELEMENT\n"
+            result += "───────────────────────────────\n"
+            
+            let trigger = inputData?["trigger"] as? String ?? "unknown"
+            let key = inputData?["key"] as? String
+            let modifiers = inputData?["modifiers"] as? [String] ?? []
+            
+            if let key = key {
+                let modStr = modifiers.isEmpty ? "" : "\(modifiers.joined(separator: "+"))+"
+                result += "Trigger: \(trigger) (\(modStr)\(key))\n"
+            } else {
+                result += "Trigger: \(trigger)\n"
+            }
+            
+            if let browser = browserElement {
+                let tagName = browser["tagName"] as? String ?? ""
+                let role = browser["role"] as? String ?? focusedElement?["role"] as? String ?? ""
+                let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                result += "Element: <\(tagName.lowercased())> [\(cleanRole)]\n"
+                
+                if let id = browser["id"] as? String, !id.isEmpty {
+                    result += "ID: \(id)\n"
+                }
+                if let className = browser["className"] as? String, !className.isEmpty {
+                    result += "Class: \(className)\n"
+                }
+                if let xpath = browser["xpath"] as? String, !xpath.isEmpty {
+                    result += "XPath: \(xpath)\n"
+                }
+                if let ariaLabel = browser["ariaLabel"] as? String, !ariaLabel.isEmpty {
+                    result += "ARIA Label: \(ariaLabel)\n"
+                }
+                if let textContent = browser["textContent"] as? String, !textContent.isEmpty {
+                    let truncated = textContent.count > 80 ? String(textContent.prefix(80)) + "..." : textContent
+                    result += "Text: \(truncated)\n"
+                }
+                if let href = browser["href"] as? String, !href.isEmpty {
+                    result += "Link: \(href)\n"
+                }
+                
+                if let pageTitle = browser["pageTitle"] as? String, !pageTitle.isEmpty {
+                    result += "\n───────────────────────────────\n"
+                    result += "PAGE\n"
+                    result += "───────────────────────────────\n"
+                    result += "Title: \(pageTitle)\n"
+                }
+                if let parentURL = browser["parentURL"] as? String, !parentURL.isEmpty {
+                    result += "URL: \(parentURL)\n"
+                }
+                
+                if let bounds = browser["bounds"] as? [String: Any] {
+                    let x = bounds["screenX"] as? Int ?? bounds["x"] as? Int ?? 0
+                    let y = bounds["screenY"] as? Int ?? bounds["y"] as? Int ?? 0
+                    let w = bounds["width"] as? Int ?? 0
+                    let h = bounds["height"] as? Int ?? 0
+                    result += "Position: (\(x), \(y)) Size: \(w)×\(h)\n"
+                }
+                
+                if let allAttrs = browser["allAttributes"] as? [String: Any], !allAttrs.isEmpty {
+                    let keyAttrs = ["tabindex", "aria-label", "aria-labelledby", "aria-describedby", "role"]
+                    let keyAttrValues = keyAttrs.compactMap { key -> (String, String)? in
+                        guard let val = allAttrs[key] as? String, !val.isEmpty else { return nil }
+                        return (key, val)
+                    }
+                    if !keyAttrValues.isEmpty {
+                        result += "\n───────────────────────────────\n"
+                        result += "KEY ATTRIBUTES\n"
+                        result += "───────────────────────────────\n"
+                        for (key, val) in keyAttrValues {
+                            result += "\(key): \(val)\n"
+                        }
+                    }
+                    
+                    let skipKeys = Set(["id", "class", "role", "tabindex", "aria-label", "aria-labelledby", "aria-describedby"])
+                    let otherAttrs = allAttrs.filter { !skipKeys.contains($0.key.lowercased()) && ($0.value as? String)?.isEmpty == false }
+                    if !otherAttrs.isEmpty {
+                        result += "\n───────────────────────────────\n"
+                        result += "OTHER ATTRIBUTES\n"
+                        result += "───────────────────────────────\n"
+                        for (key, value) in otherAttrs.sorted(by: { $0.key < $1.key }) {
+                            if let strVal = value as? String, !strVal.isEmpty {
+                                result += "\(key): \(strVal)\n"
+                            }
+                        }
+                    }
+                }
+                
+                if let styles = browser["computedStyles"] as? [String: Any], !styles.isEmpty {
+                    result += "\n───────────────────────────────\n"
+                    result += "KEY STYLES\n"
+                    result += "───────────────────────────────\n"
+                    let keyStyles = ["display", "color", "backgroundColor", "fontSize", "fontWeight", 
+                                     "border", "outline", "cursor", "opacity", "position", "zIndex"]
+                    for styleKey in keyStyles {
+                        if let val = styles[styleKey] as? String, !val.isEmpty, val != "none", val != "normal", val != "auto" {
+                            result += "\(styleKey): \(val)\n"
+                        }
+                    }
+                }
+            } else if let native = focusedElement {
+                let role = native["role"] as? String ?? ""
+                let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                let label = native["label"] as? String ?? native["title"] as? String ?? ""
+                result += "Element: \(label.isEmpty ? "(no label)" : label) [\(cleanRole)]\n"
+                
+                if let domId = native["domId"] as? String, !domId.isEmpty {
+                    result += "ID: \(domId)\n"
+                }
+                if let domClassList = native["domClassList"] as? String, !domClassList.isEmpty {
+                    result += "Class: \(domClassList)\n"
+                }
+                if let roleDesc = native["roleDescription"] as? String, !roleDesc.isEmpty {
+                    result += "Role Description: \(roleDesc)\n"
+                }
+                
+                if let docTitle = native["documentTitle"] as? String, !docTitle.isEmpty {
+                    result += "\n───────────────────────────────\n"
+                    result += "PAGE\n"
+                    result += "───────────────────────────────\n"
+                    result += "Title: \(docTitle)\n"
+                }
+                if let docURL = native["documentURL"] as? String, !docURL.isEmpty {
+                    result += "URL: \(docURL)\n"
+                }
+                
+                if let appName = native["applicationName"] as? String, !appName.isEmpty {
+                    result += "App: \(appName)\n"
+                }
+                
+                if let bounds = native["bounds"] as? [String: Any] {
+                    let x = bounds["x"] as? Int ?? 0
+                    let y = bounds["y"] as? Int ?? 0
+                    let w = bounds["width"] as? Int ?? 0
+                    let h = bounds["height"] as? Int ?? 0
+                    result += "Position: (\(x), \(y)) Size: \(w)×\(h)\n"
+                }
+            }
+            
+            return result
+        }
+        
+        result += "\n───────────────────────────────\n"
+        result += "DATA\n"
+        result += "───────────────────────────────\n"
+        result += formatEventDataForDetailPanel(data)
+        return result
     }
     
     private func formatEventDataForDetailPanel(_ data: [String: Any], indent: Int = 0) -> String {
         var result = ""
         let indentStr = String(repeating: "  ", count: indent)
         
+        let skipKeys = Set(["browserElement", "focusedElement"])
         let sortedKeys = data.keys.sorted()
         
         for key in sortedKeys {
+            if skipKeys.contains(key) { continue }
+            
             let value = data[key]
             let displayKey = key.replacingOccurrences(of: "_", with: " ").capitalized
             
             if let dictValue = value as? [String: Any] {
-                result += "\(indentStr)\(displayKey):\n"
-                result += formatEventDataForDetailPanel(dictValue, indent: indent + 1)
+                if key == "inputData" {
+                    result += formatEventDataForDetailPanel(dictValue, indent: indent)
+                } else {
+                    result += "\(indentStr)\(displayKey):\n"
+                    result += formatEventDataForDetailPanel(dictValue, indent: indent + 1)
+                }
             } else if let arrayValue = value as? [[String: Any]] {
                 result += "\(indentStr)\(displayKey): [\(arrayValue.count) items]\n"
                 for (i, item) in arrayValue.prefix(3).enumerated() {
@@ -5318,13 +5825,13 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 }
             } else if let stringArray = value as? [String] {
                 if stringArray.isEmpty {
-                    result += "\(indentStr)\(displayKey): []\n"
+                    continue
                 } else {
                     result += "\(indentStr)\(displayKey): \(stringArray.joined(separator: ", "))\n"
                 }
             } else if let stringValue = value as? String {
                 if stringValue.isEmpty {
-                    result += "\(indentStr)\(displayKey): (empty)\n"
+                    continue
                 } else if stringValue.count > 100 {
                     result += "\(indentStr)\(displayKey): \(stringValue.prefix(100))...\n"
                 } else {
@@ -5332,12 +5839,20 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 }
             } else if let numberValue = value as? NSNumber {
                 if CFGetTypeID(numberValue) == CFBooleanGetTypeID() {
-                    result += "\(indentStr)\(displayKey): \(numberValue.boolValue ? "Yes" : "No")\n"
+                    let boolVal = numberValue.boolValue
+                    if key.lowercased().contains("enabled") || key.lowercased().contains("required") ||
+                       key.lowercased().contains("expanded") || key.lowercased().contains("selected") {
+                        if boolVal {
+                            result += "\(indentStr)\(displayKey): Yes\n"
+                        }
+                    } else {
+                        result += "\(indentStr)\(displayKey): \(boolVal ? "Yes" : "No")\n"
+                    }
                 } else {
                     result += "\(indentStr)\(displayKey): \(numberValue)\n"
                 }
             } else if value is NSNull {
-                result += "\(indentStr)\(displayKey): null\n"
+                continue
             } else if let anyValue = value {
                 result += "\(indentStr)\(displayKey): \(anyValue)\n"
             }

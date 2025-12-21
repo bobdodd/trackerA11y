@@ -7,11 +7,69 @@ import { spawn, ChildProcess } from 'child_process';
 import { BaseInteractionTracker } from '../BaseInteractionTracker';
 import { InteractionEvent, InteractionConfig } from '@/types';
 import * as path from 'path';
+import { BrowserExtensionBridge, BrowserFocusEvent } from '../BrowserExtensionBridge';
+
+// Helper to extract all focused element properties from native event
+function extractFocusedElementData(focusedElement: any) {
+  if (!focusedElement) return undefined;
+  
+  return {
+    // Core accessibility info
+    role: focusedElement.role,
+    subrole: focusedElement.subrole,
+    title: focusedElement.title,
+    label: focusedElement.label,
+    value: focusedElement.value,
+    roleDescription: focusedElement.roleDescription,
+    help: focusedElement.help,
+    
+    // DOM-specific (browser elements)
+    domId: focusedElement.domId,
+    domClassList: focusedElement.domClassList,
+    url: focusedElement.url,
+    documentURL: focusedElement.documentURL,
+    documentTitle: focusedElement.documentTitle,
+    placeholder: focusedElement.placeholder,
+    
+    // State attributes
+    enabled: focusedElement.enabled,
+    required: focusedElement.required,
+    invalid: focusedElement.invalid,
+    expanded: focusedElement.expanded,
+    selected: focusedElement.selected,
+    checked: focusedElement.checked,
+    visited: focusedElement.visited,
+    hasPopup: focusedElement.hasPopup,
+    
+    // Form-related
+    autocomplete: focusedElement.autocomplete,
+    
+    // ARIA live region
+    ariaLive: focusedElement.ariaLive,
+    ariaAtomic: focusedElement.ariaAtomic,
+    ariaBusy: focusedElement.ariaBusy,
+    
+    // Application context
+    applicationName: focusedElement.applicationName,
+    pid: focusedElement.pid,
+    
+    // Bounds
+    bounds: focusedElement.boundsX !== undefined ? {
+      x: focusedElement.boundsX,
+      y: focusedElement.boundsY,
+      width: focusedElement.boundsWidth,
+      height: focusedElement.boundsHeight
+    } : undefined
+  };
+}
 
 export class NativeInteractionTracker extends BaseInteractionTracker {
   private nativeProcess: ChildProcess | null = null;
   private sessionId: string = '';
   private nativeHelperPath: string;
+  private browserBridge: BrowserExtensionBridge;
+  private latestBrowserElement: BrowserFocusEvent | null = null;
+  private browserElementTimestamp: number = 0;
   private hoverTracker: {
     currentPosition: { x: number; y: number } | null;
     startTime: number | null;
@@ -30,6 +88,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
     super(config);
     this.sessionId = `native_session_${Date.now()}`;
     this.nativeHelperPath = path.resolve(__dirname, '../../../native_helpers/native_helpers/mouse_capture');
+    this.browserBridge = new BrowserExtensionBridge();
   }
 
   async initialize(): Promise<void> {
@@ -61,6 +120,7 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
 
     try {
       await this.startNativeCapture();
+      await this.startBrowserBridge();
       
       this.isMonitoring = true;
       this.emit('monitoringStarted');
@@ -107,6 +167,27 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
     } catch (error) {
       throw new Error(`Native helper not found at ${this.nativeHelperPath}. Run 'make' in the native_helpers directory.`);
     }
+  }
+
+  private async startBrowserBridge(): Promise<void> {
+    try {
+      await this.browserBridge.start();
+      
+      this.browserBridge.on('browserFocus', (event: BrowserFocusEvent) => {
+        this.latestBrowserElement = event;
+        this.browserElementTimestamp = Date.now();
+      });
+    } catch (error) {
+      console.warn('⚠️ Browser extension bridge failed to start:', error);
+    }
+  }
+
+  private getBrowserElementIfRecent(): BrowserFocusEvent | null {
+    const age = Date.now() - this.browserElementTimestamp;
+    if (age < 500 && this.latestBrowserElement) {
+      return this.latestBrowserElement;
+    }
+    return null;
   }
 
   private async startNativeCapture(): Promise<void> {
@@ -336,8 +417,14 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
           interactionType = 'focus_change';
           const focusedElement = nativeEvent.data.focusedElement;
           const focusTrigger = nativeEvent.data.trigger || 'keyboard';
+          const extractedElement = extractFocusedElementData(focusedElement);
           
-          if (focusTrigger === 'click') {
+          const browserData = this.getBrowserElementIfRecent();
+          const isBrowser = focusedElement?.applicationName === 'Safari' || 
+                           focusedElement?.applicationName === 'Google Chrome' ||
+                           focusedElement?.applicationName === 'Firefox';
+          
+          if (focusTrigger === 'click' || focusTrigger === 'programmatic') {
             target = {
               coordinates: {
                 x: nativeEvent.data.x,
@@ -345,24 +432,24 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
               }
             };
             inputData = {
-              trigger: 'click',
-              ...(focusedElement && {
-                focusedElement: {
-                  role: focusedElement.role,
-                  subrole: focusedElement.subrole,
-                  title: focusedElement.title,
-                  label: focusedElement.label,
-                  value: focusedElement.value,
-                  roleDescription: focusedElement.roleDescription,
-                  domId: focusedElement.domId,
-                  domClassList: focusedElement.domClassList,
-                  applicationName: focusedElement.applicationName,
-                  bounds: focusedElement.boundsX !== undefined ? {
-                    x: focusedElement.boundsX,
-                    y: focusedElement.boundsY,
-                    width: focusedElement.boundsWidth,
-                    height: focusedElement.boundsHeight
-                  } : undefined
+              trigger: focusTrigger,
+              ...(extractedElement && { focusedElement: extractedElement }),
+              ...(isBrowser && browserData && {
+                browserElement: {
+                  tagName: browserData.element.tagName,
+                  id: browserData.element.id,
+                  className: browserData.element.className,
+                  xpath: browserData.element.xpath,
+                  allAttributes: browserData.element.allAttributes,
+                  computedStyles: browserData.element.computedStyles,
+                  role: browserData.element.role,
+                  ariaLabel: browserData.element.ariaLabel,
+                  textContent: browserData.element.textContent,
+                  href: browserData.element.href,
+                  outerHTML: browserData.element.outerHTML,
+                  bounds: browserData.element.bounds,
+                  parentURL: browserData.url,
+                  pageTitle: browserData.title
                 }
               })
             };
@@ -374,23 +461,23 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
               key: focusKey,
               keyCode: nativeEvent.data.keyCode,
               modifiers: focusModifiers,
-              ...(focusedElement && {
-                focusedElement: {
-                  role: focusedElement.role,
-                  subrole: focusedElement.subrole,
-                  title: focusedElement.title,
-                  label: focusedElement.label,
-                  value: focusedElement.value,
-                  roleDescription: focusedElement.roleDescription,
-                  domId: focusedElement.domId,
-                  domClassList: focusedElement.domClassList,
-                  applicationName: focusedElement.applicationName,
-                  bounds: focusedElement.boundsX !== undefined ? {
-                    x: focusedElement.boundsX,
-                    y: focusedElement.boundsY,
-                    width: focusedElement.boundsWidth,
-                    height: focusedElement.boundsHeight
-                  } : undefined
+              ...(extractedElement && { focusedElement: extractedElement }),
+              ...(isBrowser && browserData && {
+                browserElement: {
+                  tagName: browserData.element.tagName,
+                  id: browserData.element.id,
+                  className: browserData.element.className,
+                  xpath: browserData.element.xpath,
+                  allAttributes: browserData.element.allAttributes,
+                  computedStyles: browserData.element.computedStyles,
+                  role: browserData.element.role,
+                  ariaLabel: browserData.element.ariaLabel,
+                  textContent: browserData.element.textContent,
+                  href: browserData.element.href,
+                  outerHTML: browserData.element.outerHTML,
+                  bounds: browserData.element.bounds,
+                  parentURL: browserData.url,
+                  pageTitle: browserData.title
                 }
               })
             };
@@ -622,9 +709,8 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
   }
 
   async shutdown(): Promise<void> {
-    // Clean up hover tracking
     this.resetHoverTracking();
-    
+    await this.browserBridge.stop();
     await this.stopMonitoring();
     await super.shutdown();
   }

@@ -80,14 +80,17 @@ async function runEventRecorderDemo() {
     console.error('❌ Recorder error:', error.message);
   });
 
-  // Handle graceful shutdown
-  process.on('SIGINT', async () => {
+  let isShuttingDown = false;
+  
+  async function gracefulShutdown() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
     console.log('\n\n🛑 Stopping recording...');
     
     try {
-      const outputDir = await recorder.stopRecording();
+      await recorder.stopRecording();
       
-      // Show what was captured
       console.log('\n🎯 What Was Captured:');
       console.log('• Every mouse click with exact coordinates');
       console.log('• Every keystroke (navigation keys, not passwords)');
@@ -103,13 +106,10 @@ async function runEventRecorderDemo() {
       console.error('❌ Error stopping recording:', error);
       process.exit(1);
     }
-  });
+  }
 
-  process.on('SIGTERM', async () => {
-    await recorder.stopRecording();
-    await recorder.shutdown();
-    process.exit(0);
-  });
+  process.on('SIGINT', gracefulShutdown);
+  process.on('SIGTERM', gracefulShutdown);
 
   try {
     console.log('🚀 Initializing comprehensive event recorder...');
