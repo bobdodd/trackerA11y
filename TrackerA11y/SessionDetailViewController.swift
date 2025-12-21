@@ -3305,7 +3305,8 @@ class SessionDetailViewController: NSViewController {
         let sources: [(String, NSColor)] = [
             ("Interaction", .systemGreen),
             ("Focus", .systemBlue),
-            ("System", .systemOrange)
+            ("System", .systemOrange),
+            ("Marker", .systemRed)
         ]
         
         for (name, color) in sources {
@@ -3552,8 +3553,10 @@ class SessionDetailViewController: NSViewController {
                 }
                 
                 DispatchQueue.main.async {
-                    self.events = eventsArray
-                    if let firstTimestamp = eventsArray.first?["timestamp"] as? Double {
+                    self.events = eventsArray.sorted { 
+                        ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0)
+                    }
+                    if let firstTimestamp = self.events.first?["timestamp"] as? Double {
                         self.sessionStartTimestamp = firstTimestamp
                     }
                     self.finishLoading()
@@ -6048,7 +6051,26 @@ class EnhancedTimelineView: NSView {
     
     func setZoom(_ level: CGFloat) {
         zoomLevel = max(0.5, min(level, 5.0))
+        updateFrameForZoom()
+        invalidateIntrinsicContentSize()
         needsDisplay = true
+    }
+    
+    override var intrinsicContentSize: NSSize {
+        guard let scrollView = enclosingScrollView else {
+            return NSSize(width: NSView.noIntrinsicMetric, height: NSView.noIntrinsicMetric)
+        }
+        let baseWidth = scrollView.contentSize.width
+        let zoomedWidth = baseWidth * zoomLevel
+        return NSSize(width: zoomedWidth, height: NSView.noIntrinsicMetric)
+    }
+    
+    private func updateFrameForZoom() {
+        guard let scrollView = enclosingScrollView else { return }
+        let baseWidth = scrollView.contentSize.width
+        let zoomedWidth = baseWidth * zoomLevel
+        let newFrame = NSRect(x: 0, y: 0, width: zoomedWidth, height: bounds.height)
+        frame = newFrame
     }
     
     override init(frame frameRect: NSRect) {
@@ -6070,12 +6092,14 @@ class EnhancedTimelineView: NSView {
     }
     
     func setEvents(_ events: [[String: Any]]) {
-        self.events = events
+        self.events = events.sorted { 
+            ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0)
+        }
         
-        if let firstTimestamp = events.first?["timestamp"] as? Double,
-           let lastTimestamp = events.last?["timestamp"] as? Double {
-            startTime = firstTimestamp
-            endTime = lastTimestamp
+        let timestamps = self.events.compactMap { $0["timestamp"] as? Double }
+        if let minTime = timestamps.min(), let maxTime = timestamps.max() {
+            startTime = minTime
+            endTime = maxTime
         }
         
         needsDisplay = true
@@ -6083,17 +6107,23 @@ class EnhancedTimelineView: NSView {
     
     func zoomIn() {
         zoomLevel = min(zoomLevel * 1.5, 10.0)
+        updateFrameForZoom()
+        invalidateIntrinsicContentSize()
         needsDisplay = true
     }
     
     func zoomOut() {
         zoomLevel = max(zoomLevel / 1.5, 0.5)
+        updateFrameForZoom()
+        invalidateIntrinsicContentSize()
         needsDisplay = true
     }
     
     func resetZoom() {
         zoomLevel = 1.0
         panOffset = 0
+        updateFrameForZoom()
+        invalidateIntrinsicContentSize()
         needsDisplay = true
     }
     
@@ -6344,8 +6374,6 @@ class EnhancedTimelineView: NSView {
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)
             eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
         }
-        
-        drawLegend(in: timelineRect)
     }
     
     private func drawLegend(in timelineRect: NSRect) {
@@ -6389,31 +6417,28 @@ class EnhancedTimelineView: NSView {
         axisPath.lineWidth = 1
         axisPath.stroke()
         
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm:ss"
-        
-        let startDate = Date(timeIntervalSince1970: startTime / 1_000_000)
-        let endDate = Date(timeIntervalSince1970: endTime / 1_000_000)
-        
         let timeAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
             .foregroundColor: NSColor.secondaryLabelColor
         ]
         
-        let startLabel = timeFormatter.string(from: startDate)
+        let duration = endTime - startTime
+        let durationSeconds = duration / 1_000_000
+        
+        let startLabel = "0:00"
         startLabel.draw(at: NSPoint(x: leftMargin, y: axisY + 5), withAttributes: timeAttributes)
         
-        let endLabel = timeFormatter.string(from: endDate)
+        let endLabel = formatRelativeTime(durationSeconds)
         let endLabelSize = endLabel.size(withAttributes: timeAttributes)
         endLabel.draw(at: NSPoint(x: bounds.width - rightMargin - endLabelSize.width, y: axisY + 5), withAttributes: timeAttributes)
         
-        let markerCount = min(max(Int(zoomLevel * 3), 3), 8)
-        let duration = endTime - startTime
         let timelineWidth = bounds.width - leftMargin - rightMargin
+        let targetSpacing: CGFloat = 100
+        let markerCount = max(3, Int(timelineWidth / targetSpacing))
         
         for i in 1..<markerCount {
             let progress = CGFloat(i) / CGFloat(markerCount)
-            let markerX = leftMargin + progress * timelineWidth * zoomLevel
+            let markerX = leftMargin + progress * timelineWidth
             
             guard markerX < bounds.width - rightMargin - 40 else { continue }
             
@@ -6423,12 +6448,19 @@ class EnhancedTimelineView: NSView {
             tickPath.lineWidth = 1
             tickPath.stroke()
             
-            let markerTime = startTime + Double(progress) * duration
-            let markerDate = Date(timeIntervalSince1970: markerTime / 1_000_000)
-            let markerLabel = timeFormatter.string(from: markerDate)
+            let relativeSeconds = Double(progress) * durationSeconds
+            let markerLabel = formatRelativeTime(relativeSeconds)
             let labelSize = markerLabel.size(withAttributes: timeAttributes)
             markerLabel.draw(at: NSPoint(x: markerX - labelSize.width/2, y: axisY + 5), withAttributes: timeAttributes)
         }
+    }
+    
+    private func formatRelativeTime(_ seconds: Double) -> String {
+        let hours = Int(seconds) / 3600
+        let mins = (Int(seconds) % 3600) / 60
+        let secs = Int(seconds) % 60
+        let tenths = Int((seconds - Double(Int(seconds))) * 10)
+        return String(format: "%02d:%02d:%02d.%d", hours, mins, secs, tenths)
     }
     
     private func drawHoveredEventTooltip() {
