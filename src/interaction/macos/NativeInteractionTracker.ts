@@ -395,7 +395,8 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
                 bounds: mouseDownBrowserData.element.bounds,
                 parentURL: mouseDownBrowserData.url,
                 pageTitle: mouseDownBrowserData.title
-              }
+              },
+              browserContext: mouseDownBrowserData.browser
             })
           };
           break;
@@ -470,7 +471,8 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
                 bounds: mouseUpBrowserData.element.bounds,
                 parentURL: mouseUpBrowserData.url,
                 pageTitle: mouseUpBrowserData.title
-              }
+              },
+              browserContext: mouseUpBrowserData.browser
             })
           };
 
@@ -550,7 +552,8 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
                   bounds: browserData.element.bounds,
                   parentURL: browserData.url,
                   pageTitle: browserData.title
-                }
+                },
+                browserContext: browserData.browser
               })
             };
           } else {
@@ -578,7 +581,8 @@ export class NativeInteractionTracker extends BaseInteractionTracker {
                   bounds: browserData.element.bounds,
                   parentURL: browserData.url,
                   pageTitle: browserData.title
-                }
+                },
+                browserContext: browserData.browser
               })
             };
           }

@@ -18,9 +18,22 @@ browserAPI.runtime.onMessage.addListener((message, sender) => {
   const validTypes = ['focus_change', 'mouse_down', 'mouse_up', 'click', 'hover'];
   if (validTypes.includes(message.type)) {
     console.log('TrackerA11y:', message.type, message.element?.tagName, message.element?.id || '');
+    
+    message.browser = {
+      name: 'Safari',
+      windowId: sender.tab?.windowId,
+      tabId: sender.tab?.id,
+      tabIndex: sender.tab?.index,
+      tabUrl: sender.tab?.url,
+      tabTitle: sender.tab?.title,
+      frameId: sender.frameId,
+      incognito: sender.tab?.incognito || false
+    };
+    
     message.tabId = sender.tab?.id;
     message.tabUrl = sender.tab?.url;
     message.frameId = sender.frameId;
+    
     sendMessage(message);
   }
   return false;

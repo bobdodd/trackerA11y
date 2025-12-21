@@ -2856,6 +2856,7 @@ class SessionDetailViewController: NSViewController {
     
     private var timelineRangeLabel: NSTextField?
     private var timelineDetailLabel: NSTextField?
+    private var timelineDetailStackView: NSStackView?
     private var timelineZoomSlider: NSSlider?
     private var timelineSourceFilters: [String: Bool] = ["interaction": true, "focus": true, "system": true]
     private var timelineSearchField: NSSearchField?
@@ -3366,6 +3367,23 @@ class SessionDetailViewController: NSViewController {
         panel.addSubview(detailLabel)
         self.timelineDetailLabel = detailLabel
         
+        let stackView = NSStackView()
+        stackView.orientation = .vertical
+        stackView.spacing = 8
+        stackView.alignment = .leading
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let scrollView = NSScrollView()
+        scrollView.documentView = stackView
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.isHidden = true
+        panel.addSubview(scrollView)
+        self.timelineDetailStackView = stackView
+        
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: panel.topAnchor, constant: 12),
             titleLabel.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
@@ -3373,7 +3391,16 @@ class SessionDetailViewController: NSViewController {
             
             detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             detailLabel.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
-            detailLabel.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12)
+            detailLabel.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
+            
+            scrollView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            scrollView.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 8),
+            scrollView.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -8),
+            scrollView.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -8),
+            
+            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -16)
         ])
         
         return panel
@@ -5515,6 +5542,27 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                     pageCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
                 }
                 
+                if let browserCtx = inputData?["browserContext"] as? [String: Any] {
+                    let (ctxCard, ctxContent) = createDetailCard(title: "Browser Context", icon: "🖥️")
+                    if let name = browserCtx["name"] as? String, !name.isEmpty {
+                        ctxContent.addArrangedSubview(createDetailRow(label: "Browser", value: name, valueColor: .systemPurple))
+                    }
+                    if let windowId = browserCtx["windowId"] as? Int {
+                        ctxContent.addArrangedSubview(createDetailRow(label: "Window", value: "\(windowId)", monospace: true))
+                    }
+                    if let tabIndex = browserCtx["tabIndex"] as? Int {
+                        ctxContent.addArrangedSubview(createDetailRow(label: "Tab", value: "\(tabIndex)", monospace: true))
+                    }
+                    if let tabTitle = browserCtx["tabTitle"] as? String, !tabTitle.isEmpty {
+                        ctxContent.addArrangedSubview(createDetailRow(label: "Tab Title", value: tabTitle))
+                    }
+                    if let incognito = browserCtx["incognito"] as? Bool, incognito {
+                        ctxContent.addArrangedSubview(createDetailRow(label: "Private", value: "Yes", valueColor: .systemOrange))
+                    }
+                    stackView.addArrangedSubview(ctxCard)
+                    ctxCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                }
+                
                 if let allAttrs = browser["allAttributes"] as? [String: Any], !allAttrs.isEmpty {
                     let keyAttrs = ["tabindex", "aria-label", "aria-labelledby", "aria-describedby", "role"]
                     let keyAttrValues = keyAttrs.compactMap { key -> (String, String)? in
@@ -5887,59 +5935,63 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
     private func updateTimelineInfo(with event: [String: Any]) {
         selectedTimelineEvent = event
         
-        var infoText = ""
         let eventType = event["type"] as? String ?? ""
         let isMarkerEvent = eventType.lowercased() == "marker"
         
         print("🔍 updateTimelineInfo - eventType: '\(eventType)', isMarker: \(isMarkerEvent), keys: \(event.keys)")
-        if isMarkerEvent {
-            print("🔍 markerName: \(event["markerName"] ?? "nil"), markerNote: \(event["markerNote"] != nil)")
-            if let markerName = event["markerName"] as? String, !markerName.isEmpty {
-                infoText += "🚩 Marker: \(markerName)\n\n"
-            } else {
-                infoText += "🚩 Marker\n\n"
-            }
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
             
-            if let timestamp = event["timestamp"] as? Double {
-                infoText += "Time: \(formatTimestamp(timestamp))\n"
-            }
-            
-            if let noteBase64 = event["markerNote"] as? String,
-               let noteData = Data(base64Encoded: noteBase64) {
-                if let noteString = extractPlainTextFromRTF(noteData) {
-                    infoText += "\nNote:\n\(noteString)"
-                }
-            }
-        } else {
-            if let timestamp = event["timestamp"] as? Double {
-                infoText += "Time: \(formatTimestamp(timestamp))\n"
+            if isMarkerEvent {
+                timelineDetailLabel?.isHidden = true
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
                 
-                let originalIndex = findEventIndex(byTimestamp: timestamp)
-                if originalIndex >= 0 {
-                    let tags = eventTags[originalIndex] ?? Set<String>()
-                    if !tags.isEmpty {
-                        infoText += "Tags: \(tags.sorted().joined(separator: ", "))\n"
-                    }
-                    if eventNotes[originalIndex] != nil {
-                        infoText += "📝 Has note\n"
+                let (markerCard, markerContent) = createDetailCard(title: "Marker", icon: "🚩")
+                if let markerName = event["markerName"] as? String, !markerName.isEmpty {
+                    markerContent.addArrangedSubview(createDetailRow(label: "Name", value: markerName, valueColor: .systemOrange))
+                }
+                if let timestamp = event["timestamp"] as? Double {
+                    markerContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp)))
+                }
+                if let noteBase64 = event["markerNote"] as? String,
+                   let noteData = Data(base64Encoded: noteBase64),
+                   let noteString = extractPlainTextFromRTF(noteData) {
+                    markerContent.addArrangedSubview(createDetailRow(label: "Note", value: noteString))
+                }
+                stackView.addArrangedSubview(markerCard)
+                markerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            } else if let data = event["data"] as? [String: Any] {
+                timelineDetailLabel?.isHidden = true
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+                
+                let (headerCard, headerContent) = createDetailCard(title: "Event", icon: "📋")
+                if let timestamp = event["timestamp"] as? Double {
+                    headerContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp)))
+                    let originalIndex = findEventIndex(byTimestamp: timestamp)
+                    if originalIndex >= 0 {
+                        let tags = eventTags[originalIndex] ?? Set<String>()
+                        if !tags.isEmpty {
+                            headerContent.addArrangedSubview(createDetailRow(label: "Tags", value: tags.sorted().joined(separator: ", "), valueColor: .systemBlue))
+                        }
                     }
                 }
-            }
-            
-            if let source = event["source"] as? String {
-                infoText += "Source: \(source.capitalized)\n"
-            }
-            
-            if let type = event["type"] as? String {
-                infoText += "Type: \(type.replacingOccurrences(of: "_", with: " ").capitalized)\n"
-            }
-            
-            if let data = event["data"] as? [String: Any] {
-                infoText += "\nDetails:\n\(formatEventDataDetailed(data))"
+                if let source = event["source"] as? String {
+                    headerContent.addArrangedSubview(createDetailRow(label: "Source", value: source.capitalized))
+                }
+                if let type = event["type"] as? String {
+                    headerContent.addArrangedSubview(createDetailRow(label: "Type", value: type.replacingOccurrences(of: "_", with: " ").capitalized, valueColor: .systemPurple))
+                }
+                stackView.addArrangedSubview(headerCard)
+                headerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                
+                buildFocusEventCards(data, into: stackView)
+            } else {
+                timelineDetailLabel?.isHidden = false
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = true
+                timelineDetailLabel?.stringValue = "No detailed data available"
             }
         }
-        
-        timelineDetailLabel?.stringValue = infoText
     }
     
     private func extractPlainTextFromRTF(_ rtfData: Data) -> String? {

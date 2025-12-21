@@ -85,12 +85,24 @@ export interface BrowserElementDetails {
   timestamp?: number;
 }
 
+export interface BrowserContext {
+  name: string;
+  windowId?: number;
+  tabId?: number;
+  tabIndex?: number;
+  tabUrl?: string;
+  tabTitle?: string;
+  frameId?: number;
+  incognito?: boolean;
+}
+
 export interface BrowserFocusEvent {
   type: 'focus_change';
   trigger: 'focusin' | 'click' | 'tab' | 'initial';
   element: BrowserElementDetails;
   url: string;
   title: string;
+  browser?: BrowserContext;
   tabId?: number;
   tabUrl?: string;
   frameId?: number;
@@ -101,6 +113,7 @@ export interface BrowserElementEvent {
   element: BrowserElementDetails;
   url: string;
   title: string;
+  browser?: BrowserContext;
   button?: number;
   clientX?: number;
   clientY?: number;
@@ -222,26 +235,39 @@ export class BrowserExtensionBridge extends EventEmitter {
     }
     this.lastEventSignature = signature;
 
+    const browserContext: BrowserContext | undefined = message.browser ? {
+      name: message.browser.name || 'Unknown',
+      windowId: message.browser.windowId,
+      tabId: message.browser.tabId,
+      tabIndex: message.browser.tabIndex,
+      tabUrl: message.browser.tabUrl,
+      tabTitle: message.browser.tabTitle,
+      frameId: message.browser.frameId,
+      incognito: message.browser.incognito
+    } : undefined;
+
     if (message.type === 'focus_change') {
-      console.log(`🌐 Bridge: focus_change on <${message.element?.tagName}> id=${message.element?.id || ''}`);
+      console.log(`🌐 Bridge: focus_change on <${message.element?.tagName}> window=${browserContext?.windowId} tab=${browserContext?.tabIndex}`);
       const event: BrowserFocusEvent = {
         type: 'focus_change',
         trigger: message.trigger || 'focusin',
         element: message.element,
         url: message.url,
         title: message.title,
+        browser: browserContext,
         tabId: message.tabId,
         tabUrl: message.tabUrl,
         frameId: message.frameId
       };
       this.emit('browserFocus', event);
     } else {
-      console.log(`🌐 Bridge: ${message.type} on <${message.element?.tagName}> id=${message.element?.id || ''} xpath=${message.element?.xpath || ''}`);
+      console.log(`🌐 Bridge: ${message.type} on <${message.element?.tagName}> window=${browserContext?.windowId} tab=${browserContext?.tabIndex}`);
       const event: BrowserElementEvent = {
         type: message.type,
         element: message.element,
         url: message.url,
         title: message.title,
+        browser: browserContext,
         button: message.button,
         clientX: message.clientX,
         clientY: message.clientY,
