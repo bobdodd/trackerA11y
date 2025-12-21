@@ -1,5 +1,7 @@
 import Cocoa
 import ObjectiveC
+import AVFoundation
+import AVKit
 
 class TagsNotesCellView: NSView {
     weak var viewController: SessionDetailViewController?
@@ -94,6 +96,16 @@ class SessionDetailViewController: NSViewController {
     private var pendingMarkers: [String: [String: Any]] = [:]  // Markers to insert after events load
     private var sessionStartTimestamp: Double = 0  // First event timestamp for relative time display
     
+    // Video player for Timeline tab
+    private var videoPlayerView: AVPlayerView?
+    private var videoPlayer: AVPlayer?
+    private var videoTimeObserver: Any?
+    private var timelineScrollView: NSScrollView?
+    private var isVideoSyncEnabled: Bool = true
+    private var isSyncingFromVideo: Bool = false
+    private var isSyncingFromTimeline: Bool = false
+    private var videoStartTimestamp: Double = 0  // Recording start timestamp from metadata
+    
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
     private var currentNoteEventIndex: Int = -1
@@ -111,6 +123,13 @@ class SessionDetailViewController: NSViewController {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    deinit {
+        if let observer = videoTimeObserver, let player = videoPlayer {
+            player.removeTimeObserver(observer)
+        }
+        NotificationCenter.default.removeObserver(self)
     }
     
     override func loadView() {
@@ -2778,6 +2797,12 @@ class SessionDetailViewController: NSViewController {
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         headerStack.addArrangedSubview(spacer)
         
+        // Sync toggle button
+        let syncButton = NSButton(checkboxWithTitle: "Sync Video", target: self, action: #selector(toggleVideoSync(_:)))
+        syncButton.state = .on
+        syncButton.font = NSFont.systemFont(ofSize: 13)
+        headerStack.addArrangedSubview(syncButton)
+        
         // Add Marker at Timecode button
         let addMarkerBtn = NSButton(title: "🚩 Add Marker at Timecode...", target: self, action: #selector(showAddMarkerAtTimecodeDialog(_:)))
         addMarkerBtn.bezelStyle = .rounded
@@ -2785,6 +2810,10 @@ class SessionDetailViewController: NSViewController {
         headerStack.addArrangedSubview(addMarkerBtn)
         
         containerView.addSubview(headerStack)
+        
+        // Video player section (top half)
+        let videoContainer = createVideoPlayerContainer()
+        containerView.addSubview(videoContainer)
         
         // Controls toolbar
         let controlsToolbar = createTimelineControlsToolbar()
@@ -2803,6 +2832,7 @@ class SessionDetailViewController: NSViewController {
         timeline.layer?.borderColor = NSColor.separatorColor.cgColor
         timeline.onEventSelected = { [weak self] event in
             self?.updateTimelineInfo(with: event)
+            self?.syncVideoToEvent(event)
         }
         timeline.onEventRightClicked = { [weak self] event, eventIndex, nsEvent in
             self?.showTimelineEventContextMenu(event: event, eventIndex: eventIndex, nsEvent: nsEvent)
@@ -2810,14 +2840,23 @@ class SessionDetailViewController: NSViewController {
         self.timelineView = timeline
         
         // Wrap timeline in scroll view for horizontal scrolling
-        let timelineScrollView = NSScrollView()
-        timelineScrollView.documentView = timeline
-        timelineScrollView.hasVerticalScroller = false
-        timelineScrollView.hasHorizontalScroller = true
-        timelineScrollView.autohidesScrollers = true
-        timelineScrollView.translatesAutoresizingMaskIntoConstraints = false
-        timelineScrollView.drawsBackground = false
-        containerView.addSubview(timelineScrollView)
+        let scrollView = NSScrollView()
+        scrollView.documentView = timeline
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.drawsBackground = false
+        self.timelineScrollView = scrollView
+        containerView.addSubview(scrollView)
+        
+        // Observe scroll changes to sync video
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(timelineScrollViewDidScroll(_:)),
+            name: NSScrollView.didLiveScrollNotification,
+            object: scrollView
+        )
         
         // Event detail panel (right side)
         let detailPanel = createTimelineDetailPanel()
@@ -2828,30 +2867,236 @@ class SessionDetailViewController: NSViewController {
             headerStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             headerStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             
-            controlsToolbar.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
+            // Video container takes top portion
+            videoContainer.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
+            videoContainer.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            videoContainer.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
+            videoContainer.heightAnchor.constraint(equalTo: containerView.heightAnchor, multiplier: 0.45),
+            
+            controlsToolbar.topAnchor.constraint(equalTo: videoContainer.bottomAnchor, constant: 8),
             controlsToolbar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            controlsToolbar.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            controlsToolbar.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
             
-            legendView.topAnchor.constraint(equalTo: controlsToolbar.bottomAnchor, constant: 12),
+            legendView.topAnchor.constraint(equalTo: controlsToolbar.bottomAnchor, constant: 8),
             legendView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            legendView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
-            legendView.heightAnchor.constraint(equalToConstant: 30),
+            legendView.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
+            legendView.heightAnchor.constraint(equalToConstant: 24),
             
-            timelineScrollView.topAnchor.constraint(equalTo: legendView.bottomAnchor, constant: 12),
-            timelineScrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            timelineScrollView.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
-            timelineScrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            // Timeline takes remaining bottom portion
+            scrollView.topAnchor.constraint(equalTo: legendView.bottomAnchor, constant: 8),
+            scrollView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            scrollView.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
+            scrollView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
             
-            timeline.widthAnchor.constraint(greaterThanOrEqualTo: timelineScrollView.widthAnchor),
-            timeline.heightAnchor.constraint(equalTo: timelineScrollView.heightAnchor),
+            timeline.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.widthAnchor),
+            timeline.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
             
-            detailPanel.topAnchor.constraint(equalTo: legendView.bottomAnchor, constant: 12),
+            detailPanel.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
             detailPanel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             detailPanel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
             detailPanel.widthAnchor.constraint(equalToConstant: 280)
         ])
         
+        // Load video if available
+        loadSessionVideo()
+        
         return containerView
+    }
+    
+    private func createVideoPlayerContainer() -> NSView {
+        let container = NSView()
+        container.wantsLayer = true
+        container.layer?.backgroundColor = NSColor.black.cgColor
+        container.layer?.cornerRadius = 8
+        container.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Video player view
+        let playerView = AVPlayerView()
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerView.controlsStyle = .inline
+        playerView.showsFullScreenToggleButton = true
+        self.videoPlayerView = playerView
+        container.addSubview(playerView)
+        
+        // "No video" placeholder label
+        let noVideoLabel = NSTextField(labelWithString: "No screen recording available for this session")
+        noVideoLabel.font = NSFont.systemFont(ofSize: 14)
+        noVideoLabel.textColor = .secondaryLabelColor
+        noVideoLabel.alignment = .center
+        noVideoLabel.translatesAutoresizingMaskIntoConstraints = false
+        noVideoLabel.tag = 999  // Tag for easy removal when video loads
+        container.addSubview(noVideoLabel)
+        
+        NSLayoutConstraint.activate([
+            playerView.topAnchor.constraint(equalTo: container.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            
+            noVideoLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            noVideoLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+        
+        return container
+    }
+    
+    private func loadSessionVideo() {
+        let videoPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screen_recording.mp4"
+        let videoURL = URL(fileURLWithPath: videoPath)
+        
+        guard FileManager.default.fileExists(atPath: videoPath) else {
+            print("📹 No screen recording found at: \(videoPath)")
+            return
+        }
+        
+        print("📹 Loading screen recording: \(videoPath)")
+        
+        // Remove "no video" placeholder
+        if let placeholder = videoPlayerView?.superview?.viewWithTag(999) {
+            placeholder.removeFromSuperview()
+        }
+        
+        // Load recording start timestamp from metadata
+        loadVideoStartTimestamp()
+        
+        // Create player
+        let player = AVPlayer(url: videoURL)
+        self.videoPlayer = player
+        videoPlayerView?.player = player
+        
+        // Add periodic time observer to sync timeline with video
+        let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        videoTimeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            self?.videoTimeDidChange(time)
+        }
+        
+        print("📹 Screen recording loaded successfully")
+    }
+    
+    private func loadVideoStartTimestamp() {
+        let metadataPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/metadata.json"
+        
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)),
+              let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            // Fall back to first event timestamp
+            videoStartTimestamp = sessionStartTimestamp
+            return
+        }
+        
+        // Try to get recording start timestamp from metadata
+        if let recordingStart = metadata["recordingStartTimestamp"] as? Double {
+            videoStartTimestamp = recordingStart
+        } else if let startTime = metadata["startTime"] as? Double {
+            videoStartTimestamp = startTime
+        } else {
+            videoStartTimestamp = sessionStartTimestamp
+        }
+    }
+    
+    private func videoTimeDidChange(_ time: CMTime) {
+        guard isVideoSyncEnabled, !isSyncingFromTimeline else { return }
+        
+        isSyncingFromVideo = true
+        defer { isSyncingFromVideo = false }
+        
+        let videoSeconds = time.seconds
+        
+        // Calculate event timestamp from video time
+        // Video time 0 = videoStartTimestamp
+        let eventTimestamp = videoStartTimestamp + (videoSeconds * 1_000_000)  // Convert to microseconds
+        
+        // Scroll timeline to show this timestamp
+        scrollTimelineToTimestamp(eventTimestamp)
+    }
+    
+    private func scrollTimelineToTimestamp(_ timestamp: Double) {
+        guard let scrollView = timelineScrollView,
+              let timeline = timelineView,
+              !events.isEmpty else { return }
+        
+        // Find the position in the timeline for this timestamp
+        let firstTimestamp = events.first?["timestamp"] as? Double ?? sessionStartTimestamp
+        let lastTimestamp = events.last?["timestamp"] as? Double ?? firstTimestamp
+        let timeRange = lastTimestamp - firstTimestamp
+        
+        guard timeRange > 0 else { return }
+        
+        let relativePosition = (timestamp - firstTimestamp) / timeRange
+        let clampedPosition = max(0, min(1, relativePosition))
+        
+        // Calculate scroll position
+        let contentWidth = timeline.frame.width
+        let visibleWidth = scrollView.contentView.bounds.width
+        let maxScroll = max(0, contentWidth - visibleWidth)
+        
+        let targetX = clampedPosition * maxScroll
+        
+        // Smoothly scroll to position
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.1
+            context.allowsImplicitAnimation = true
+            scrollView.contentView.setBoundsOrigin(NSPoint(x: targetX, y: 0))
+        }
+    }
+    
+    @objc private func timelineScrollViewDidScroll(_ notification: Notification) {
+        guard isVideoSyncEnabled, !isSyncingFromVideo,
+              let scrollView = notification.object as? NSScrollView,
+              scrollView === timelineScrollView else { return }
+        
+        isSyncingFromTimeline = true
+        defer { isSyncingFromTimeline = false }
+        
+        syncVideoToScrollPosition()
+    }
+    
+    private func syncVideoToScrollPosition() {
+        guard let scrollView = timelineScrollView,
+              let timeline = timelineView,
+              let player = videoPlayer,
+              !events.isEmpty else { return }
+        
+        // Calculate what timestamp the scroll position represents
+        let contentWidth = timeline.frame.width
+        let visibleWidth = scrollView.contentView.bounds.width
+        let maxScroll = max(1, contentWidth - visibleWidth)
+        let currentScroll = scrollView.contentView.bounds.origin.x
+        
+        let scrollRatio = currentScroll / maxScroll
+        let clampedRatio = max(0, min(1, scrollRatio))
+        
+        // Map scroll ratio to timestamp
+        let firstTimestamp = events.first?["timestamp"] as? Double ?? sessionStartTimestamp
+        let lastTimestamp = events.last?["timestamp"] as? Double ?? firstTimestamp
+        let timeRange = lastTimestamp - firstTimestamp
+        
+        let targetTimestamp = firstTimestamp + (clampedRatio * timeRange)
+        
+        // Convert timestamp to video time
+        let videoSeconds = (targetTimestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
+        
+        guard videoSeconds >= 0 else { return }
+        
+        let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
+    private func syncVideoToEvent(_ event: [String: Any]) {
+        guard isVideoSyncEnabled,
+              let player = videoPlayer,
+              let eventTimestamp = event["timestamp"] as? Double else { return }
+        
+        // Convert event timestamp to video time
+        let videoSeconds = (eventTimestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
+        
+        guard videoSeconds >= 0 else { return }
+        
+        let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
+    @objc private func toggleVideoSync(_ sender: NSButton) {
+        isVideoSyncEnabled = sender.state == .on
     }
     
     private var timelineRangeLabel: NSTextField?

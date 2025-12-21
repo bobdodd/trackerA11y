@@ -36,7 +36,8 @@ export class EventRecorder extends EventEmitter {
   constructor(config: RecorderConfig) {
     super();
     this.config = config;
-    this.sessionId = `session_${Date.now()}`;
+    // Use session ID from environment (passed by Swift app) or generate one
+    this.sessionId = process.env.TRACKER_SESSION_ID || `session_${Date.now()}`;
     this.outputDir = path.resolve(config.outputDirectory || './recordings', this.sessionId);
     
     // Initialize timing
@@ -362,6 +363,18 @@ export class EventRecorder extends EventEmitter {
         const trigger = data.inputData?.trigger || 'click';
         const triggerIcon = trigger === 'click' ? '🖱️' : trigger === 'programmatic' ? '⚡' : '⌨️';
         return `🚫 FOCUS LOST ${triggerIcon}`;
+      }
+      // Handle browser focus events from Safari extension
+      if (data.interactionType === 'browser_focus') {
+        const el = data.inputData?.browserElement;
+        const trigger = data.inputData?.trigger || 'focusin';
+        const triggerIcon = trigger === 'click' ? '🖱️' : trigger === 'tab' ? '⌨️' : '🌐';
+        if (el) {
+          const label = el.ariaLabel || el.innerText?.substring(0, 30) || el.title || el.id || el.tagName;
+          const role = el.role || el.tagName?.toLowerCase() || 'element';
+          return `🌐 BROWSER ${triggerIcon} → ${label} [${role}]`;
+        }
+        return `🌐 BROWSER ${triggerIcon} → (no element info)`;
       }
       if (data.inputData?.key) return `Key: ${data.inputData.key}`;
       if (data.coordinates) return `Click: (${data.coordinates.x},${data.coordinates.y})`;

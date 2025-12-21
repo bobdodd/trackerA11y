@@ -215,6 +215,103 @@ NSDictionary* getFocusedElement(void) {
         }
     }
     
+    // Get URL attribute (for links and current page)
+    CFTypeRef urlRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXURLAttribute, &urlRef) == kAXErrorSuccess && urlRef) {
+        if (CFGetTypeID(urlRef) == CFURLGetTypeID()) {
+            CFURLRef url = (CFURLRef)urlRef;
+            info[@"url"] = (__bridge_transfer NSString*)CFURLGetString(url);
+        }
+        CFRelease(urlRef);
+    }
+    
+    // Get placeholder text (for input fields)
+    CFTypeRef placeholderRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXPlaceholderValue"), &placeholderRef) == kAXErrorSuccess && placeholderRef) {
+        info[@"placeholder"] = (__bridge_transfer NSString*)placeholderRef;
+    }
+    
+    // Get required state
+    CFTypeRef requiredRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXRequired"), &requiredRef) == kAXErrorSuccess && requiredRef) {
+        info[@"required"] = (__bridge NSNumber*)requiredRef;
+        CFRelease(requiredRef);
+    }
+    
+    // Get invalid state (for form validation)
+    CFTypeRef invalidRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXInvalid"), &invalidRef) == kAXErrorSuccess && invalidRef) {
+        info[@"invalid"] = (__bridge_transfer NSString*)invalidRef;
+    }
+    
+    // Get expanded state (for dropdowns, accordions)
+    CFTypeRef expandedRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXExpanded"), &expandedRef) == kAXErrorSuccess && expandedRef) {
+        info[@"expanded"] = (__bridge NSNumber*)expandedRef;
+        CFRelease(expandedRef);
+    }
+    
+    // Get selected state
+    CFTypeRef selectedRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXSelectedAttribute, &selectedRef) == kAXErrorSuccess && selectedRef) {
+        info[@"selected"] = (__bridge NSNumber*)selectedRef;
+        CFRelease(selectedRef);
+    }
+    
+    // Get checked state (for checkboxes/radio)
+    CFTypeRef checkedRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXValue"), &checkedRef) == kAXErrorSuccess && checkedRef) {
+        if (CFGetTypeID(checkedRef) == CFBooleanGetTypeID() || CFGetTypeID(checkedRef) == CFNumberGetTypeID()) {
+            info[@"checked"] = (__bridge NSNumber*)checkedRef;
+        }
+        CFRelease(checkedRef);
+    }
+    
+    // Get enabled state
+    CFTypeRef enabledRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, kAXEnabledAttribute, &enabledRef) == kAXErrorSuccess && enabledRef) {
+        info[@"enabled"] = (__bridge NSNumber*)enabledRef;
+        CFRelease(enabledRef);
+    }
+    
+    // Get visited state (for links)
+    CFTypeRef visitedRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXVisited"), &visitedRef) == kAXErrorSuccess && visitedRef) {
+        info[@"visited"] = (__bridge NSNumber*)visitedRef;
+        CFRelease(visitedRef);
+    }
+    
+    // Get autocomplete attribute
+    CFTypeRef autocompleteRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXAutocompleteValue"), &autocompleteRef) == kAXErrorSuccess && autocompleteRef) {
+        info[@"autocomplete"] = (__bridge_transfer NSString*)autocompleteRef;
+    }
+    
+    // Get has popup (for menus, dialogs)
+    CFTypeRef hasPopupRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXHasPopup"), &hasPopupRef) == kAXErrorSuccess && hasPopupRef) {
+        info[@"hasPopup"] = (__bridge NSNumber*)hasPopupRef;
+        CFRelease(hasPopupRef);
+    }
+    
+    // Get live region attributes
+    CFTypeRef liveRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXARIALive"), &liveRef) == kAXErrorSuccess && liveRef) {
+        info[@"ariaLive"] = (__bridge_transfer NSString*)liveRef;
+    }
+    
+    CFTypeRef atomicRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXARIAAtomic"), &atomicRef) == kAXErrorSuccess && atomicRef) {
+        info[@"ariaAtomic"] = (__bridge NSNumber*)atomicRef;
+        CFRelease(atomicRef);
+    }
+    
+    CFTypeRef busyRef = NULL;
+    if (AXUIElementCopyAttributeValue(focusedElement, CFSTR("AXARIABusy"), &busyRef) == kAXErrorSuccess && busyRef) {
+        info[@"ariaBusy"] = (__bridge NSNumber*)busyRef;
+        CFRelease(busyRef);
+    }
+    
     // Get position and size
     CFTypeRef posRef = NULL;
     if (AXUIElementCopyAttributeValue(focusedElement, kAXPositionAttribute, &posRef) == kAXErrorSuccess && posRef) {
@@ -239,6 +336,76 @@ NSDictionary* getFocusedElement(void) {
     // Add application info
     info[@"applicationName"] = frontApp.localizedName ?: @"Unknown";
     info[@"pid"] = @(frontApp.processIdentifier);
+    
+    // For browser elements, try to get parent document URL by traversing up the tree
+    NSString* appName = frontApp.localizedName;
+    if ([appName containsString:@"Safari"] || [appName containsString:@"Chrome"] || 
+        [appName containsString:@"Firefox"] || [appName containsString:@"Edge"]) {
+        
+        // Traverse up to find the web area or window with URL
+        AXUIElementRef parent = focusedElement;
+        CFRetain(parent); // Keep reference for traversal
+        
+        for (int i = 0; i < 20; i++) { // Max 20 levels up
+            AXUIElementRef nextParent = NULL;
+            if (AXUIElementCopyAttributeValue(parent, kAXParentAttribute, (CFTypeRef*)&nextParent) == kAXErrorSuccess && nextParent) {
+                
+                // Check for document URL at this level
+                CFTypeRef docUrlRef = NULL;
+                if (AXUIElementCopyAttributeValue(nextParent, kAXURLAttribute, &docUrlRef) == kAXErrorSuccess && docUrlRef) {
+                    if (CFGetTypeID(docUrlRef) == CFURLGetTypeID()) {
+                        CFURLRef docUrl = (CFURLRef)docUrlRef;
+                        NSString* urlString = (__bridge NSString*)CFURLGetString(docUrl);
+                        if (urlString && [urlString hasPrefix:@"http"]) {
+                            info[@"documentURL"] = urlString;
+                        }
+                    }
+                    CFRelease(docUrlRef);
+                }
+                
+                // Check role - stop at web area or window
+                CFTypeRef parentRoleRef = NULL;
+                if (AXUIElementCopyAttributeValue(nextParent, kAXRoleAttribute, &parentRoleRef) == kAXErrorSuccess && parentRoleRef) {
+                    NSString* parentRole = (__bridge NSString*)parentRoleRef;
+                    CFRelease(parentRoleRef);
+                    
+                    if ([parentRole isEqualToString:@"AXWebArea"]) {
+                        // Get document title from web area
+                        CFTypeRef webTitleRef = NULL;
+                        if (AXUIElementCopyAttributeValue(nextParent, kAXTitleAttribute, &webTitleRef) == kAXErrorSuccess && webTitleRef) {
+                            info[@"documentTitle"] = (__bridge_transfer NSString*)webTitleRef;
+                        }
+                        
+                        CFRelease(nextParent);
+                        break;
+                    }
+                    
+                    if ([parentRole isEqualToString:@"AXWindow"]) {
+                        // Get window title
+                        CFTypeRef winTitleRef = NULL;
+                        if (AXUIElementCopyAttributeValue(nextParent, kAXTitleAttribute, &winTitleRef) == kAXErrorSuccess && winTitleRef) {
+                            NSString* winTitle = (__bridge_transfer NSString*)winTitleRef;
+                            if (!info[@"documentTitle"]) {
+                                info[@"documentTitle"] = winTitle;
+                            }
+                        }
+                        
+                        CFRelease(nextParent);
+                        break;
+                    }
+                }
+                
+                CFRelease(parent);
+                parent = nextParent;
+            } else {
+                break;
+            }
+        }
+        
+        if (parent != focusedElement) {
+            CFRelease(parent);
+        }
+    }
     
     CFRelease(focusedElement);
     

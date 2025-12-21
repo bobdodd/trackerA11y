@@ -33,6 +33,34 @@ export interface DOMElement {
     width: number;
     height: number;
   };
+  // Enhanced properties
+  xpath?: string;
+  attributes?: Record<string, string>;
+  computedStyles?: Record<string, string>;
+  parentURL?: string;
+  name?: string;
+  tabIndex?: number;
+  isContentEditable?: boolean;
+  inputMode?: string;
+  autocomplete?: string;
+  required?: boolean;
+  pattern?: string;
+  minLength?: number;
+  maxLength?: number;
+  ariaBusy?: string;
+  ariaExpanded?: string;
+  ariaHasPopup?: string;
+  ariaPressed?: string;
+  ariaSelected?: string;
+  ariaChecked?: string;
+  ariaDisabled?: string;
+  ariaHidden?: string;
+  ariaLive?: string;
+  ariaAtomic?: string;
+  ariaRelevant?: string;
+  ariaControls?: string;
+  ariaOwns?: string;
+  ariaLabelledBy?: string;
 }
 
 export interface BrowserHitTest {

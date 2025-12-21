@@ -1,4 +1,5 @@
 import Cocoa
+import AVFoundation
 
 class MainViewController: NSViewController {
     
@@ -10,6 +11,7 @@ class MainViewController: NSViewController {
     private var eventCountLabel: NSTextField!
     private var sessionLabel: NSTextField!
     private var databaseStatusLabel: NSTextField!
+    private var screenRecordingLabel: NSTextField!
     
     // Tracker bridge
     private var trackerBridge: TrackerBridge?
@@ -17,6 +19,10 @@ class MainViewController: NSViewController {
     private var isPaused = false
     private var currentSession: String?
     private var eventCount = 0
+    
+    // Screen recorder
+    private var screenRecorder: ScreenRecorder?
+    private var currentVideoURL: URL?
     
     // Keep references to prevent deallocation
     private var sessionWindows: [NSWindow] = []
@@ -219,6 +225,67 @@ class MainViewController: NSViewController {
         trackerBridge?.delegate = self
         trackerBridge?.initialize()
         checkDatabaseStatus()
+        setupScreenRecorder()
+    }
+    
+    private func setupScreenRecorder() {
+        if #available(macOS 12.3, *) {
+            screenRecorder = ScreenRecorder()
+            screenRecorder?.delegate = self
+            
+            Task {
+                let hasPermission = await screenRecorder?.requestPermissions() ?? false
+                await MainActor.run {
+                    if hasPermission {
+                        print("✅ Screen recording permission granted")
+                    } else {
+                        print("⚠️ Screen recording permission not granted - open System Settings > Privacy & Security > Screen Recording")
+                    }
+                }
+            }
+        } else {
+            print("⚠️ Screen recording requires macOS 12.3 or later")
+        }
+    }
+    
+    private func getSessionVideoURL(sessionId: String) -> URL? {
+        let recordingsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+        
+        // Ensure directory exists
+        do {
+            try FileManager.default.createDirectory(atPath: recordingsPath, withIntermediateDirectories: true)
+        } catch {
+            print("❌ Failed to create recordings directory: \(error)")
+            return nil
+        }
+        
+        let videoPath = "\(recordingsPath)/screen_recording.mp4"
+        return URL(fileURLWithPath: videoPath)
+    }
+    
+    @available(macOS 12.3, *)
+    private func saveRecordingMetadata(sessionId: String, recorder: ScreenRecorder) {
+        let recordingsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+        let metadataPath = "\(recordingsPath)/metadata.json"
+        
+        var metadata: [String: Any] = [:]
+        
+        if FileManager.default.fileExists(atPath: metadataPath),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)),
+           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            metadata = existing
+        }
+        
+        metadata["recordingStartTimestamp"] = recorder.recordingStartTimestamp
+        metadata["hasScreenRecording"] = true
+        
+        do {
+            let data = try JSONSerialization.data(withJSONObject: metadata, options: .prettyPrinted)
+            try data.write(to: URL(fileURLWithPath: metadataPath))
+            print("📝 Saved recording metadata with timestamp: \(recorder.recordingStartTimestamp)")
+        } catch {
+            print("❌ Failed to save recording metadata: \(error)")
+        }
     }
     
     private func checkDatabaseStatus() {
@@ -255,10 +322,26 @@ class MainViewController: NSViewController {
         
         isTracking = true
         isPaused = false
-        currentSession = "session_\(Date().timeIntervalSince1970)"
+        currentSession = "session_\(Int(Date().timeIntervalSince1970 * 1000))"
         eventCount = 0
         
         tracker.startTracking(sessionId: currentSession!)
+        
+        if #available(macOS 12.3, *), let recorder = screenRecorder, let sessionId = currentSession {
+            if let videoURL = getSessionVideoURL(sessionId: sessionId) {
+                currentVideoURL = videoURL
+                Task {
+                    do {
+                        try await recorder.startRecording(to: videoURL)
+                        await MainActor.run {
+                            self.saveRecordingMetadata(sessionId: sessionId, recorder: recorder)
+                        }
+                    } catch {
+                        print("❌ Failed to start screen recording: \(error)")
+                    }
+                }
+            }
+        }
         
         updateUI()
         progressIndicator.startAnimation(nil)
@@ -278,6 +361,12 @@ class MainViewController: NSViewController {
         isPaused = false
         tracker.stopTracking()
         
+        if #available(macOS 12.3, *), let recorder = screenRecorder {
+            Task {
+                await recorder.stopRecording()
+            }
+        }
+        
         updateUI()
         progressIndicator.stopAnimation(nil)
         
@@ -295,6 +384,10 @@ class MainViewController: NSViewController {
         isPaused = true
         tracker.pauseTracking()
         
+        if #available(macOS 12.3, *) {
+            screenRecorder?.pauseRecording()
+        }
+        
         updateUI()
         
         // Update app delegate status
@@ -310,6 +403,10 @@ class MainViewController: NSViewController {
         
         isPaused = false
         tracker.resumeTracking()
+        
+        if #available(macOS 12.3, *) {
+            screenRecorder?.resumeRecording()
+        }
         
         updateUI()
         
@@ -483,6 +580,35 @@ extension MainViewController: NSWindowDelegate {
         if let index = sessionWindows.firstIndex(of: window) {
             sessionWindows.remove(at: index)
             print("📊 Session window closed and reference removed")
+        }
+    }
+}
+
+// MARK: - ScreenRecorderDelegate
+@available(macOS 12.3, *)
+extension MainViewController: ScreenRecorderDelegate {
+    func screenRecorderDidStartRecording() {
+        print("🎬 Screen recording started")
+    }
+    
+    func screenRecorderDidStopRecording(outputURL: URL?) {
+        if let url = outputURL {
+            print("🎬 Screen recording saved to: \(url.path)")
+        }
+    }
+    
+    func screenRecorderDidPauseRecording() {
+        print("⏸ Screen recording paused")
+    }
+    
+    func screenRecorderDidResumeRecording() {
+        print("▶️ Screen recording resumed")
+    }
+    
+    func screenRecorderDidFail(error: Error) {
+        print("❌ Screen recording failed: \(error)")
+        DispatchQueue.main.async {
+            self.showAlert(title: "Screen Recording Error", message: error.localizedDescription)
         }
     }
 }

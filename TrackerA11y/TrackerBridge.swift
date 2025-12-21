@@ -149,6 +149,9 @@ class TrackerBridge: NSObject {
         print("🔍 DEBUG: Current working directory: \(FileManager.default.currentDirectoryPath)")
         print("💻 DEBUG: About to start npm process...")
         
+        // Capture session ID for use in async block
+        let capturedSessionId = currentSessionId ?? "unknown"
+        
         DispatchQueue.global(qos: .background).async {
             print("📋 DEBUG: In background queue, setting up process...")
             
@@ -157,6 +160,11 @@ class TrackerBridge: NSObject {
             self.nodeProcess?.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/npm")
             self.nodeProcess?.arguments = ["run", "demo:recorder"]
             self.nodeProcess?.currentDirectoryURL = URL(fileURLWithPath: projectPath)
+            
+            // Pass session ID to Node.js recorder via environment
+            var env = ProcessInfo.processInfo.environment
+            env["TRACKER_SESSION_ID"] = capturedSessionId
+            self.nodeProcess?.environment = env
             
             print("🔍 DEBUG: Process setup complete")
             print("🔍 DEBUG: Executable: /opt/homebrew/bin/npm")
