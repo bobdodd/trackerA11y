@@ -106,6 +106,9 @@ class SessionDetailViewController: NSViewController {
     private var isSyncingFromTimeline: Bool = false
     private var videoStartTimestamp: Double = 0  // Recording start timestamp from metadata
     private var lastPlayheadTimestamp: Double = 0  // Track playhead position for direction detection
+    private var lastAutoShownEventTimestamp: Double = 0  // Track last event shown during playback
+    private var isUserSelectedEvent: Bool = false  // True when user clicked an event (disables auto-update until playback)
+    private var isVideoPlaying: Bool = false  // Track if video is actively playing
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -130,6 +133,7 @@ class SessionDetailViewController: NSViewController {
         if let observer = videoTimeObserver, let player = videoPlayer {
             player.removeTimeObserver(observer)
         }
+        videoPlayer?.removeObserver(self, forKeyPath: "rate")
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -138,6 +142,9 @@ class SessionDetailViewController: NSViewController {
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
         view.autoresizingMask = [.width, .height]
+        
+        // Load recordingStartTimestamp from metadata FIRST - this is the datum (00:00:00)
+        loadRecordingStartTimestamp()
         
         setupUI()
         loadSessionEvents()
@@ -2832,6 +2839,7 @@ class SessionDetailViewController: NSViewController {
         timeline.layer?.borderWidth = 1
         timeline.layer?.borderColor = NSColor.separatorColor.cgColor
         timeline.onEventSelected = { [weak self] event in
+            self?.isUserSelectedEvent = true
             self?.updateTimelineInfo(with: event)
         }
         timeline.onEventRightClicked = { [weak self] event, eventIndex, nsEvent in
@@ -2850,6 +2858,15 @@ class SessionDetailViewController: NSViewController {
                 self.scrollTimelineToKeepPlayheadVisible(timestamp: timestamp, movingForward: true)
             }
         }
+        
+        // Set video start timestamp as datum IMMEDIATELY
+        print("🎬 VC videoStartTimestamp: \(videoStartTimestamp)")
+        if videoStartTimestamp > 0 {
+            timeline.setVideoStartTime(videoStartTimestamp)
+        } else {
+            print("⚠️ videoStartTimestamp is 0!")
+        }
+        
         self.timelineView = timeline
         
         // Wrap timeline in scroll view for horizontal scrolling
@@ -2969,8 +2986,8 @@ class SessionDetailViewController: NSViewController {
             placeholder.removeFromSuperview()
         }
         
-        // Load recording start timestamp from metadata
-        loadVideoStartTimestamp()
+        // Set timeline to use recordingStartTimestamp as datum
+        timelineView?.setVideoStartTime(videoStartTimestamp)
         
         // Create player
         let player = AVPlayer(url: videoURL)
@@ -2983,33 +3000,41 @@ class SessionDetailViewController: NSViewController {
             self?.videoTimeDidChange(time)
         }
         
+        // Observe play/pause state to know when video is actively playing
+        player.addObserver(self, forKeyPath: "rate", options: [.new], context: nil)
+        
         // Set initial playhead position at video start (time 0)
         timelineView?.setPlayheadTimestamp(videoStartTimestamp)
         
         print("📹 Screen recording loaded successfully")
     }
     
-    private func loadVideoStartTimestamp() {
+    private func loadRecordingStartTimestamp() {
+        // Load recordingStartTimestamp from metadata - this is the datum (00:00:00) for all times
         let metadataPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/metadata.json"
         
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath)),
-              let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            // Fall back to first event timestamp
-            videoStartTimestamp = sessionStartTimestamp
+              let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let recordingStart = metadata["recordingStartTimestamp"] as? Double else {
+            print("⚠️ No recordingStartTimestamp in metadata for session \(sessionId)")
             return
         }
         
-        // Try to get recording start timestamp from metadata
-        if let recordingStart = metadata["recordingStartTimestamp"] as? Double {
-            videoStartTimestamp = recordingStart
-        } else if let startTime = metadata["startTime"] as? Double {
-            videoStartTimestamp = startTime
-        } else {
-            videoStartTimestamp = sessionStartTimestamp
+        videoStartTimestamp = recordingStart
+        print("📹 Recording start timestamp (datum 00:00:00): \(recordingStart)")
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "rate", let player = object as? AVPlayer {
+            let wasPlaying = isVideoPlaying
+            isVideoPlaying = player.rate > 0
+            
+            // When playback starts, re-enable auto-update of event details
+            if isVideoPlaying && !wasPlaying {
+                isUserSelectedEvent = false
+                lastAutoShownEventTimestamp = 0
+            }
         }
-        
-        // Set the video start time on the timeline so it uses video time as zero
-        timelineView?.setVideoStartTime(videoStartTimestamp)
     }
     
     private func videoTimeDidChange(_ time: CMTime) {
@@ -3026,6 +3051,11 @@ class SessionDetailViewController: NSViewController {
         // Always update playhead position
         timelineView?.setPlayheadTimestamp(eventTimestamp)
         
+        // Auto-show event details during playback (if not user-selected)
+        if isVideoPlaying && !isUserSelectedEvent {
+            autoShowEventAtTimestamp(eventTimestamp)
+        }
+        
         // Only scroll if sync is enabled and we're not already syncing from timeline
         guard isVideoSyncEnabled, !isSyncingFromTimeline else { return }
         
@@ -3034,6 +3064,28 @@ class SessionDetailViewController: NSViewController {
         
         // Scroll timeline to keep playhead visible at appropriate position
         scrollTimelineToKeepPlayheadVisible(timestamp: eventTimestamp, movingForward: isMovingForward)
+    }
+    
+    private func autoShowEventAtTimestamp(_ timestamp: Double) {
+        // Find the most recent event at or before the current timestamp
+        var mostRecentEvent: [String: Any]? = nil
+        var mostRecentTimestamp: Double = 0
+        
+        for event in events {
+            guard let eventTimestamp = event["timestamp"] as? Double else { continue }
+            
+            // Only consider events at or before the playhead
+            if eventTimestamp <= timestamp && eventTimestamp > mostRecentTimestamp {
+                mostRecentTimestamp = eventTimestamp
+                mostRecentEvent = event
+            }
+        }
+        
+        // Only update if we found an event and it's different from the last shown
+        if let event = mostRecentEvent, mostRecentTimestamp != lastAutoShownEventTimestamp {
+            lastAutoShownEventTimestamp = mostRecentTimestamp
+            updateTimelineInfo(with: event)
+        }
     }
     
     private func scrollTimelineToKeepPlayheadVisible(timestamp: Double, movingForward: Bool) {
@@ -5144,12 +5196,12 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func formatTimestamp(_ timestamp: Double) -> String {
-        let relativeMs = (timestamp - sessionStartTimestamp) / 1000.0
-        let totalSeconds = Int(relativeMs / 1000)
+        let relativeSeconds = (timestamp - videoStartTimestamp) / 1_000_000.0
+        let totalSeconds = Int(relativeSeconds)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        let ms = Int(relativeMs.truncatingRemainder(dividingBy: 1000))
+        let ms = Int((relativeSeconds - Double(totalSeconds)) * 1000)
         return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms)
     }
     
@@ -6428,25 +6480,25 @@ class EnhancedTimelineView: NSView {
         
         let timestamps = self.events.compactMap { $0["timestamp"] as? Double }
         if let maxTime = timestamps.max() {
-            // Use video start time if available, otherwise use first event
             if let videoStart = videoStartTime {
                 startTime = videoStart
+                print("🎬 setEvents using videoStartTime: \(videoStart)")
             } else if let minTime = timestamps.min() {
                 startTime = minTime
+                print("⚠️ setEvents using first event: \(minTime)")
             }
             endTime = maxTime
+            print("🎬 setEvents: startTime=\(startTime), endTime=\(endTime)")
         }
         
         needsDisplay = true
     }
     
     func setVideoStartTime(_ timestamp: Double) {
+        print("🎬 EnhancedTimelineView.setVideoStartTime: \(timestamp)")
         videoStartTime = timestamp
-        // Recalculate startTime if we have events
-        if !events.isEmpty {
-            startTime = timestamp
-            needsDisplay = true
-        }
+        startTime = timestamp
+        needsDisplay = true
     }
     
     func zoomIn() {
@@ -6816,7 +6868,7 @@ class EnhancedTimelineView: NSView {
         let timelineRect = NSRect(
             x: leftMargin,
             y: bottomMargin,
-            width: (bounds.width - leftMargin - rightMargin) * zoomLevel,
+            width: bounds.width - leftMargin - rightMargin,
             height: bounds.height - topMargin - bottomMargin
         )
         
@@ -6984,8 +7036,9 @@ class EnhancedTimelineView: NSView {
         trianglePath.close()
         trianglePath.fill()
         
-        // Draw current time label
-        let timeInSeconds = (position - startTime) / 1_000_000  // Convert from microseconds
+        // Draw current time label - use videoStartTime as datum if available
+        let datum = videoStartTime ?? startTime
+        let timeInSeconds = (position - datum) / 1_000_000  // Convert from microseconds
         let minutes = Int(timeInSeconds) / 60
         let seconds = Int(timeInSeconds) % 60
         let millis = Int((timeInSeconds - Double(Int(timeInSeconds))) * 1000)
@@ -7054,7 +7107,8 @@ class EnhancedTimelineView: NSView {
             .foregroundColor: NSColor.secondaryLabelColor
         ]
         
-        let duration = endTime - startTime
+        let datum = videoStartTime ?? startTime
+        let duration = endTime - datum
         let durationSeconds = duration / 1_000_000
         
         let startLabel = "0:00"
