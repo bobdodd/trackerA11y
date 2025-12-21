@@ -2937,11 +2937,11 @@ class SessionDetailViewController: NSViewController {
             headerStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             headerStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             
-            // Video container takes top portion
+            // Video container takes top portion (larger to give more space for video)
             videoContainer.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
             videoContainer.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             videoContainer.trailingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: -12),
-            videoContainer.heightAnchor.constraint(equalTo: containerView.heightAnchor, multiplier: 0.45),
+            videoContainer.heightAnchor.constraint(equalTo: containerView.heightAnchor, multiplier: 0.6),
             
             controlsToolbar.topAnchor.constraint(equalTo: videoContainer.bottomAnchor, constant: 8),
             controlsToolbar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
@@ -3335,7 +3335,7 @@ class SessionDetailViewController: NSViewController {
         zoomOutButton.widthAnchor.constraint(equalToConstant: 30).isActive = true
         row1.addArrangedSubview(zoomOutButton)
         
-        let zoomSlider = NSSlider(value: 1.0, minValue: 0.5, maxValue: 5.0, target: self, action: #selector(timelineZoomChanged(_:)))
+        let zoomSlider = NSSlider(value: 1.0, minValue: 0.5, maxValue: 100.0, target: self, action: #selector(timelineZoomChanged(_:)))
         zoomSlider.widthAnchor.constraint(equalToConstant: 100).isActive = true
         self.timelineZoomSlider = zoomSlider
         row1.addArrangedSubview(zoomSlider)
@@ -4044,8 +4044,23 @@ class SessionDetailViewController: NSViewController {
                         self.timelineView?.setPauseGaps(pauseGapsArray)
                     }
                     
-                    // Set initial playhead position at start
-                    self.timelineView?.setPlayheadTimestamp(self.videoStartTimestamp)
+                    // Set initial playhead position
+                    // If session is paused, start at beginning of last segment (where we left off)
+                    // Otherwise start at the beginning
+                    let isPaused = (sessionJson["metadata"] as? [String: Any])?["status"] as? String == "paused"
+                    if isPaused, let lastGap = pauseGapsArray.last {
+                        let lastSegmentStart = lastGap.end
+                        self.timelineView?.setPlayheadTimestamp(lastSegmentStart)
+                        // Also seek video to this position
+                        let videoTime = self.eventTimestampToVideoTime(lastSegmentStart)
+                        if videoTime >= 0 {
+                            let targetTime = CMTime(seconds: videoTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+                            self.videoPlayer?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                        }
+                        print("📍 Paused session - starting at last segment: \(lastSegmentStart)")
+                    } else {
+                        self.timelineView?.setPlayheadTimestamp(self.videoStartTimestamp)
+                    }
                     
                     self.finishLoading()
                 }
@@ -6629,7 +6644,7 @@ class EnhancedTimelineView: NSView {
     }
     
     func setZoom(_ level: CGFloat) {
-        zoomLevel = max(0.5, min(level, 5.0))
+        zoomLevel = max(0.5, min(level, 100.0))
         updateFrameForZoom()
         invalidateIntrinsicContentSize()
         needsDisplay = true
@@ -6677,6 +6692,16 @@ class EnhancedTimelineView: NSView {
         }
         
         let timestamps = self.events.compactMap { $0["timestamp"] as? Double }
+        
+        // For endTime, exclude system events like recording_ended to avoid huge gaps
+        let userEventTimestamps = self.events.compactMap { event -> Double? in
+            let eventType = event["type"] as? String ?? ""
+            if eventType == "recording_ended" || eventType == "initial_focus" || eventType == "initial_state" {
+                return nil
+            }
+            return event["timestamp"] as? Double
+        }
+        
         if let maxTime = timestamps.max() {
             if let videoStart = videoStartTime {
                 startTime = videoStart
@@ -6685,7 +6710,8 @@ class EnhancedTimelineView: NSView {
                 startTime = minTime
                 print("⚠️ setEvents using first event: \(minTime)")
             }
-            endTime = maxTime
+            // Use last user event for endTime, or fall back to absolute max
+            endTime = userEventTimestamps.max() ?? maxTime
             print("🎬 setEvents: startTime=\(startTime), endTime=\(endTime)")
         }
         
@@ -6818,7 +6844,7 @@ class EnhancedTimelineView: NSView {
     }
     
     func zoomIn() {
-        zoomLevel = min(zoomLevel * 1.5, 10.0)
+        zoomLevel = min(zoomLevel * 1.5, 100.0)
         updateFrameForZoom()
         invalidateIntrinsicContentSize()
         needsDisplay = true
@@ -7240,7 +7266,7 @@ class EnhancedTimelineView: NSView {
         
         let normalHeight = timelineRect.height * 0.5
         let markerBarHeight = timelineRect.height * 0.85
-        let barWidth: CGFloat = max(3, 6 * zoomLevel / 2)
+        let barWidth: CGFloat = 4  // Fixed width - timeline stretches, not events
         let spacing: CGFloat = 2
         
         var drawnPositions: [Double: CGFloat] = [:]

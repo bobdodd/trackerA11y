@@ -309,9 +309,10 @@ class SessionListViewController: NSViewController {
                     
                     let date = Date(timeIntervalSince1970: timestamp / 1000)
                     
-                    // Try to read event count and duration from summary.txt or events.json
+                    // Try to read event count, duration, and status from events.json
                     var eventCount = 0
                     var duration: TimeInterval?
+                    var metadataStatus: String? = nil
                     
                     if FileManager.default.fileExists(atPath: eventsPath) {
                         do {
@@ -326,14 +327,26 @@ class SessionListViewController: NSViewController {
                                     // Convert from microseconds to seconds
                                     duration = (endTime - startTime) / 1000000.0
                                 }
+                                // Check metadata for paused status
+                                if let metadata = eventsJson["metadata"] as? [String: Any],
+                                   let status = metadata["status"] as? String {
+                                    metadataStatus = status
+                                }
                             }
                         } catch {
                             print("⚠️ Failed to read events.json for \(sessionFolder): \(error)")
                         }
                     }
                     
-                    // Check if session has summary.txt (indicates completion)
-                    let status = FileManager.default.fileExists(atPath: summaryPath) ? "completed" : "partial"
+                    // Determine status: paused from metadata, or completed/partial from summary.txt
+                    let status: String
+                    if metadataStatus == "paused" {
+                        status = "paused"
+                    } else if FileManager.default.fileExists(atPath: summaryPath) {
+                        status = "completed"
+                    } else {
+                        status = "partial"
+                    }
                     
                     // Load custom name from metadata if exists
                     let customName = self.loadCustomSessionName(for: sessionFolder, at: sessionPath)
@@ -757,6 +770,8 @@ extension SessionListViewController: NSTableViewDelegate {
                 textField.textColor = .systemGreen
             case "active", "recording":
                 textField.textColor = .systemBlue
+            case "paused":
+                textField.textColor = .systemYellow
             case "error", "failed":
                 textField.textColor = .systemRed
             case "partial":
