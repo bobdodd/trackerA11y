@@ -5234,6 +5234,22 @@ class SessionDetailViewController: NSViewController {
         return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms)
     }
     
+    private func formatDuration(_ microseconds: Double) -> String {
+        let totalSeconds = microseconds / 1_000_000.0
+        let hours = Int(totalSeconds) / 3600
+        let minutes = (Int(totalSeconds) % 3600) / 60
+        let seconds = Int(totalSeconds) % 60
+        let tenths = Int((totalSeconds - Double(Int(totalSeconds))) * 10)
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+        } else if minutes > 0 {
+            return String(format: "%d:%02d.%d", minutes, seconds, tenths)
+        } else {
+            return String(format: "%d.%d seconds", seconds, tenths)
+        }
+    }
+    
     private func formatEventData(_ data: [String: Any]) -> String {
         if let appName = data["applicationName"] as? String {
             return "App: \(appName)"
@@ -5321,16 +5337,6 @@ class SessionDetailViewController: NSViewController {
         displayFormatter.dateStyle = .medium
         displayFormatter.timeStyle = .medium
         return displayFormatter.string(from: date)
-    }
-    
-    private func formatDuration(_ duration: Double) -> String {
-        if duration < 60 {
-            return String(format: "%.1f seconds", duration)
-        } else {
-            let minutes = Int(duration) / 60
-            let seconds = Int(duration) % 60
-            return "\(minutes)m \(seconds)s"
-        }
     }
     
     // MARK: - Helper Methods
@@ -5788,8 +5794,37 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         
         let eventType = event["type"] as? String ?? "unknown"
         let isMarkerEvent = eventType.lowercased() == "marker"
+        let isPauseEvent = eventType == "recording_paused"
+        let isResumeEvent = eventType == "recording_resumed"
         
-        if isMarkerEvent {
+        if isPauseEvent || isResumeEvent {
+            let icon = isPauseEvent ? "⏸" : "▶️"
+            let title = isPauseEvent ? "Recording Paused" : "Recording Resumed"
+            let (pauseCard, pauseContent) = createDetailCard(title: title, icon: icon)
+            
+            if let timestamp = event["timestamp"] as? Double {
+                pauseContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp), valueColor: .systemBlue))
+            }
+            
+            if let data = event["data"] as? [String: Any] {
+                if isPauseEvent {
+                    if let reason = data["reason"] as? String {
+                        pauseContent.addArrangedSubview(createDetailRow(label: "Reason", value: reason.replacingOccurrences(of: "_", with: " ").capitalized))
+                    }
+                } else {
+                    if let pauseDuration = data["pauseDuration"] as? Double {
+                        pauseContent.addArrangedSubview(createDetailRow(label: "Pause Duration", value: formatDuration(pauseDuration), valueColor: .systemYellow))
+                    }
+                    
+                    if let totalPaused = data["totalPausedDuration"] as? Double {
+                        pauseContent.addArrangedSubview(createDetailRow(label: "Total Paused", value: formatDuration(totalPaused), valueColor: .secondaryLabelColor))
+                    }
+                }
+            }
+            
+            stackView.addArrangedSubview(pauseCard)
+            pauseCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        } else if isMarkerEvent {
             let (markerCard, markerContent) = createDetailCard(title: "Marker", icon: "🚩")
             
             if let markerName = event["markerName"] as? String, !markerName.isEmpty {
@@ -6333,13 +6368,45 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         
         let eventType = event["type"] as? String ?? ""
         let isMarkerEvent = eventType.lowercased() == "marker"
+        let isPauseEvent = eventType == "recording_paused"
+        let isResumeEvent = eventType == "recording_resumed"
         
         print("🔍 updateTimelineInfo - eventType: '\(eventType)', isMarker: \(isMarkerEvent), keys: \(event.keys)")
         
         if let stackView = timelineDetailStackView {
             stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
             
-            if isMarkerEvent {
+            if isPauseEvent || isResumeEvent {
+                timelineDetailLabel?.isHidden = true
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+                
+                let icon = isPauseEvent ? "⏸" : "▶️"
+                let title = isPauseEvent ? "Recording Paused" : "Recording Resumed"
+                let (pauseCard, pauseContent) = createDetailCard(title: title, icon: icon)
+                
+                if let timestamp = event["timestamp"] as? Double {
+                    pauseContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp), valueColor: .systemBlue))
+                }
+                
+                if let data = event["data"] as? [String: Any] {
+                    if isPauseEvent {
+                        if let reason = data["reason"] as? String {
+                            pauseContent.addArrangedSubview(createDetailRow(label: "Reason", value: reason.replacingOccurrences(of: "_", with: " ").capitalized))
+                        }
+                    } else {
+                        if let pauseDuration = data["pauseDuration"] as? Double {
+                            pauseContent.addArrangedSubview(createDetailRow(label: "Pause Duration", value: formatDuration(pauseDuration), valueColor: .systemYellow))
+                        }
+                        
+                        if let totalPaused = data["totalPausedDuration"] as? Double {
+                            pauseContent.addArrangedSubview(createDetailRow(label: "Total Paused", value: formatDuration(totalPaused), valueColor: .secondaryLabelColor))
+                        }
+                    }
+                }
+                
+                stackView.addArrangedSubview(pauseCard)
+                pauseCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            } else if isMarkerEvent {
                 timelineDetailLabel?.isHidden = true
                 timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
                 
@@ -6458,6 +6525,10 @@ class EnhancedTimelineView: NSView {
     // Pause gaps - periods where recording was paused
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []
     
+    // Folded timeline: collapses pause gaps to small markers
+    private var foldPauses: Bool = true
+    private let pauseMarkerWidth: CGFloat = 12  // Width of collapsed pause marker
+    
     var currentZoom: CGFloat {
         return zoomLevel
     }
@@ -6538,6 +6609,97 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    private func getEffectiveDuration() -> Double {
+        guard foldPauses else { return endTime - startTime }
+        let totalPauseDuration = pauseGaps.reduce(0.0) { $0 + $1.duration }
+        return max(1, (endTime - startTime) - totalPauseDuration)
+    }
+    
+    private func getPauseDurationBefore(_ timestamp: Double) -> Double {
+        guard foldPauses else { return 0 }
+        var totalPause: Double = 0
+        for gap in pauseGaps {
+            if timestamp > gap.end {
+                totalPause += gap.duration
+            } else if timestamp > gap.start {
+                totalPause += (timestamp - gap.start)
+            }
+        }
+        return totalPause
+    }
+    
+    private func timestampToFoldedX(_ timestamp: Double, in timelineRect: NSRect) -> CGFloat {
+        let effectiveDuration = getEffectiveDuration()
+        guard effectiveDuration > 0 else { return timelineRect.minX }
+        
+        if foldPauses && !pauseGaps.isEmpty {
+            let pauseBefore = getPauseDurationBefore(timestamp)
+            let effectiveTime = (timestamp - startTime) - pauseBefore
+            
+            var xOffset: CGFloat = 0
+            for gap in pauseGaps where gap.end <= timestamp {
+                xOffset += pauseMarkerWidth
+            }
+            
+            let relativeTime = effectiveTime / effectiveDuration
+            let baseX = timelineRect.minX + CGFloat(relativeTime) * (timelineRect.width - xOffset - CGFloat(pauseGaps.count) * pauseMarkerWidth)
+            
+            var pauseMarkersBeforeX: CGFloat = 0
+            for gap in pauseGaps where gap.end <= timestamp {
+                pauseMarkersBeforeX += pauseMarkerWidth
+            }
+            
+            return baseX + pauseMarkersBeforeX
+        } else {
+            let duration = max(endTime - startTime, 1)
+            let relativeTime = (timestamp - startTime) / duration
+            return timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
+        }
+    }
+    
+    private func foldedXToTimestamp(_ x: CGFloat, in timelineRect: NSRect) -> Double {
+        let effectiveDuration = getEffectiveDuration()
+        guard effectiveDuration > 0 else { return startTime }
+        
+        if foldPauses && !pauseGaps.isEmpty {
+            let totalMarkerWidth = CGFloat(pauseGaps.count) * pauseMarkerWidth
+            let contentWidth = timelineRect.width - totalMarkerWidth
+            
+            var currentX = timelineRect.minX
+            var effectiveTime: Double = 0
+            let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
+            
+            for (index, gap) in sortedGaps.enumerated() {
+                let gapEffectiveStart = (gap.start - startTime) - getPauseDurationBefore(gap.start)
+                let segmentEndX = timelineRect.minX + CGFloat(gapEffectiveStart / effectiveDuration) * contentWidth + CGFloat(index) * pauseMarkerWidth
+                
+                if x <= segmentEndX {
+                    let relativeX = (x - currentX) / contentWidth
+                    effectiveTime = relativeX * effectiveDuration
+                    var totalPause: Double = 0
+                    for g in sortedGaps where g.end <= gap.start {
+                        totalPause += g.duration
+                    }
+                    return startTime + effectiveTime + totalPause
+                }
+                
+                if x <= segmentEndX + pauseMarkerWidth {
+                    return gap.start
+                }
+                
+                currentX = segmentEndX + pauseMarkerWidth
+            }
+            
+            let relativeX = (x - currentX) / contentWidth
+            let totalPause = pauseGaps.reduce(0.0) { $0 + $1.duration }
+            return startTime + relativeX * effectiveDuration + totalPause
+        } else {
+            let duration = max(endTime - startTime, 1)
+            let relativeX = (x - timelineRect.minX) / timelineRect.width
+            return startTime + relativeX * duration
+        }
+    }
+    
     func zoomIn() {
         zoomLevel = min(zoomLevel * 1.5, 10.0)
         updateFrameForZoom()
@@ -6574,13 +6736,17 @@ class EnhancedTimelineView: NSView {
         
         let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
-        let timelineWidth = bounds.width - leftMargin - rightMargin
-        let duration = endTime - startTime
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
         
-        let relativePosition = (position - startTime) / duration
-        guard relativePosition >= 0 else { return nil }
+        let timelineRect = NSRect(
+            x: leftMargin,
+            y: bottomMargin,
+            width: bounds.width - leftMargin - rightMargin,
+            height: bounds.height - topMargin - bottomMargin
+        )
         
-        return leftMargin + CGFloat(relativePosition) * timelineWidth
+        return timestampToFoldedX(position, in: timelineRect)
     }
     
     func getTimeRange() -> (start: Double, end: Double) {
@@ -6784,24 +6950,25 @@ class EnhancedTimelineView: NSView {
     private func updatePlayheadFromMouseLocation(_ location: NSPoint) {
         let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
-        let timelineWidth = bounds.width - leftMargin - rightMargin
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
         
-        guard timelineWidth > 0, endTime > startTime else { return }
+        let timelineRect = NSRect(
+            x: leftMargin,
+            y: bottomMargin,
+            width: bounds.width - leftMargin - rightMargin,
+            height: bounds.height - topMargin - bottomMargin
+        )
         
-        // Calculate relative position from mouse X
-        let relativeX = (location.x - leftMargin) / timelineWidth
-        let clampedRelativeX = max(0, min(1, relativeX))
+        guard timelineRect.width > 0, endTime > startTime else { return }
         
-        // Convert to timestamp
-        let duration = endTime - startTime
-        let newTimestamp = startTime + (Double(clampedRelativeX) * duration)
+        let clampedX = max(timelineRect.minX, min(timelineRect.maxX, location.x))
+        let newTimestamp = foldedXToTimestamp(clampedX, in: timelineRect)
         
-        // Update playhead position
-        playheadPosition = newTimestamp
+        playheadPosition = max(startTime, min(endTime, newTimestamp))
         needsDisplay = true
         
-        // Notify delegate to seek video
-        onPlayheadDragged?(newTimestamp)
+        onPlayheadDragged?(playheadPosition!)
     }
     
     override func rightMouseDown(with event: NSEvent) {
@@ -6963,8 +7130,8 @@ class EnhancedTimelineView: NSView {
         
         for (index, event) in events.enumerated() {
             guard let timestamp = event["timestamp"] as? Double else { continue }
-            let relativeTime = (timestamp - startTime) / duration
-            var baseX = timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
+            
+            var baseX = timestampToFoldedX(timestamp, in: timelineRect)
             
             let originalIndex = event["_originalIndex"] as? Int ?? index
             
@@ -7044,51 +7211,57 @@ class EnhancedTimelineView: NSView {
         guard !pauseGaps.isEmpty else { return }
         
         let baselineY = timelineRect.minY + timelineRect.height * 0.5
+        let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
         
-        for gap in pauseGaps {
-            let startRelative = (gap.start - startTime) / duration
-            let endRelative = (gap.end - startTime) / duration
+        for gap in sortedGaps {
+            let markerX = timestampToFoldedX(gap.start, in: timelineRect)
             
-            guard startRelative >= 0, endRelative <= 1 else { continue }
-            
-            let startX = timelineRect.minX + CGFloat(startRelative) * timelineRect.width
-            let endX = timelineRect.minX + CGFloat(endRelative) * timelineRect.width
-            let gapWidth = max(endX - startX, 4)
-            
-            let gapRect = NSRect(
-                x: startX,
+            let markerRect = NSRect(
+                x: markerX - pauseMarkerWidth / 2,
                 y: timelineRect.minY,
-                width: gapWidth,
+                width: pauseMarkerWidth,
                 height: timelineRect.height
             )
-            NSColor.systemGray.withAlphaComponent(0.3).setFill()
-            gapRect.fill()
             
-            let pattern: [CGFloat] = [4, 2]
-            NSColor.systemGray.withAlphaComponent(0.6).setStroke()
+            NSColor.systemYellow.withAlphaComponent(0.3).setFill()
+            markerRect.fill()
+            
+            NSColor.systemYellow.withAlphaComponent(0.8).setStroke()
             let leftLine = NSBezierPath()
-            leftLine.move(to: NSPoint(x: startX, y: timelineRect.minY))
-            leftLine.line(to: NSPoint(x: startX, y: timelineRect.maxY))
-            leftLine.lineWidth = 1
-            leftLine.setLineDash(pattern, count: 2, phase: 0)
+            leftLine.move(to: NSPoint(x: markerRect.minX, y: timelineRect.minY))
+            leftLine.line(to: NSPoint(x: markerRect.minX, y: timelineRect.maxY))
+            leftLine.lineWidth = 1.5
             leftLine.stroke()
             
             let rightLine = NSBezierPath()
-            rightLine.move(to: NSPoint(x: startX + gapWidth, y: timelineRect.minY))
-            rightLine.line(to: NSPoint(x: startX + gapWidth, y: timelineRect.maxY))
-            rightLine.lineWidth = 1
-            rightLine.setLineDash(pattern, count: 2, phase: 0)
+            rightLine.move(to: NSPoint(x: markerRect.maxX, y: timelineRect.minY))
+            rightLine.line(to: NSPoint(x: markerRect.maxX, y: timelineRect.maxY))
+            rightLine.lineWidth = 1.5
             rightLine.stroke()
             
             let pauseIcon = "⏸"
             let pauseAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 12),
-                .foregroundColor: NSColor.secondaryLabelColor
+                .font: NSFont.systemFont(ofSize: 9, weight: .medium),
+                .foregroundColor: NSColor.systemYellow
             ]
             let iconSize = pauseIcon.size(withAttributes: pauseAttrs)
-            if gapWidth > iconSize.width + 4 {
-                pauseIcon.draw(at: NSPoint(x: startX + (gapWidth - iconSize.width) / 2, y: baselineY - iconSize.height / 2), withAttributes: pauseAttrs)
+            pauseIcon.draw(at: NSPoint(x: markerX - iconSize.width / 2, y: baselineY - iconSize.height / 2), withAttributes: pauseAttrs)
+            
+            let durationSecs = gap.duration / 1_000_000
+            let durationText: String
+            if durationSecs >= 60 {
+                let mins = Int(durationSecs) / 60
+                let secs = Int(durationSecs) % 60
+                durationText = "\(mins)m\(secs)s"
+            } else {
+                durationText = String(format: "%.1fs", durationSecs)
             }
+            let durationAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 8, weight: .regular),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+            let durationSize = durationText.size(withAttributes: durationAttrs)
+            durationText.draw(at: NSPoint(x: markerX - durationSize.width / 2, y: markerRect.maxY + 2), withAttributes: durationAttrs)
         }
     }
     
@@ -7101,13 +7274,14 @@ class EnhancedTimelineView: NSView {
         let topMargin: CGFloat = 50
         let bottomMargin: CGFloat = 20
         
-        let timelineWidth = bounds.width - leftMargin - rightMargin
-        let duration = endTime - startTime
+        let timelineRect = NSRect(
+            x: leftMargin,
+            y: bottomMargin,
+            width: bounds.width - leftMargin - rightMargin,
+            height: bounds.height - topMargin - bottomMargin
+        )
         
-        let relativePosition = (position - startTime) / duration
-        guard relativePosition >= 0 else { return }
-        
-        let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
+        let playheadX = timestampToFoldedX(position, in: timelineRect)
         
         // Draw playhead line
         NSColor.systemRed.setStroke()
@@ -7198,24 +7372,25 @@ class EnhancedTimelineView: NSView {
             .foregroundColor: NSColor.secondaryLabelColor
         ]
         
-        let datum = videoStartTime ?? startTime
-        let duration = endTime - datum
-        let durationSeconds = duration / 1_000_000
+        let effectiveDuration = getEffectiveDuration()
+        let effectiveDurationSeconds = effectiveDuration / 1_000_000
         
         let startLabel = "0:00"
         startLabel.draw(at: NSPoint(x: leftMargin, y: axisY + 5), withAttributes: timeAttributes)
         
-        let endLabel = formatRelativeTime(durationSeconds)
+        let endLabel = formatRelativeTime(effectiveDurationSeconds)
         let endLabelSize = endLabel.size(withAttributes: timeAttributes)
         endLabel.draw(at: NSPoint(x: bounds.width - rightMargin - endLabelSize.width, y: axisY + 5), withAttributes: timeAttributes)
         
         let timelineWidth = bounds.width - leftMargin - rightMargin
+        let totalMarkerWidth = foldPauses ? CGFloat(pauseGaps.count) * pauseMarkerWidth : 0
+        let contentWidth = timelineWidth - totalMarkerWidth
         let targetSpacing: CGFloat = 100
-        let markerCount = max(3, Int(timelineWidth / targetSpacing))
+        let markerCount = max(3, Int(contentWidth / targetSpacing))
         
         for i in 1..<markerCount {
             let progress = CGFloat(i) / CGFloat(markerCount)
-            let markerX = leftMargin + progress * timelineWidth
+            let markerX = leftMargin + progress * contentWidth
             
             guard markerX < bounds.width - rightMargin - 40 else { continue }
             
@@ -7225,7 +7400,7 @@ class EnhancedTimelineView: NSView {
             tickPath.lineWidth = 1
             tickPath.stroke()
             
-            let relativeSeconds = Double(progress) * durationSeconds
+            let relativeSeconds = Double(progress) * effectiveDurationSeconds
             let markerLabel = formatRelativeTime(relativeSeconds)
             let labelSize = markerLabel.size(withAttributes: timeAttributes)
             markerLabel.draw(at: NSPoint(x: markerX - labelSize.width/2, y: axisY + 5), withAttributes: timeAttributes)
