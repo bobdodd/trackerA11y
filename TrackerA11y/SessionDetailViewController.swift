@@ -105,6 +105,7 @@ class SessionDetailViewController: NSViewController {
     private var isSyncingFromVideo: Bool = false
     private var isSyncingFromTimeline: Bool = false
     private var videoStartTimestamp: Double = 0  // Recording start timestamp from metadata
+    private var lastPlayheadTimestamp: Double = 0  // Track playhead position for direction detection
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -2837,6 +2838,13 @@ class SessionDetailViewController: NSViewController {
         timeline.onEventRightClicked = { [weak self] event, eventIndex, nsEvent in
             self?.showTimelineEventContextMenu(event: event, eventIndex: eventIndex, nsEvent: nsEvent)
         }
+        timeline.onPlayheadDragged = { [weak self] timestamp in
+            guard let self = self else { return }
+            let isMovingForward = timestamp >= self.lastPlayheadTimestamp
+            self.lastPlayheadTimestamp = timestamp
+            self.seekVideoToTimestamp(timestamp)
+            self.scrollTimelineToKeepPlayheadVisible(timestamp: timestamp, movingForward: isMovingForward)
+        }
         self.timelineView = timeline
         
         // Wrap timeline in scroll view for horizontal scrolling
@@ -2970,6 +2978,9 @@ class SessionDetailViewController: NSViewController {
             self?.videoTimeDidChange(time)
         }
         
+        // Set initial playhead position at video start (time 0)
+        timelineView?.setPlayheadTimestamp(videoStartTimestamp)
+        
         print("📹 Screen recording loaded successfully")
     }
     
@@ -2991,22 +3002,71 @@ class SessionDetailViewController: NSViewController {
         } else {
             videoStartTimestamp = sessionStartTimestamp
         }
+        
+        // Set the video start time on the timeline so it uses video time as zero
+        timelineView?.setVideoStartTime(videoStartTimestamp)
     }
     
     private func videoTimeDidChange(_ time: CMTime) {
-        guard isVideoSyncEnabled, !isSyncingFromTimeline else { return }
-        
-        isSyncingFromVideo = true
-        defer { isSyncingFromVideo = false }
-        
         let videoSeconds = time.seconds
         
         // Calculate event timestamp from video time
         // Video time 0 = videoStartTimestamp
         let eventTimestamp = videoStartTimestamp + (videoSeconds * 1_000_000)  // Convert to microseconds
         
-        // Scroll timeline to show this timestamp
-        scrollTimelineToTimestamp(eventTimestamp)
+        // Determine playback direction
+        let isMovingForward = eventTimestamp >= lastPlayheadTimestamp
+        lastPlayheadTimestamp = eventTimestamp
+        
+        // Always update playhead position
+        timelineView?.setPlayheadTimestamp(eventTimestamp)
+        
+        // Only scroll if sync is enabled and we're not already syncing from timeline
+        guard isVideoSyncEnabled, !isSyncingFromTimeline else { return }
+        
+        isSyncingFromVideo = true
+        defer { isSyncingFromVideo = false }
+        
+        // Scroll timeline to keep playhead visible at appropriate position
+        scrollTimelineToKeepPlayheadVisible(timestamp: eventTimestamp, movingForward: isMovingForward)
+    }
+    
+    private func scrollTimelineToKeepPlayheadVisible(timestamp: Double, movingForward: Bool) {
+        guard let scrollView = timelineScrollView,
+              let timeline = timelineView else { return }
+        
+        // Get playhead X position from timeline view
+        guard let playheadX = timeline.getPlayheadXPosition() else { return }
+        
+        let visibleRect = scrollView.contentView.bounds
+        let visibleWidth = visibleRect.width
+        let currentScrollX = visibleRect.origin.x
+        
+        // Target position: 75% when moving forward, 25% when moving backward
+        let targetViewRatio = movingForward ? 0.75 : 0.25
+        let targetViewX = visibleWidth * targetViewRatio
+        
+        // Check if playhead is outside the visible area or needs repositioning
+        let playheadViewX = playheadX - currentScrollX
+        
+        // Define margins - only scroll if playhead is near edges or outside
+        let leftMargin = visibleWidth * 0.1
+        let rightMargin = visibleWidth * 0.9
+        
+        let needsScroll = playheadViewX < leftMargin || playheadViewX > rightMargin
+        
+        if needsScroll {
+            // Calculate scroll to put playhead at target position
+            let targetScrollX = playheadX - targetViewX
+            let maxScroll = max(0, timeline.frame.width - visibleWidth)
+            let clampedScrollX = max(0, min(maxScroll, targetScrollX))
+            
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.15
+                context.allowsImplicitAnimation = true
+                scrollView.contentView.setBoundsOrigin(NSPoint(x: clampedScrollX, y: 0))
+            }
+        }
     }
     
     private func scrollTimelineToTimestamp(_ timestamp: Double) {
@@ -3014,7 +3074,6 @@ class SessionDetailViewController: NSViewController {
               let timeline = timelineView,
               !events.isEmpty else { return }
         
-        // Find the position in the timeline for this timestamp
         let firstTimestamp = events.first?["timestamp"] as? Double ?? sessionStartTimestamp
         let lastTimestamp = events.last?["timestamp"] as? Double ?? firstTimestamp
         let timeRange = lastTimestamp - firstTimestamp
@@ -3024,14 +3083,12 @@ class SessionDetailViewController: NSViewController {
         let relativePosition = (timestamp - firstTimestamp) / timeRange
         let clampedPosition = max(0, min(1, relativePosition))
         
-        // Calculate scroll position
         let contentWidth = timeline.frame.width
         let visibleWidth = scrollView.contentView.bounds.width
         let maxScroll = max(0, contentWidth - visibleWidth)
         
         let targetX = clampedPosition * maxScroll
         
-        // Smoothly scroll to position
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.1
             context.allowsImplicitAnimation = true
@@ -3040,14 +3097,7 @@ class SessionDetailViewController: NSViewController {
     }
     
     @objc private func timelineScrollViewDidScroll(_ notification: Notification) {
-        guard isVideoSyncEnabled, !isSyncingFromVideo,
-              let scrollView = notification.object as? NSScrollView,
-              scrollView === timelineScrollView else { return }
-        
-        isSyncingFromTimeline = true
-        defer { isSyncingFromTimeline = false }
-        
-        syncVideoToScrollPosition()
+        // Scrollbar no longer drives video - playhead cursor does that instead
     }
     
     private func syncVideoToScrollPosition() {
@@ -3088,6 +3138,18 @@ class SessionDetailViewController: NSViewController {
         
         // Convert event timestamp to video time
         let videoSeconds = (eventTimestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
+        
+        guard videoSeconds >= 0 else { return }
+        
+        let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
+    private func seekVideoToTimestamp(_ timestamp: Double) {
+        guard let player = videoPlayer else { return }
+        
+        // Convert event timestamp to video time
+        let videoSeconds = (timestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
         
         guard videoSeconds >= 0 else { return }
         
@@ -6281,6 +6343,7 @@ class EnhancedTimelineView: NSView {
     private var events: [[String: Any]] = []
     private var startTime: Double = 0
     private var endTime: Double = 0
+    private var videoStartTime: Double? = nil  // Video recording start timestamp
     private var zoomLevel: CGFloat = 1.0
     private var panOffset: CGFloat = 0
     var showEventDetails = true
@@ -6289,6 +6352,12 @@ class EnhancedTimelineView: NSView {
     private var hoveredEventIndex: Int? = nil
     var onEventSelected: (([String: Any]) -> Void)?
     var onEventRightClicked: (([String: Any], Int, NSEvent) -> Void)?
+    
+    // Playhead for video sync
+    private var playheadPosition: Double? = nil  // Timestamp of current video position
+    var showPlayhead: Bool = true
+    private var isDraggingPlayhead: Bool = false
+    var onPlayheadDragged: ((Double) -> Void)?  // Callback when playhead is dragged (timestamp)
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -6342,12 +6411,26 @@ class EnhancedTimelineView: NSView {
         }
         
         let timestamps = self.events.compactMap { $0["timestamp"] as? Double }
-        if let minTime = timestamps.min(), let maxTime = timestamps.max() {
-            startTime = minTime
+        if let maxTime = timestamps.max() {
+            // Use video start time if available, otherwise use first event
+            if let videoStart = videoStartTime {
+                startTime = videoStart
+            } else if let minTime = timestamps.min() {
+                startTime = minTime
+            }
             endTime = maxTime
         }
         
         needsDisplay = true
+    }
+    
+    func setVideoStartTime(_ timestamp: Double) {
+        videoStartTime = timestamp
+        // Recalculate startTime if we have events
+        if !events.isEmpty {
+            startTime = timestamp
+            needsDisplay = true
+        }
     }
     
     func zoomIn() {
@@ -6372,20 +6455,104 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    func setPlayheadTimestamp(_ timestamp: Double?) {
+        playheadPosition = timestamp
+        needsDisplay = true
+    }
+    
+    func getPlayheadXPosition() -> CGFloat? {
+        guard let position = playheadPosition, endTime > startTime else { return nil }
+        
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let timelineWidth = bounds.width - leftMargin - rightMargin
+        let duration = endTime - startTime
+        
+        let relativePosition = (position - startTime) / duration
+        guard relativePosition >= 0 else { return nil }
+        
+        return leftMargin + CGFloat(relativePosition) * timelineWidth
+    }
+    
+    func getTimeRange() -> (start: Double, end: Double) {
+        return (startTime, endTime)
+    }
+    
     override func mouseDown(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
-        print("🖱️ Timeline mouseDown at: \(locationInView), eventRects count: \(eventRects.count)")
+        
+        // Check if clicking near the playhead or in the playhead drag area (top portion)
+        if isClickOnPlayhead(locationInView) || isClickInScrubArea(locationInView) {
+            isDraggingPlayhead = true
+            updatePlayheadFromMouseLocation(locationInView)
+            return
+        }
         
         for (index, eventRect) in eventRects.enumerated() {
             if eventRect.rect.contains(locationInView) {
-                print("🖱️ Hit eventRect \(index): type=\(eventRect.event["type"] ?? "nil")")
                 onEventSelected?(eventRect.event)
                 hoveredEventIndex = index
                 needsDisplay = true
                 return
             }
         }
-        print("🖱️ No event hit")
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        if isDraggingPlayhead {
+            let locationInView = convert(event.locationInWindow, from: nil)
+            updatePlayheadFromMouseLocation(locationInView)
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        isDraggingPlayhead = false
+    }
+    
+    private func isClickOnPlayhead(_ location: NSPoint) -> Bool {
+        guard let position = playheadPosition, endTime > startTime else { return false }
+        
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        let duration = endTime - startTime
+        
+        let relativePosition = (position - startTime) / duration
+        guard relativePosition >= 0 && relativePosition <= 1 else { return false }
+        
+        let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
+        
+        // Click within 10 points of playhead line
+        return abs(location.x - playheadX) < 10
+    }
+    
+    private func isClickInScrubArea(_ location: NSPoint) -> Bool {
+        // The scrub area is the top portion where the time axis and playhead handle are
+        let topMargin: CGFloat = 50
+        return location.y > bounds.height - topMargin
+    }
+    
+    private func updatePlayheadFromMouseLocation(_ location: NSPoint) {
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        
+        guard timelineWidth > 0, endTime > startTime else { return }
+        
+        // Calculate relative position from mouse X
+        let relativeX = (location.x - leftMargin) / timelineWidth
+        let clampedRelativeX = max(0, min(1, relativeX))
+        
+        // Convert to timestamp
+        let duration = endTime - startTime
+        let newTimestamp = startTime + (Double(clampedRelativeX) * duration)
+        
+        // Update playhead position
+        playheadPosition = newTimestamp
+        needsDisplay = true
+        
+        // Notify delegate to seek video
+        onPlayheadDragged?(newTimestamp)
     }
     
     override func rightMouseDown(with event: NSEvent) {
@@ -6444,6 +6611,7 @@ class EnhancedTimelineView: NSView {
         
         drawTimelineBackground()
         drawEventTracks()
+        drawPlayhead()
         drawTimeAxis()
         drawHoveredEventTooltip()
         
@@ -6619,6 +6787,65 @@ class EnhancedTimelineView: NSView {
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)
             eventRects.append((rect: clickableRect, event: event, eventIndex: originalIndex))
         }
+    }
+    
+    private func drawPlayhead() {
+        guard showPlayhead, let position = playheadPosition else { return }
+        guard endTime > startTime else { return }
+        
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
+        
+        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        let duration = endTime - startTime
+        
+        let relativePosition = (position - startTime) / duration
+        guard relativePosition >= 0 && relativePosition <= 1 else { return }
+        
+        let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
+        
+        // Draw playhead line
+        NSColor.systemRed.setStroke()
+        let playheadPath = NSBezierPath()
+        playheadPath.move(to: NSPoint(x: playheadX, y: bottomMargin))
+        playheadPath.line(to: NSPoint(x: playheadX, y: bounds.height - topMargin))
+        playheadPath.lineWidth = 2
+        playheadPath.stroke()
+        
+        // Draw playhead triangle at top
+        NSColor.systemRed.setFill()
+        let trianglePath = NSBezierPath()
+        let triangleY = bounds.height - topMargin
+        trianglePath.move(to: NSPoint(x: playheadX, y: triangleY + 12))
+        trianglePath.line(to: NSPoint(x: playheadX - 6, y: triangleY + 2))
+        trianglePath.line(to: NSPoint(x: playheadX + 6, y: triangleY + 2))
+        trianglePath.close()
+        trianglePath.fill()
+        
+        // Draw current time label
+        let timeInSeconds = (position - startTime) / 1_000_000  // Convert from microseconds
+        let minutes = Int(timeInSeconds) / 60
+        let seconds = Int(timeInSeconds) % 60
+        let millis = Int((timeInSeconds - Double(Int(timeInSeconds))) * 1000)
+        let timeString = String(format: "%02d:%02d.%03d", minutes, seconds, millis)
+        
+        let labelAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .medium),
+            .foregroundColor: NSColor.white
+        ]
+        let labelSize = timeString.size(withAttributes: labelAttrs)
+        let labelRect = NSRect(
+            x: playheadX - labelSize.width / 2 - 4,
+            y: triangleY + 14,
+            width: labelSize.width + 8,
+            height: labelSize.height + 4
+        )
+        
+        NSColor.systemRed.withAlphaComponent(0.9).setFill()
+        NSBezierPath(roundedRect: labelRect, xRadius: 4, yRadius: 4).fill()
+        timeString.draw(at: NSPoint(x: labelRect.minX + 4, y: labelRect.minY + 2), withAttributes: labelAttrs)
     }
     
     private func drawLegend(in timelineRect: NSRect) {
