@@ -3,6 +3,10 @@ import ObjectiveC
 import AVFoundation
 import AVKit
 
+class FlippedClipView: NSClipView {
+    override var isFlipped: Bool { return true }
+}
+
 class TagsNotesCellView: NSView {
     weak var viewController: SessionDetailViewController?
     var eventIndex: Int = -1
@@ -3738,7 +3742,11 @@ class SessionDetailViewController: NSViewController {
         stackView.alignment = .leading
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
+        let clipView = FlippedClipView()
+        clipView.drawsBackground = false
+        
         let scrollView = NSScrollView()
+        scrollView.contentView = clipView
         scrollView.documentView = stackView
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
@@ -3763,8 +3771,9 @@ class SessionDetailViewController: NSViewController {
             scrollView.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -8),
             scrollView.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -8),
             
-            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: clipView.topAnchor),
+            stackView.leadingAnchor.constraint(equalTo: clipView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: clipView.trailingAnchor),
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -16)
         ])
         
