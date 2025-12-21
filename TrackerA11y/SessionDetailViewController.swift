@@ -2833,7 +2833,6 @@ class SessionDetailViewController: NSViewController {
         timeline.layer?.borderColor = NSColor.separatorColor.cgColor
         timeline.onEventSelected = { [weak self] event in
             self?.updateTimelineInfo(with: event)
-            self?.syncVideoToEvent(event)
         }
         timeline.onEventRightClicked = { [weak self] event, eventIndex, nsEvent in
             self?.showTimelineEventContextMenu(event: event, eventIndex: eventIndex, nsEvent: nsEvent)
@@ -2844,6 +2843,12 @@ class SessionDetailViewController: NSViewController {
             self.lastPlayheadTimestamp = timestamp
             self.seekVideoToTimestamp(timestamp)
             self.scrollTimelineToKeepPlayheadVisible(timestamp: timestamp, movingForward: isMovingForward)
+        }
+        timeline.onZoomChanged = { [weak self] in
+            guard let self = self else { return }
+            if let timestamp = self.timelineView?.playheadTimestamp {
+                self.scrollTimelineToKeepPlayheadVisible(timestamp: timestamp, movingForward: true)
+            }
         }
         self.timelineView = timeline
         
@@ -6358,6 +6363,16 @@ class EnhancedTimelineView: NSView {
     var showPlayhead: Bool = true
     private var isDraggingPlayhead: Bool = false
     var onPlayheadDragged: ((Double) -> Void)?  // Callback when playhead is dragged (timestamp)
+    var onZoomChanged: (() -> Void)?  // Callback when zoom changes
+    
+    // Edge panning state for playhead dragging
+    private var lastDragLocation: NSPoint?
+    private var lastDragTime: Date?
+    private var lastDragTimestamp: Double = 0  // Last playhead timestamp during drag
+    private var dragTimestampVelocity: Double = 0  // Microseconds per second of real time
+    private var edgePanTimer: Timer?
+    private var edgePanDirection: CGFloat = 0  // -1 for left, 1 for right, 0 for none
+    private var edgePanStartTime: Date?
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -6368,6 +6383,7 @@ class EnhancedTimelineView: NSView {
         updateFrameForZoom()
         invalidateIntrinsicContentSize()
         needsDisplay = true
+        onZoomChanged?()
     }
     
     override var intrinsicContentSize: NSSize {
@@ -6460,6 +6476,10 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    var playheadTimestamp: Double? {
+        return playheadPosition
+    }
+    
     func getPlayheadXPosition() -> CGFloat? {
         guard let position = playheadPosition, endTime > startTime else { return nil }
         
@@ -6481,13 +6501,13 @@ class EnhancedTimelineView: NSView {
     override func mouseDown(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
         
-        // Check if clicking near the playhead or in the playhead drag area (top portion)
-        if isClickOnPlayhead(locationInView) || isClickInScrubArea(locationInView) {
-            isDraggingPlayhead = true
+        // Double-click anywhere on timeline moves playhead to that position
+        if event.clickCount == 2 {
             updatePlayheadFromMouseLocation(locationInView)
             return
         }
         
+        // Check if clicking on an event first (takes priority over scrub area)
         for (index, eventRect) in eventRects.enumerated() {
             if eventRect.rect.contains(locationInView) {
                 onEventSelected?(eventRect.event)
@@ -6496,17 +6516,158 @@ class EnhancedTimelineView: NSView {
                 return
             }
         }
+        
+        // Check if clicking near the playhead or in the playhead drag area (top portion)
+        if isClickOnPlayhead(locationInView) || isClickInScrubArea(locationInView) {
+            isDraggingPlayhead = true
+            lastDragLocation = locationInView
+            lastDragTime = Date()
+            lastDragTimestamp = playheadPosition ?? startTime
+            dragTimestampVelocity = 0
+            updatePlayheadFromMouseLocation(locationInView)
+            return
+        }
     }
     
     override func mouseDragged(with event: NSEvent) {
         if isDraggingPlayhead {
             let locationInView = convert(event.locationInWindow, from: nil)
-            updatePlayheadFromMouseLocation(locationInView)
+            
+            // Calculate current timestamp from mouse position
+            let leftMargin: CGFloat = 20
+            let timelineWidth = bounds.width - leftMargin - 20
+            let relativeX = (locationInView.x - leftMargin) / timelineWidth
+            let clampedRelativeX = max(0, min(1, relativeX))
+            let duration = endTime - startTime
+            let currentTimestamp = startTime + (Double(clampedRelativeX) * duration)
+            
+            // Calculate timestamp velocity (microseconds per second of real time)
+            if let lastTime = lastDragTime {
+                let timeDelta = Date().timeIntervalSince(lastTime)
+                if timeDelta > 0.001 {  // Avoid division by very small numbers
+                    let timestampDelta = abs(currentTimestamp - lastDragTimestamp)
+                    dragTimestampVelocity = timestampDelta / timeDelta
+                }
+            }
+            lastDragLocation = locationInView
+            lastDragTime = Date()
+            lastDragTimestamp = currentTimestamp
+            
+            // Check if we're at the edge of the visible area
+            guard let scrollView = enclosingScrollView else {
+                updatePlayheadFromMouseLocation(locationInView)
+                return
+            }
+            
+            let visibleRect = scrollView.contentView.bounds
+            let mouseInWindow = event.locationInWindow
+            let scrollViewFrame = scrollView.convert(scrollView.bounds, to: nil)
+            let locationInScrollViewX = mouseInWindow.x - scrollViewFrame.minX
+            
+            let edgeThreshold: CGFloat = 30
+            let leftEdge = edgeThreshold
+            let rightEdge = visibleRect.width - edgeThreshold
+            
+            if locationInScrollViewX < leftEdge && visibleRect.origin.x > 0 {
+                // Start left edge panning (only if we can scroll left)
+                if edgePanDirection != -1 {
+                    edgePanDirection = -1
+                    edgePanStartTime = Date()
+                    startEdgePanning()
+                }
+            } else if locationInScrollViewX > rightEdge && visibleRect.origin.x < bounds.width - visibleRect.width {
+                // Start right edge panning (only if we can scroll right)
+                if edgePanDirection != 1 {
+                    edgePanDirection = 1
+                    edgePanStartTime = Date()
+                    startEdgePanning()
+                }
+            } else {
+                // Not at edge or can't scroll further, stop panning and update normally
+                stopEdgePanning()
+                updatePlayheadFromMouseLocation(locationInView)
+            }
         }
+    }
+    
+    private func startEdgePanning() {
+        edgePanTimer?.invalidate()
+        edgePanTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
+            self?.performEdgePan()
+        }
+    }
+    
+    private func stopEdgePanning() {
+        edgePanTimer?.invalidate()
+        edgePanTimer = nil
+        edgePanDirection = 0
+        edgePanStartTime = nil
+    }
+    
+    private func performEdgePan() {
+        guard edgePanDirection != 0, endTime > startTime else { return }
+        guard let currentPosition = playheadPosition else { return }
+        
+        // Use the actual timestamp velocity - microseconds per second of real time
+        let baseTimestampVelocity = dragTimestampVelocity
+        
+        // After 3 seconds, gradually ramp up to 50% faster over the next 3 seconds
+        var speedMultiplier: Double = 1.0
+        if let panStartTime = edgePanStartTime {
+            let elapsed = Date().timeIntervalSince(panStartTime)
+            if elapsed > 3.0 {
+                // Start ramping after 3 seconds, reach 1.5x after 6 seconds total
+                let rampElapsed = elapsed - 3.0
+                let rampProgress = min(rampElapsed / 3.0, 1.0)  // 0 to 1 over 3 seconds
+                speedMultiplier = 1.0 + (0.5 * rampProgress)  // 1.0 to 1.5
+            }
+        }
+        
+        // Calculate timestamp change per frame (60fps)
+        let timestampDeltaPerFrame = baseTimestampVelocity * speedMultiplier / 60.0
+        
+        // Update playhead timestamp
+        let newTimestamp: Double
+        if edgePanDirection < 0 {
+            newTimestamp = max(startTime, currentPosition - timestampDeltaPerFrame)
+        } else {
+            newTimestamp = min(endTime, currentPosition + timestampDeltaPerFrame)
+        }
+        
+        playheadPosition = newTimestamp
+        lastDragTimestamp = newTimestamp
+        needsDisplay = true
+        onPlayheadDragged?(newTimestamp)
+        
+        // Scroll to keep playhead visible
+        guard let scrollView = enclosingScrollView else { return }
+        
+        let leftMargin: CGFloat = 20
+        let timelineWidth = bounds.width - leftMargin - 20
+        let duration = endTime - startTime
+        let relativePosition = (newTimestamp - startTime) / duration
+        let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
+        
+        // Calculate scroll to keep playhead at edge
+        let visibleWidth = scrollView.contentView.bounds.width
+        let edgeThreshold: CGFloat = 30
+        let targetScrollX: CGFloat
+        if edgePanDirection < 0 {
+            targetScrollX = playheadX - edgeThreshold
+        } else {
+            targetScrollX = playheadX - visibleWidth + edgeThreshold
+        }
+        
+        let maxScroll = max(0, bounds.width - visibleWidth)
+        let clampedScrollX = max(0, min(maxScroll, targetScrollX))
+        scrollView.contentView.setBoundsOrigin(NSPoint(x: clampedScrollX, y: 0))
     }
     
     override func mouseUp(with event: NSEvent) {
         isDraggingPlayhead = false
+        stopEdgePanning()
+        lastDragLocation = nil
+        lastDragTime = nil
     }
     
     private func isClickOnPlayhead(_ location: NSPoint) -> Bool {
@@ -6514,7 +6675,7 @@ class EnhancedTimelineView: NSView {
         
         let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
-        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        let timelineWidth = bounds.width - leftMargin - rightMargin
         let duration = endTime - startTime
         
         let relativePosition = (position - startTime) / duration
@@ -6522,7 +6683,6 @@ class EnhancedTimelineView: NSView {
         
         let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
         
-        // Click within 10 points of playhead line
         return abs(location.x - playheadX) < 10
     }
     
@@ -6535,7 +6695,7 @@ class EnhancedTimelineView: NSView {
     private func updatePlayheadFromMouseLocation(_ location: NSPoint) {
         let leftMargin: CGFloat = 20
         let rightMargin: CGFloat = 20
-        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        let timelineWidth = bounds.width - leftMargin - rightMargin
         
         guard timelineWidth > 0, endTime > startTime else { return }
         
@@ -6798,11 +6958,11 @@ class EnhancedTimelineView: NSView {
         let topMargin: CGFloat = 50
         let bottomMargin: CGFloat = 20
         
-        let timelineWidth = (bounds.width - leftMargin - rightMargin) * zoomLevel
+        let timelineWidth = bounds.width - leftMargin - rightMargin
         let duration = endTime - startTime
         
         let relativePosition = (position - startTime) / duration
-        guard relativePosition >= 0 && relativePosition <= 1 else { return }
+        guard relativePosition >= 0 else { return }
         
         let playheadX = leftMargin + CGFloat(relativePosition) * timelineWidth
         
