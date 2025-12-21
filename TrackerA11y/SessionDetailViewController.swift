@@ -113,6 +113,7 @@ class SessionDetailViewController: NSViewController {
     private var lastAutoShownEventTimestamp: Double = 0  // Track last event shown during playback
     private var isUserSelectedEvent: Bool = false  // True when user clicked an event (disables auto-update until playback)
     private var isVideoPlaying: Bool = false  // Track if video is actively playing
+    private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []  // Pause gaps for video/event time conversion
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -153,6 +154,41 @@ class SessionDetailViewController: NSViewController {
         setupUI()
         loadSessionEvents()
         loadSessionMetadata()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSessionDataUpdated(_:)),
+            name: NSNotification.Name("SessionDataUpdated"),
+            object: nil
+        )
+    }
+    
+    @objc private func handleSessionDataUpdated(_ notification: Notification) {
+        guard let updatedSessionId = notification.userInfo?["sessionId"] as? String,
+              updatedSessionId == sessionId else { return }
+        
+        print("🔄 Session data updated, refreshing view...")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.loadRecordingStartTimestamp()
+            self.loadSessionEvents()
+            self.loadSessionMetadata()
+            self.reloadVideo()
+        }
+    }
+    
+    private func reloadVideo() {
+        let videoPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screen_recording.mp4"
+        let videoURL = URL(fileURLWithPath: videoPath)
+        
+        guard FileManager.default.fileExists(atPath: videoPath) else {
+            print("⚠️ Video file not found for reload: \(videoPath)")
+            return
+        }
+        
+        let newItem = AVPlayerItem(url: videoURL)
+        videoPlayer?.replaceCurrentItem(with: newItem)
+        print("🎬 Video reloaded: \(videoPath)")
     }
     
     private func setupUI() {
@@ -3045,8 +3081,8 @@ class SessionDetailViewController: NSViewController {
         let videoSeconds = time.seconds
         
         // Calculate event timestamp from video time
-        // Video time 0 = videoStartTimestamp
-        let eventTimestamp = videoStartTimestamp + (videoSeconds * 1_000_000)  // Convert to microseconds
+        // Must account for pause gaps: merged video is continuous, but events have gaps
+        let eventTimestamp = videoTimeToEventTimestamp(videoSeconds)
         
         // Determine playback direction
         let isMovingForward = eventTimestamp >= lastPlayheadTimestamp
@@ -3197,8 +3233,8 @@ class SessionDetailViewController: NSViewController {
               let player = videoPlayer,
               let eventTimestamp = event["timestamp"] as? Double else { return }
         
-        // Convert event timestamp to video time
-        let videoSeconds = (eventTimestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
+        // Convert event timestamp to video time (accounting for pause gaps)
+        let videoSeconds = eventTimestampToVideoTime(eventTimestamp)
         
         guard videoSeconds >= 0 else { return }
         
@@ -3209,13 +3245,55 @@ class SessionDetailViewController: NSViewController {
     private func seekVideoToTimestamp(_ timestamp: Double) {
         guard let player = videoPlayer else { return }
         
-        // Convert event timestamp to video time
-        let videoSeconds = (timestamp - videoStartTimestamp) / 1_000_000  // Convert from microseconds
+        // Convert event timestamp to video time (accounting for pause gaps)
+        let videoSeconds = eventTimestampToVideoTime(timestamp)
         
         guard videoSeconds >= 0 else { return }
         
         let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
+    private func videoTimeToEventTimestamp(_ videoSeconds: Double) -> Double {
+        let baseTimestamp = videoStartTimestamp + (videoSeconds * 1_000_000)
+        
+        guard !pauseGaps.isEmpty else { return baseTimestamp }
+        
+        let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
+        var adjustedTimestamp = baseTimestamp
+        var accumulatedPauseDuration: Double = 0
+        
+        for gap in sortedGaps {
+            let gapStartInVideoTime = (gap.start - videoStartTimestamp - accumulatedPauseDuration) / 1_000_000
+            
+            if videoSeconds >= gapStartInVideoTime {
+                adjustedTimestamp += gap.duration
+                accumulatedPauseDuration += gap.duration
+            } else {
+                break
+            }
+        }
+        
+        return adjustedTimestamp
+    }
+    
+    private func eventTimestampToVideoTime(_ timestamp: Double) -> Double {
+        guard !pauseGaps.isEmpty else {
+            return (timestamp - videoStartTimestamp) / 1_000_000
+        }
+        
+        let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
+        var totalPauseBefore: Double = 0
+        
+        for gap in sortedGaps {
+            if gap.end <= timestamp {
+                totalPauseBefore += gap.duration
+            } else if gap.start < timestamp {
+                break
+            }
+        }
+        
+        return (timestamp - videoStartTimestamp - totalPauseBefore) / 1_000_000
     }
     
     @objc private func toggleVideoSync(_ sender: NSButton) {
@@ -3939,6 +4017,8 @@ class SessionDetailViewController: NSViewController {
                     print("✅ Found \(pauseGapsArray.count) pause gaps")
                 }
                 
+                let eventsStartTime = sessionJson["startTime"] as? Double
+                
                 DispatchQueue.main.async {
                     self.events = eventsArray.sorted { 
                         ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0)
@@ -3947,10 +4027,25 @@ class SessionDetailViewController: NSViewController {
                         self.sessionStartTimestamp = firstTimestamp
                     }
                     
+                    // Adjust videoStartTimestamp to align with when events actually started
+                    // This accounts for Node.js startup delay
+                    if let eventsStart = eventsStartTime, eventsStart > self.videoStartTimestamp {
+                        let startupDelay = eventsStart - self.videoStartTimestamp
+                        print("📹 Adjusting video start by \(startupDelay / 1_000_000)s for Node.js startup delay")
+                        self.videoStartTimestamp = eventsStart
+                        self.timelineView?.setVideoStartTime(eventsStart)
+                    }
+                    
+                    // Store pause gaps for video/event time conversion
+                    self.pauseGaps = pauseGapsArray
+                    
                     // Set pause gaps on timeline
                     if !pauseGapsArray.isEmpty {
                         self.timelineView?.setPauseGaps(pauseGapsArray)
                     }
+                    
+                    // Set initial playhead position at start
+                    self.timelineView?.setPlayheadTimestamp(self.videoStartTimestamp)
                     
                     self.finishLoading()
                 }
@@ -6633,23 +6728,38 @@ class EnhancedTimelineView: NSView {
         guard effectiveDuration > 0 else { return timelineRect.minX }
         
         if foldPauses && !pauseGaps.isEmpty {
-            let pauseBefore = getPauseDurationBefore(timestamp)
-            let effectiveTime = (timestamp - startTime) - pauseBefore
+            let totalMarkerWidth = CGFloat(pauseGaps.count) * pauseMarkerWidth
+            let contentWidth = timelineRect.width - totalMarkerWidth
+            let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
             
-            var xOffset: CGFloat = 0
-            for gap in pauseGaps where gap.end <= timestamp {
-                xOffset += pauseMarkerWidth
+            var currentX = timelineRect.minX
+            var previousGapEnd = startTime
+            
+            for gap in sortedGaps {
+                let segmentDuration = gap.start - previousGapEnd
+                let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
+                
+                if timestamp < gap.start {
+                    let progressInSegment = (timestamp - previousGapEnd) / segmentDuration
+                    return currentX + segmentWidth * CGFloat(progressInSegment)
+                }
+                
+                if timestamp >= gap.start && timestamp < gap.end {
+                    return currentX + segmentWidth
+                }
+                
+                currentX += segmentWidth + pauseMarkerWidth
+                previousGapEnd = gap.end
             }
             
-            let relativeTime = effectiveTime / effectiveDuration
-            let baseX = timelineRect.minX + CGFloat(relativeTime) * (timelineRect.width - xOffset - CGFloat(pauseGaps.count) * pauseMarkerWidth)
-            
-            var pauseMarkersBeforeX: CGFloat = 0
-            for gap in pauseGaps where gap.end <= timestamp {
-                pauseMarkersBeforeX += pauseMarkerWidth
+            let finalSegmentDuration = endTime - previousGapEnd
+            if finalSegmentDuration > 0 {
+                let progressInFinal = (timestamp - previousGapEnd) / finalSegmentDuration
+                let finalSegmentWidth = contentWidth * CGFloat(finalSegmentDuration / effectiveDuration)
+                return currentX + finalSegmentWidth * CGFloat(min(1.0, progressInFinal))
             }
             
-            return baseX + pauseMarkersBeforeX
+            return currentX
         } else {
             let duration = max(endTime - startTime, 1)
             let relativeTime = (timestamp - startTime) / duration
@@ -6664,35 +6774,42 @@ class EnhancedTimelineView: NSView {
         if foldPauses && !pauseGaps.isEmpty {
             let totalMarkerWidth = CGFloat(pauseGaps.count) * pauseMarkerWidth
             let contentWidth = timelineRect.width - totalMarkerWidth
-            
-            var currentX = timelineRect.minX
-            var effectiveTime: Double = 0
             let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
             
+            var currentX = timelineRect.minX
+            var currentEventTime = startTime
+            var previousGapEnd = startTime
+            
             for (index, gap) in sortedGaps.enumerated() {
-                let gapEffectiveStart = (gap.start - startTime) - getPauseDurationBefore(gap.start)
-                let segmentEndX = timelineRect.minX + CGFloat(gapEffectiveStart / effectiveDuration) * contentWidth + CGFloat(index) * pauseMarkerWidth
+                let segmentDuration = gap.start - previousGapEnd
+                let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
+                let segmentEndX = currentX + segmentWidth
                 
-                if x <= segmentEndX {
-                    let relativeX = (x - currentX) / contentWidth
-                    effectiveTime = relativeX * effectiveDuration
-                    var totalPause: Double = 0
-                    for g in sortedGaps where g.end <= gap.start {
-                        totalPause += g.duration
-                    }
-                    return startTime + effectiveTime + totalPause
+                if x < segmentEndX {
+                    let progressInSegment = (x - currentX) / segmentWidth
+                    return currentEventTime + segmentDuration * Double(progressInSegment)
                 }
                 
-                if x <= segmentEndX + pauseMarkerWidth {
+                currentEventTime = gap.start
+                
+                if x < segmentEndX + pauseMarkerWidth {
                     return gap.start
                 }
                 
                 currentX = segmentEndX + pauseMarkerWidth
+                currentEventTime = gap.end
+                previousGapEnd = gap.end
             }
             
-            let relativeX = (x - currentX) / contentWidth
-            let totalPause = pauseGaps.reduce(0.0) { $0 + $1.duration }
-            return startTime + relativeX * effectiveDuration + totalPause
+            let finalSegmentDuration = endTime - previousGapEnd
+            let finalSegmentWidth = contentWidth * CGFloat(finalSegmentDuration / effectiveDuration)
+            
+            if finalSegmentWidth > 0 {
+                let progressInFinal = min(1.0, max(0, (x - currentX) / finalSegmentWidth))
+                return currentEventTime + finalSegmentDuration * Double(progressInFinal)
+            }
+            
+            return endTime
         } else {
             let duration = max(endTime - startTime, 1)
             let relativeX = (x - timelineRect.minX) / timelineRect.width

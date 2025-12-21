@@ -385,12 +385,13 @@ class MainViewController: NSViewController {
         tracker.pauseTracking()
         
         if #available(macOS 12.3, *) {
-            screenRecorder?.pauseRecording()
+            Task {
+                await screenRecorder?.pauseRecording()
+            }
         }
         
         updateUI()
         
-        // Update app delegate status
         if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
             appDelegate.updateRecordingState(.paused)
         }
@@ -405,12 +406,13 @@ class MainViewController: NSViewController {
         tracker.resumeTracking()
         
         if #available(macOS 12.3, *) {
-            screenRecorder?.resumeRecording()
+            Task {
+                try? await screenRecorder?.resumeRecording()
+            }
         }
         
         updateUI()
         
-        // Update app delegate status
         if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
             appDelegate.updateRecordingState(.recording)
         }
@@ -601,8 +603,20 @@ extension MainViewController: ScreenRecorderDelegate {
         }
     }
     
-    func screenRecorderDidPauseRecording() {
-        print("⏸ Screen recording paused")
+    func screenRecorderDidPauseRecording(interimURL: URL?) {
+        if let url = interimURL {
+            print("⏸ Screen recording paused - interim video: \(url.path)")
+        } else {
+            print("⏸ Screen recording paused")
+        }
+        
+        if let session = currentSession {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SessionDataUpdated"),
+                object: nil,
+                userInfo: ["sessionId": session]
+            )
+        }
     }
     
     func screenRecorderDidResumeRecording() {

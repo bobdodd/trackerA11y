@@ -211,9 +211,9 @@ export class EventRecorder extends EventEmitter {
   }
 
   /**
-   * Pause recording - creates a pause event and stops capturing
+   * Pause recording - creates a pause event, saves interim state, and stops capturing
    */
-  pauseRecording(): void {
+  async pauseRecording(): Promise<void> {
     if (!this.isRecording || this.isPaused) return;
 
     this.isPaused = true;
@@ -225,11 +225,42 @@ export class EventRecorder extends EventEmitter {
     });
     this.addEvent(pauseEvent);
 
-    console.log('⏸️ Recording paused');
+    await this.saveInterimState();
+
+    console.log('⏸️ Recording paused - session saved for review');
     this.emit('recordingPaused', { 
       sessionId: this.sessionId,
       pauseTimestamp: this.pauseStartTimestamp
     });
+  }
+
+  /**
+   * Save interim state so session can be reviewed while paused
+   */
+  private async saveInterimState(): Promise<void> {
+    try {
+      const interimLog = {
+        ...this.eventLog,
+        endTime: this.timeSync.now(),
+        events: this.eventBuffer,
+        metadata: {
+          ...this.eventLog.metadata,
+          pauseGaps: this.pauseGaps,
+          totalPausedDuration: this.totalPausedDuration,
+          status: 'paused'
+        }
+      };
+
+      const logPath = path.join(this.outputDir, 'events.json');
+      await fs.writeFile(logPath, JSON.stringify(interimLog, null, 2));
+
+      await this.generateSummary(path.join(this.outputDir, 'summary.txt'));
+
+      console.log(`💾 Interim session saved: ${this.outputDir}`);
+      console.log(`📊 Events so far: ${this.eventBuffer.length}`);
+    } catch (error) {
+      console.error('⚠️ Failed to save interim state:', error);
+    }
   }
 
   /**

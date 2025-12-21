@@ -12,7 +12,7 @@ enum ScreenRecorderState {
 protocol ScreenRecorderDelegate: AnyObject {
     func screenRecorderDidStartRecording()
     func screenRecorderDidStopRecording(outputURL: URL?)
-    func screenRecorderDidPauseRecording()
+    func screenRecorderDidPauseRecording(interimURL: URL?)
     func screenRecorderDidResumeRecording()
     func screenRecorderDidFail(error: Error)
 }
@@ -43,6 +43,12 @@ class ScreenRecorder: NSObject {
     private var streamConfiguration: SCStreamConfiguration?
     private var contentFilter: SCContentFilter?
     
+    private var segmentURLs: [URL] = []
+    private var currentSegmentIndex: Int = 0
+    private var baseOutputURL: URL?
+    private var displayWidth: Int = 0
+    private var displayHeight: Int = 0
+    
     var recordingStartTimestamp: Double {
         return sessionStartTimestamp
     }
@@ -62,7 +68,11 @@ class ScreenRecorder: NSObject {
             throw ScreenRecorderError.alreadyRecording
         }
         
-        self.outputURL = outputURL
+        self.baseOutputURL = outputURL
+        let segment0URL = createSegmentURL(index: 0)
+        self.outputURL = segment0URL
+        self.segmentURLs = []
+        self.currentSegmentIndex = 0
         sessionStartTimestamp = Date().timeIntervalSince1970 * 1_000_000
         
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
@@ -79,12 +89,14 @@ class ScreenRecorder: NSObject {
         config.showsCursor = true
         config.capturesAudio = false
         
+        displayWidth = config.width
+        displayHeight = config.height
         streamConfiguration = config
         
         let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
         contentFilter = filter
         
-        try setupAssetWriter(outputURL: outputURL, width: config.width, height: config.height)
+        try setupAssetWriter(outputURL: segment0URL, width: config.width, height: config.height)
         try setupMicrophoneCapture()
         
         stream = SCStream(filter: filter, configuration: config, delegate: self)
@@ -103,23 +115,126 @@ class ScreenRecorder: NSObject {
             self.delegate?.screenRecorderDidStartRecording()
         }
         
-        print("🎬 Screen recording started: \(outputURL.lastPathComponent)")
+        print("🎬 Screen recording started: \(segment0URL.lastPathComponent)")
     }
     
-    func pauseRecording() {
+    func pauseRecording() async {
         guard state == .recording else { return }
         
         state = .paused
         
-        DispatchQueue.main.async {
-            self.delegate?.screenRecorderDidPauseRecording()
+        await finishCurrentSegment()
+        
+        if let url = outputURL {
+            segmentURLs.append(url)
         }
         
-        print("⏸ Screen recording paused")
+        var interimURL: URL? = nil
+        
+        if segmentURLs.count == 1 {
+            if let segment = segmentURLs.first, let base = baseOutputURL {
+                do {
+                    if FileManager.default.fileExists(atPath: base.path) {
+                        try FileManager.default.removeItem(at: base)
+                    }
+                    try FileManager.default.copyItem(at: segment, to: base)
+                    interimURL = base
+                } catch {
+                    print("⚠️ Could not copy segment to base: \(error)")
+                    interimURL = segment
+                }
+            }
+        } else if segmentURLs.count > 1 {
+            interimURL = await mergeSegmentsForInterim()
+        }
+        
+        DispatchQueue.main.async {
+            self.delegate?.screenRecorderDidPauseRecording(interimURL: interimURL)
+        }
+        
+        print("⏸ Screen recording paused - \(segmentURLs.count) segment(s), merged video available")
     }
     
-    func resumeRecording() {
+    private func mergeSegmentsForInterim() async -> URL? {
+        guard let baseURL = baseOutputURL else { return segmentURLs.last }
+        
+        print("🎬 Merging \(segmentURLs.count) segments for interim review...")
+        
+        let composition = AVMutableComposition()
+        
+        guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            print("❌ Failed to create video track")
+            return segmentURLs.last
+        }
+        
+        let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        var currentTime = CMTime.zero
+        
+        for segmentURL in segmentURLs {
+            let asset = AVAsset(url: segmentURL)
+            
+            do {
+                let duration = try await asset.load(.duration)
+                let videoTracks = try await asset.loadTracks(withMediaType: .video)
+                let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+                
+                if let sourceVideoTrack = videoTracks.first {
+                    try videoTrack.insertTimeRange(
+                        CMTimeRange(start: .zero, duration: duration),
+                        of: sourceVideoTrack,
+                        at: currentTime
+                    )
+                }
+                
+                if let sourceAudioTrack = audioTracks.first, let audioTrack = audioTrack {
+                    try audioTrack.insertTimeRange(
+                        CMTimeRange(start: .zero, duration: duration),
+                        of: sourceAudioTrack,
+                        at: currentTime
+                    )
+                }
+                
+                currentTime = CMTimeAdd(currentTime, duration)
+            } catch {
+                print("⚠️ Error processing segment \(segmentURL.lastPathComponent): \(error)")
+            }
+        }
+        
+        if FileManager.default.fileExists(atPath: baseURL.path) {
+            try? FileManager.default.removeItem(at: baseURL)
+        }
+        
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            print("❌ Failed to create export session")
+            return segmentURLs.last
+        }
+        
+        exportSession.outputURL = baseURL
+        exportSession.outputFileType = .mp4
+        
+        await exportSession.export()
+        
+        if exportSession.status == .completed {
+            print("✅ Interim merge complete: \(baseURL.lastPathComponent)")
+            return baseURL
+        } else {
+            print("❌ Interim merge failed: \(exportSession.error?.localizedDescription ?? "unknown")")
+            return segmentURLs.last
+        }
+    }
+    
+    func resumeRecording() async throws {
         guard state == .paused else { return }
+        
+        currentSegmentIndex += 1
+        let segmentURL = createSegmentURL(index: currentSegmentIndex)
+        outputURL = segmentURL
+        
+        try setupAssetWriter(outputURL: segmentURL, width: displayWidth, height: displayHeight)
+        
+        startTime = nil
+        lastFrameTime = nil
         
         state = .recording
         
@@ -127,12 +242,54 @@ class ScreenRecorder: NSObject {
             self.delegate?.screenRecorderDidResumeRecording()
         }
         
-        print("▶️ Screen recording resumed")
+        print("▶️ Screen recording resumed - new segment: \(segmentURL.lastPathComponent)")
+    }
+    
+    private func createSegmentURL(index: Int) -> URL {
+        guard let baseURL = baseOutputURL else {
+            return URL(fileURLWithPath: "/tmp/recording_segment_\(index).mp4")
+        }
+        let baseName = baseURL.deletingPathExtension().lastPathComponent
+        let directory = baseURL.deletingLastPathComponent()
+        return directory.appendingPathComponent("\(baseName)_segment\(index).mp4")
+    }
+    
+    private func finishCurrentSegment() async {
+        guard let writer = assetWriter else { return }
+        
+        guard writer.status == .writing else {
+            print("⚠️ Asset writer was not writing")
+            assetWriter = nil
+            videoInput = nil
+            audioInput = nil
+            pixelBufferAdaptor = nil
+            return
+        }
+        
+        videoInput?.markAsFinished()
+        audioInput?.markAsFinished()
+        
+        await withCheckedContinuation { continuation in
+            writer.finishWriting {
+                if writer.status == .completed {
+                    print("✅ Segment written successfully")
+                } else if let error = writer.error {
+                    print("❌ Failed to write segment: \(error)")
+                }
+                continuation.resume()
+            }
+        }
+        
+        assetWriter = nil
+        videoInput = nil
+        audioInput = nil
+        pixelBufferAdaptor = nil
     }
     
     func stopRecording() async {
         guard state != .idle else { return }
         
+        let wasRecording = state == .recording
         state = .idle
         
         do {
@@ -145,15 +302,110 @@ class ScreenRecorder: NSObject {
         
         stopMicrophoneCapture()
         
-        await finishWriting()
+        if wasRecording {
+            await finishCurrentSegment()
+            if let url = outputURL {
+                segmentURLs.append(url)
+            }
+        }
         
-        let finalURL = outputURL
+        var finalURL: URL? = nil
+        
+        if segmentURLs.count == 1 {
+            finalURL = segmentURLs.first
+            if let base = baseOutputURL, let segment = finalURL, segment != base {
+                do {
+                    if FileManager.default.fileExists(atPath: base.path) {
+                        try FileManager.default.removeItem(at: base)
+                    }
+                    try FileManager.default.moveItem(at: segment, to: base)
+                    finalURL = base
+                } catch {
+                    print("⚠️ Could not rename segment to final: \(error)")
+                }
+            }
+        } else if segmentURLs.count > 1 {
+            finalURL = await mergeSegments()
+        }
         
         DispatchQueue.main.async {
             self.delegate?.screenRecorderDidStopRecording(outputURL: finalURL)
         }
         
-        print("⏹ Screen recording stopped (captured \(frameCount) frames)")
+        print("⏹ Screen recording stopped (captured \(frameCount) frames, \(segmentURLs.count) segments)")
+    }
+    
+    private func mergeSegments() async -> URL? {
+        guard let baseURL = baseOutputURL else { return segmentURLs.first }
+        
+        print("🎬 Merging \(segmentURLs.count) video segments...")
+        
+        let composition = AVMutableComposition()
+        
+        guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            print("❌ Failed to create video track")
+            return segmentURLs.first
+        }
+        
+        let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        var currentTime = CMTime.zero
+        
+        for segmentURL in segmentURLs {
+            let asset = AVAsset(url: segmentURL)
+            
+            do {
+                let duration = try await asset.load(.duration)
+                let videoTracks = try await asset.loadTracks(withMediaType: .video)
+                let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+                
+                if let sourceVideoTrack = videoTracks.first {
+                    try videoTrack.insertTimeRange(
+                        CMTimeRange(start: .zero, duration: duration),
+                        of: sourceVideoTrack,
+                        at: currentTime
+                    )
+                }
+                
+                if let sourceAudioTrack = audioTracks.first, let audioTrack = audioTrack {
+                    try audioTrack.insertTimeRange(
+                        CMTimeRange(start: .zero, duration: duration),
+                        of: sourceAudioTrack,
+                        at: currentTime
+                    )
+                }
+                
+                currentTime = CMTimeAdd(currentTime, duration)
+            } catch {
+                print("⚠️ Error processing segment \(segmentURL.lastPathComponent): \(error)")
+            }
+        }
+        
+        let exportURL = baseURL
+        if FileManager.default.fileExists(atPath: exportURL.path) {
+            try? FileManager.default.removeItem(at: exportURL)
+        }
+        
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            print("❌ Failed to create export session")
+            return segmentURLs.first
+        }
+        
+        exportSession.outputURL = exportURL
+        exportSession.outputFileType = .mp4
+        
+        await exportSession.export()
+        
+        if exportSession.status == .completed {
+            print("✅ Segments merged successfully")
+            for segmentURL in segmentURLs where segmentURL != baseURL {
+                try? FileManager.default.removeItem(at: segmentURL)
+            }
+            return exportURL
+        } else {
+            print("❌ Failed to merge segments: \(exportSession.error?.localizedDescription ?? "unknown")")
+            return segmentURLs.first
+        }
     }
     
     private func setupAssetWriter(outputURL: URL, width: Int, height: Int) throws {

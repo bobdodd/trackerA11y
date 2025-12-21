@@ -12,10 +12,10 @@ let recorder: EventRecorder | null = null;
 
 // Register signal handlers IMMEDIATELY at module load time
 // This ensures they're in place before Swift sends any signals
-process.on('SIGUSR1', () => {
+process.on('SIGUSR1', async () => {
   console.log('\n⏸️ Received SIGUSR1 - Pausing recording...');
   if (recorder) {
-    recorder.pauseRecording();
+    await recorder.pauseRecording();
   } else {
     console.log('⚠️ Recorder not initialized yet');
   }
