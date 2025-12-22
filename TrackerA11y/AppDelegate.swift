@@ -126,6 +126,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         sessionMenu.addItem(withTitle: "Start Annotation...", action: #selector(startAnnotation), keyEquivalent: "d")
         
         sessionMenu.addItem(NSMenuItem.separator())
+        
+        // VoiceOver menu item
+        sessionMenu.addItem(withTitle: "Toggle VoiceOver", action: #selector(toggleVoiceOver), keyEquivalent: "v")
+        
+        sessionMenu.addItem(NSMenuItem.separator())
         sessionMenu.addItem(withTitle: "New Session", action: #selector(newSession), keyEquivalent: "n")
         sessionMenu.addItem(withTitle: "Export Session...", action: #selector(exportSession), keyEquivalent: "e")
         
@@ -223,6 +228,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             statusMenu.addItem(NSMenuItem.separator())
             addScreenshotSubmenu(to: statusMenu)
             statusMenu.addItem(withTitle: "🎨 Annotate Screen...", action: #selector(statusBarStartAnnotation), keyEquivalent: "")
+            addVoiceOverSubmenu(to: statusMenu)
             
         case .paused:
             statusMenu.addItem(withTitle: "▶️ Resume Recording", action: #selector(statusBarResumeRecording), keyEquivalent: "r")
@@ -230,6 +236,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             statusMenu.addItem(NSMenuItem.separator())
             addScreenshotSubmenu(to: statusMenu)
             statusMenu.addItem(withTitle: "🎨 Annotate Screen...", action: #selector(statusBarStartAnnotation), keyEquivalent: "")
+            addVoiceOverSubmenu(to: statusMenu)
         }
         
         statusMenu.addItem(NSMenuItem.separator())
@@ -340,6 +347,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func statusBarStartAnnotation() {
         print("🎨 Status bar: Start annotation requested")
         mainViewController?.startAnnotation()
+    }
+    
+    // MARK: - VoiceOver Actions
+    
+    @objc private func toggleVoiceOver() {
+        mainViewController?.toggleVoiceOver()
+    }
+    
+    @objc private func statusBarToggleVoiceOver() {
+        mainViewController?.toggleVoiceOver()
+    }
+    
+    private func addVoiceOverSubmenu(to menu: NSMenu) {
+        let isEnabled = mainViewController?.isVoiceOverEnabled() == true
+        let toggleTitle = isEnabled ? "🔊 Turn Off VoiceOver" : "🔇 Turn On VoiceOver"
+        menu.addItem(withTitle: toggleTitle, action: #selector(statusBarToggleVoiceOver), keyEquivalent: "")
     }
     
     private func addScreenshotSubmenu(to menu: NSMenu) {

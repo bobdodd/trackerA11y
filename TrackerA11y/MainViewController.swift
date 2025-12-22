@@ -37,6 +37,12 @@ class MainViewController: NSViewController {
     private var annotationToolbar: AnnotationToolbar?
     private var isAnnotating = false
     
+    // VoiceOver integration
+    private var voiceOverIntegration: VoiceOverIntegration?
+    private var isVoiceOverMonitoring = false
+    private var isCapturingVoiceOverAudio = false
+    private var wasVoiceOverEnabledBeforePause = false
+    
     // Keep references to prevent deallocation
     private var sessionWindows: [NSWindow] = []
     
@@ -157,6 +163,7 @@ class MainViewController: NSViewController {
         ✅ Window and application focus events
         ✅ Real-time event correlation
         ✅ Session-based data collection
+        ✅ VoiceOver announcement tracking
         """
         
         let featuresLabel = NSTextField(labelWithString: featuresText)
@@ -208,7 +215,7 @@ class MainViewController: NSViewController {
             stopButton.widthAnchor.constraint(equalToConstant: 150),
             
             // Progress indicator
-            progressIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            progressIndicator.leadingAnchor.constraint(equalTo: stopButton.trailingAnchor, constant: spacing),
             progressIndicator.centerYAnchor.constraint(equalTo: startButton.centerYAnchor),
             
             // Features box
@@ -239,6 +246,12 @@ class MainViewController: NSViewController {
         trackerBridge?.initialize()
         checkDatabaseStatus()
         setupScreenRecorder()
+        setupVoiceOverIntegration()
+    }
+    
+    private func setupVoiceOverIntegration() {
+        voiceOverIntegration = VoiceOverIntegration()
+        voiceOverIntegration?.delegate = self
     }
     
     private func setupScreenRecorder() {
@@ -370,6 +383,11 @@ class MainViewController: NSViewController {
     @objc func stopRecording() {
         guard let tracker = trackerBridge else { return }
         
+        // Turn off VoiceOver if it's on
+        if isVoiceOverEnabled() {
+            turnOffVoiceOver()
+        }
+        
         isTracking = false
         isPaused = false
         tracker.stopTracking()
@@ -393,6 +411,12 @@ class MainViewController: NSViewController {
     
     @objc func pauseRecording() {
         guard let tracker = trackerBridge, isTracking else { return }
+        
+        // Remember VoiceOver state and turn it off during pause
+        wasVoiceOverEnabledBeforePause = isVoiceOverEnabled()
+        if wasVoiceOverEnabledBeforePause {
+            turnOffVoiceOver()
+        }
         
         isPaused = true
         tracker.pauseTracking()
@@ -422,6 +446,11 @@ class MainViewController: NSViewController {
             Task {
                 try? await screenRecorder?.resumeRecording()
             }
+        }
+        
+        // Restore VoiceOver if it was on before pause
+        if wasVoiceOverEnabledBeforePause {
+            turnOnVoiceOver()
         }
         
         updateUI()
@@ -557,6 +586,9 @@ class MainViewController: NSViewController {
         if isTracking {
             stopRecording()
         }
+        
+        voiceOverIntegration?.stopMonitoring()
+        voiceOverIntegration?.stopAudioCapture()
         
         // Use synchronous cleanup to ensure processes terminate before app exits
         print("🔧 DEBUG: About to call trackerBridge?.cleanupSynchronously()")
@@ -1270,6 +1302,139 @@ class MainViewController: NSViewController {
         } catch {
             print("❌ Failed to save annotation event: \(error)")
         }
+    }
+    
+    // MARK: - VoiceOver Feature
+    
+    func toggleVoiceOver() {
+        if isVoiceOverEnabled() {
+            turnOffVoiceOver()
+        } else {
+            turnOnVoiceOver()
+        }
+    }
+    
+    func turnOnVoiceOver() {
+        guard !isVoiceOverEnabled() else { return }
+        voiceOverIntegration?.toggleVoiceOver()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.startVoiceOverMonitoring()
+            self.startVoiceOverAudioCapture()
+        }
+    }
+    
+    func turnOffVoiceOver() {
+        guard isVoiceOverEnabled() else { return }
+        
+        stopVoiceOverMonitoring()
+        stopVoiceOverAudioCapture()
+        voiceOverIntegration?.toggleVoiceOver()
+    }
+    
+    private func startVoiceOverMonitoring() {
+        guard !isVoiceOverMonitoring else { return }
+        isVoiceOverMonitoring = true
+        voiceOverIntegration?.startMonitoring()
+    }
+    
+    private func stopVoiceOverMonitoring() {
+        guard isVoiceOverMonitoring else { return }
+        isVoiceOverMonitoring = false
+        voiceOverIntegration?.stopMonitoring()
+    }
+    
+    func isVoiceOverMonitoringActive() -> Bool {
+        return isVoiceOverMonitoring
+    }
+    
+    func isVoiceOverEnabled() -> Bool {
+        return voiceOverIntegration?.isVoiceOverEnabled ?? false
+    }
+    
+    private func startVoiceOverAudioCapture() {
+        guard isTracking, let sessionId = currentSession else { return }
+        guard !isCapturingVoiceOverAudio else { return }
+        
+        let audioDir = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+        let audioPath = "\(audioDir)/voiceover_audio.caf"
+        
+        isCapturingVoiceOverAudio = true
+        voiceOverIntegration?.startAudioCapture(outputURL: URL(fileURLWithPath: audioPath))
+    }
+    
+    private func stopVoiceOverAudioCapture() {
+        guard isCapturingVoiceOverAudio else { return }
+        isCapturingVoiceOverAudio = false
+        voiceOverIntegration?.stopAudioCapture()
+    }
+    
+    func isVoiceOverAudioCaptureActive() -> Bool {
+        return isCapturingVoiceOverAudio
+    }
+    
+    private func saveVoiceOverEvent(text: String, element: [String: Any]?, timestamp: TimeInterval, eventType: String) {
+        guard let sessionId = currentSession else { return }
+        
+        let eventsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/voiceover_events.json"
+        
+        var events: [[String: Any]] = []
+        
+        if FileManager.default.fileExists(atPath: eventsPath) {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: eventsPath))
+                if let existing = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    events = existing
+                }
+            } catch {
+                print("⚠️ Failed to load existing voiceover_events.json: \(error)")
+            }
+        }
+        
+        var eventData: [String: Any] = [
+            "text": text,
+            "eventType": eventType
+        ]
+        
+        if let element = element {
+            eventData["element"] = element
+        }
+        
+        let voEvent: [String: Any] = [
+            "type": "VoiceOverSpeech",
+            "timestamp": timestamp,
+            "source": "voiceover",
+            "data": eventData
+        ]
+        
+        events.append(voEvent)
+        
+        do {
+            let updatedData = try JSONSerialization.data(withJSONObject: events, options: .prettyPrinted)
+            try updatedData.write(to: URL(fileURLWithPath: eventsPath))
+            eventCount += 1
+            updateUI()
+        } catch {
+        }
+    }
+}
+
+// MARK: - VoiceOverIntegrationDelegate
+extension MainViewController: VoiceOverIntegrationDelegate {
+    func voiceOverDidAnnounce(text: String, element: [String: Any]?, timestamp: TimeInterval) {
+        if isTracking && isVoiceOverMonitoring {
+            saveVoiceOverEvent(text: text, element: element, timestamp: timestamp, eventType: "announcement")
+        }
+    }
+    
+    func voiceOverFocusDidChange(element: [String: Any], timestamp: TimeInterval) {
+        if isTracking && isVoiceOverMonitoring {
+            let description = element["description"] as? String ?? element["title"] as? String ?? "Focus changed"
+            saveVoiceOverEvent(text: description, element: element, timestamp: timestamp, eventType: "focus")
+        }
+    }
+    
+    func voiceOverStateDidChange(enabled: Bool) {
     }
 }
 

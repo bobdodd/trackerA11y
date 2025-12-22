@@ -124,6 +124,12 @@ class SessionDetailViewController: NSViewController {
     private var pendingNoteRTFData: Data?
     private var pendingMarkerEventIndex: Int?
     
+    // VoiceOver audio track
+    private var voiceOverAudioPlayer: AVAudioPlayer?
+    private var voiceOverVolumeSlider: NSSlider?
+    private var voiceOverToggleButton: NSButton?
+    private var isVoiceOverAudioEnabled: Bool = true
+    
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
         self.sessionData = sessionData
@@ -142,6 +148,8 @@ class SessionDetailViewController: NSViewController {
             player.removeTimeObserver(observer)
         }
         videoPlayer?.removeObserver(self, forKeyPath: "rate")
+        voiceOverAudioPlayer?.stop()
+        voiceOverAudioPlayer = nil
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -2991,6 +2999,43 @@ class SessionDetailViewController: NSViewController {
         self.videoPlayerView = playerView
         container.addSubview(playerView)
         
+        // VoiceOver audio controls bar
+        let audioControlsBar = NSView()
+        audioControlsBar.wantsLayer = true
+        audioControlsBar.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
+        audioControlsBar.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(audioControlsBar)
+        
+        let voLabel = NSTextField(labelWithString: "🔊 VoiceOver Audio:")
+        voLabel.font = NSFont.systemFont(ofSize: 11)
+        voLabel.textColor = .white
+        voLabel.isBordered = false
+        voLabel.isEditable = false
+        voLabel.backgroundColor = .clear
+        voLabel.translatesAutoresizingMaskIntoConstraints = false
+        audioControlsBar.addSubview(voLabel)
+        
+        let voToggle = NSButton(checkboxWithTitle: "", target: self, action: #selector(toggleVoiceOverAudio(_:)))
+        voToggle.state = .on
+        voToggle.translatesAutoresizingMaskIntoConstraints = false
+        self.voiceOverToggleButton = voToggle
+        audioControlsBar.addSubview(voToggle)
+        
+        let volumeSlider = NSSlider(value: 1.0, minValue: 0.0, maxValue: 1.0, target: self, action: #selector(voiceOverVolumeChanged(_:)))
+        volumeSlider.translatesAutoresizingMaskIntoConstraints = false
+        volumeSlider.controlSize = .small
+        self.voiceOverVolumeSlider = volumeSlider
+        audioControlsBar.addSubview(volumeSlider)
+        
+        let volumeIcon = NSTextField(labelWithString: "🔈")
+        volumeIcon.font = NSFont.systemFont(ofSize: 10)
+        volumeIcon.textColor = .white
+        volumeIcon.isBordered = false
+        volumeIcon.isEditable = false
+        volumeIcon.backgroundColor = .clear
+        volumeIcon.translatesAutoresizingMaskIntoConstraints = false
+        audioControlsBar.addSubview(volumeIcon)
+        
         // "No video" placeholder label
         let noVideoLabel = NSTextField(labelWithString: "No screen recording available for this session")
         noVideoLabel.font = NSFont.systemFont(ofSize: 14)
@@ -3004,10 +3049,28 @@ class SessionDetailViewController: NSViewController {
             playerView.topAnchor.constraint(equalTo: container.topAnchor),
             playerView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             playerView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            playerView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            playerView.bottomAnchor.constraint(equalTo: audioControlsBar.topAnchor),
+            
+            audioControlsBar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            audioControlsBar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            audioControlsBar.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            audioControlsBar.heightAnchor.constraint(equalToConstant: 28),
+            
+            voLabel.leadingAnchor.constraint(equalTo: audioControlsBar.leadingAnchor, constant: 8),
+            voLabel.centerYAnchor.constraint(equalTo: audioControlsBar.centerYAnchor),
+            
+            voToggle.leadingAnchor.constraint(equalTo: voLabel.trailingAnchor, constant: 4),
+            voToggle.centerYAnchor.constraint(equalTo: audioControlsBar.centerYAnchor),
+            
+            volumeIcon.leadingAnchor.constraint(equalTo: voToggle.trailingAnchor, constant: 12),
+            volumeIcon.centerYAnchor.constraint(equalTo: audioControlsBar.centerYAnchor),
+            
+            volumeSlider.leadingAnchor.constraint(equalTo: volumeIcon.trailingAnchor, constant: 4),
+            volumeSlider.centerYAnchor.constraint(equalTo: audioControlsBar.centerYAnchor),
+            volumeSlider.widthAnchor.constraint(equalToConstant: 80),
             
             noVideoLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            noVideoLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+            noVideoLabel.centerYAnchor.constraint(equalTo: playerView.centerYAnchor)
         ])
         
         return container
@@ -3049,7 +3112,68 @@ class SessionDetailViewController: NSViewController {
         // Set initial playhead position at video start (time 0)
         timelineView?.setPlayheadTimestamp(videoStartTimestamp)
         
+        // Load VoiceOver audio track if available
+        loadVoiceOverAudioTrack()
+        
         print("📹 Screen recording loaded successfully")
+    }
+    
+    private func loadVoiceOverAudioTrack() {
+        let audioPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/voiceover_audio.caf"
+        let audioURL = URL(fileURLWithPath: audioPath)
+        
+        guard FileManager.default.fileExists(atPath: audioPath) else {
+            print("🔊 No VoiceOver audio track found at: \(audioPath)")
+            voiceOverToggleButton?.isEnabled = false
+            voiceOverVolumeSlider?.isEnabled = false
+            return
+        }
+        
+        do {
+            voiceOverAudioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+            voiceOverAudioPlayer?.prepareToPlay()
+            voiceOverAudioPlayer?.volume = Float(voiceOverVolumeSlider?.doubleValue ?? 1.0)
+            voiceOverToggleButton?.isEnabled = true
+            voiceOverVolumeSlider?.isEnabled = true
+            print("🔊 VoiceOver audio track loaded: \(audioPath)")
+        } catch {
+            print("❌ Failed to load VoiceOver audio track: \(error)")
+            voiceOverToggleButton?.isEnabled = false
+            voiceOverVolumeSlider?.isEnabled = false
+        }
+    }
+    
+    @objc private func toggleVoiceOverAudio(_ sender: NSButton) {
+        isVoiceOverAudioEnabled = sender.state == .on
+        
+        if isVoiceOverAudioEnabled {
+            if isVideoPlaying {
+                syncVoiceOverAudioWithVideo()
+            }
+        } else {
+            voiceOverAudioPlayer?.pause()
+        }
+        
+        print("🔊 VoiceOver audio \(isVoiceOverAudioEnabled ? "enabled" : "disabled")")
+    }
+    
+    @objc private func voiceOverVolumeChanged(_ sender: NSSlider) {
+        voiceOverAudioPlayer?.volume = Float(sender.doubleValue)
+    }
+    
+    private func syncVoiceOverAudioWithVideo() {
+        guard let videoPlayer = videoPlayer,
+              let voiceOverPlayer = voiceOverAudioPlayer,
+              isVoiceOverAudioEnabled else { return }
+        
+        let videoTime = videoPlayer.currentTime().seconds
+        
+        if videoTime >= 0 && videoTime < voiceOverPlayer.duration {
+            voiceOverPlayer.currentTime = videoTime
+            if isVideoPlaying {
+                voiceOverPlayer.play()
+            }
+        }
     }
     
     private func loadRecordingStartTimestamp() {
@@ -3076,6 +3200,13 @@ class SessionDetailViewController: NSViewController {
             if isVideoPlaying && !wasPlaying {
                 isUserSelectedEvent = false
                 lastAutoShownEventTimestamp = 0
+                // Sync and play VoiceOver audio
+                if isVoiceOverAudioEnabled {
+                    syncVoiceOverAudioWithVideo()
+                }
+            } else if !isVideoPlaying && wasPlaying {
+                // Video paused, pause VoiceOver audio too
+                voiceOverAudioPlayer?.pause()
             }
         }
     }
@@ -3255,6 +3386,13 @@ class SessionDetailViewController: NSViewController {
         
         let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        
+        // Sync VoiceOver audio position
+        if let voiceOverPlayer = voiceOverAudioPlayer, isVoiceOverAudioEnabled {
+            if videoSeconds >= 0 && videoSeconds < voiceOverPlayer.duration {
+                voiceOverPlayer.currentTime = videoSeconds
+            }
+        }
     }
     
     private func videoTimeToEventTimestamp(_ videoSeconds: Double) -> Double {
@@ -3755,7 +3893,8 @@ class SessionDetailViewController: NSViewController {
             ("Interaction", .systemGreen),
             ("Focus", .systemBlue),
             ("System", .systemOrange),
-            ("Marker", .systemRed)
+            ("Marker", .systemRed),
+            ("VoiceOver", .systemCyan)
         ]
         
         for (name, color) in sources {
@@ -4033,6 +4172,20 @@ class SessionDetailViewController: NSViewController {
                         }
                     } catch {
                         print("⚠️ Failed to load screenshots.json: \(error)")
+                    }
+                }
+                
+                // Load voiceover_events.json and merge with events
+                let voiceOverPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(self.sessionId)/voiceover_events.json"
+                if FileManager.default.fileExists(atPath: voiceOverPath) {
+                    do {
+                        let voiceOverData = try Data(contentsOf: URL(fileURLWithPath: voiceOverPath))
+                        if let voiceOverEvents = try JSONSerialization.jsonObject(with: voiceOverData) as? [[String: Any]] {
+                            eventsArray.append(contentsOf: voiceOverEvents)
+                            print("✅ Loaded \(voiceOverEvents.count) VoiceOver events from voiceover_events.json")
+                        }
+                    } catch {
+                        print("⚠️ Failed to load voiceover_events.json: \(error)")
                     }
                 }
                 
@@ -7478,7 +7631,8 @@ class EnhancedTimelineView: NSView {
         let sourceColors: [String: NSColor] = [
             "interaction": .systemGreen,
             "focus": .systemBlue,
-            "system": .systemOrange
+            "system": .systemOrange,
+            "voiceover": .systemCyan
         ]
         
         let typeColors: [String: NSColor] = [
@@ -7503,7 +7657,8 @@ class EnhancedTimelineView: NSView {
             "error": .systemRed,
             "input": .systemPurple,
             "change": .systemPurple,
-            "screenshot": .systemPink
+            "screenshot": .systemPink,
+            "VoiceOverSpeech": .systemCyan
         ]
         
         let markerColor: NSColor = .systemRed
@@ -7526,6 +7681,7 @@ class EnhancedTimelineView: NSView {
             let eventType = event["type"] as? String ?? "unknown"
             let isMarkerEvent = eventType == "marker"
             let isScreenshotEvent = eventType == "screenshot"
+            let isVoiceOverEvent = eventType == "VoiceOverSpeech" || source == "voiceover"
             
             if let existingX = drawnPositions[timestamp] {
                 baseX = existingX + barWidth + spacing
@@ -7540,6 +7696,9 @@ class EnhancedTimelineView: NSView {
                 barHeight = markerBarHeight
             } else if isScreenshotEvent {
                 eventColor = .systemPink
+                barHeight = markerBarHeight
+            } else if isVoiceOverEvent {
+                eventColor = .systemCyan
                 barHeight = markerBarHeight
             } else if let typeColor = typeColors[eventType] {
                 eventColor = typeColor
@@ -7607,6 +7766,25 @@ class EnhancedTimelineView: NSView {
                 NSColor.systemPink.withAlphaComponent(0.9).setFill()
                 NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
                 screenshotName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
+            }
+            
+            if isVoiceOverEvent {
+                let voText = (event["data"] as? [String: Any])?["text"] as? String ?? "VoiceOver"
+                let displayText = voText.count > 20 ? String(voText.prefix(20)) + "..." : voText
+                let labelAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: max(9, 10 * zoomLevel / 2), weight: .medium),
+                    .foregroundColor: NSColor.white
+                ]
+                let labelSize = displayText.size(withAttributes: labelAttrs)
+                let labelRect = NSRect(
+                    x: baseX - labelSize.width / 2 - 3,
+                    y: barRect.maxY + 4,
+                    width: labelSize.width + 6,
+                    height: labelSize.height + 2
+                )
+                NSColor.systemCyan.withAlphaComponent(0.9).setFill()
+                NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
+                displayText.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
             }
             
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)
