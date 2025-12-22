@@ -122,6 +122,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         screenshotMenuItem.submenu = screenshotMenu
         sessionMenu.addItem(screenshotMenuItem)
         
+        // Annotation menu item
+        sessionMenu.addItem(withTitle: "Start Annotation...", action: #selector(startAnnotation), keyEquivalent: "d")
+        
         sessionMenu.addItem(NSMenuItem.separator())
         sessionMenu.addItem(withTitle: "New Session", action: #selector(newSession), keyEquivalent: "n")
         sessionMenu.addItem(withTitle: "Export Session...", action: #selector(exportSession), keyEquivalent: "e")
@@ -219,12 +222,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
             statusMenu.addItem(NSMenuItem.separator())
             addScreenshotSubmenu(to: statusMenu)
+            statusMenu.addItem(withTitle: "🎨 Annotate Screen...", action: #selector(statusBarStartAnnotation), keyEquivalent: "")
             
         case .paused:
             statusMenu.addItem(withTitle: "▶️ Resume Recording", action: #selector(statusBarResumeRecording), keyEquivalent: "r")
             statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
             statusMenu.addItem(NSMenuItem.separator())
             addScreenshotSubmenu(to: statusMenu)
+            statusMenu.addItem(withTitle: "🎨 Annotate Screen...", action: #selector(statusBarStartAnnotation), keyEquivalent: "")
         }
         
         statusMenu.addItem(NSMenuItem.separator())
@@ -323,6 +328,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func takeBrowserScreenshot() {
         print("📸 Menu: Browser full page screenshot requested")
         mainViewController?.takeScreenshot(type: .browserFullPage)
+    }
+    
+    // MARK: - Annotation Actions
+    
+    @objc private func startAnnotation() {
+        print("🎨 Menu: Start annotation requested")
+        mainViewController?.startAnnotation()
+    }
+    
+    @objc private func statusBarStartAnnotation() {
+        print("🎨 Status bar: Start annotation requested")
+        mainViewController?.startAnnotation()
     }
     
     private func addScreenshotSubmenu(to menu: NSMenu) {

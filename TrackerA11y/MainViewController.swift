@@ -31,6 +31,12 @@ class MainViewController: NSViewController {
     private var screenRecorder: ScreenRecorder?
     private var currentVideoURL: URL?
     
+    // Annotation overlay
+    private var annotationWindow: AnnotationOverlayWindow?
+    private var annotationDrawingView: AnnotationDrawingView?
+    private var annotationToolbar: AnnotationToolbar?
+    private var isAnnotating = false
+    
     // Keep references to prevent deallocation
     private var sessionWindows: [NSWindow] = []
     
@@ -1135,6 +1141,146 @@ class MainViewController: NSViewController {
         } catch {
             print("❌ Failed to save screenshot event: \(error)")
         }
+    }
+    
+    // MARK: - Annotation Feature
+    
+    func startAnnotation() {
+        guard isTracking, let _ = currentSession else {
+            showAlert(title: "No Active Recording", message: "Please start a recording before annotating.")
+            return
+        }
+        
+        if isAnnotating {
+            return
+        }
+        
+        isAnnotating = true
+        
+        annotationWindow = AnnotationOverlayWindow()
+        
+        let drawingView = AnnotationDrawingView(frame: annotationWindow!.contentView!.bounds)
+        drawingView.autoresizingMask = [.width, .height]
+        drawingView.delegate = self
+        annotationWindow!.contentView?.addSubview(drawingView)
+        annotationDrawingView = drawingView
+        
+        annotationToolbar = AnnotationToolbar()
+        annotationToolbar?.drawingView = drawingView
+        annotationToolbar?.onClose = { [weak self] in
+            self?.stopAnnotation()
+        }
+        
+        annotationWindow?.makeKeyAndOrderFront(nil)
+        annotationToolbar?.makeKeyAndOrderFront(nil)
+        
+        print("🎨 Annotation mode started")
+    }
+    
+    func stopAnnotation() {
+        guard isAnnotating, let sessionId = currentSession else { return }
+        
+        let paths = annotationDrawingView?.getAnnotationPaths() ?? []
+        let startTime = annotationDrawingView?.getAnnotationStartTime() ?? 0
+        let snapshot = annotationDrawingView?.captureSnapshot()
+        
+        annotationWindow?.orderOut(nil)
+        annotationToolbar?.orderOut(nil)
+        annotationWindow = nil
+        annotationToolbar = nil
+        annotationDrawingView = nil
+        isAnnotating = false
+        
+        if !paths.isEmpty {
+            saveAnnotationEvent(paths: paths, startTime: startTime, snapshot: snapshot, sessionId: sessionId)
+        }
+        
+        print("🎨 Annotation mode ended")
+    }
+    
+    private func saveAnnotationEvent(paths: [AnnotationPath], startTime: TimeInterval, snapshot: NSImage?, sessionId: String) {
+        let screenshotsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screenshots.json"
+        let annotationsDir = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/annotations"
+        
+        try? FileManager.default.createDirectory(atPath: annotationsDir, withIntermediateDirectories: true)
+        
+        var imagePath: String? = nil
+        if let snapshot = snapshot {
+            let filename = "annotation_\(Int(Date().timeIntervalSince1970 * 1000)).png"
+            let fullPath = "\(annotationsDir)/\(filename)"
+            
+            if let tiffData = snapshot.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                try? pngData.write(to: URL(fileURLWithPath: fullPath))
+                imagePath = "annotations/\(filename)"
+                print("🎨 Annotation snapshot saved: \(filename)")
+            }
+        }
+        
+        var screenshots: [[String: Any]] = []
+        
+        if FileManager.default.fileExists(atPath: screenshotsPath) {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: screenshotsPath))
+                if let existing = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    screenshots = existing
+                }
+            } catch {
+                print("⚠️ Failed to load existing screenshots.json: \(error)")
+            }
+        }
+        
+        let pathsData: [[String: Any]] = paths.map { path in
+            [
+                "tool": String(describing: path.tool),
+                "color": path.color.hexString,
+                "strokeWidth": path.strokeWidth,
+                "pointCount": path.points.count,
+                "timestamp": path.timestamp
+            ]
+        }
+        
+        var annotationEvent: [String: Any] = [
+            "type": "annotation",
+            "timestamp": startTime * 1000,
+            "source": "system",
+            "data": [
+                "pathCount": paths.count,
+                "paths": pathsData,
+                "duration": (Date().timeIntervalSince1970 * 1000) - startTime
+            ]
+        ]
+        
+        if let imagePath = imagePath {
+            var data = annotationEvent["data"] as? [String: Any] ?? [:]
+            data["imagePath"] = imagePath
+            annotationEvent["data"] = data
+        }
+        
+        screenshots.append(annotationEvent)
+        
+        do {
+            let updatedData = try JSONSerialization.data(withJSONObject: screenshots, options: .prettyPrinted)
+            try updatedData.write(to: URL(fileURLWithPath: screenshotsPath))
+            print("🎨 Annotation event saved with \(paths.count) paths")
+            
+            eventCount += 1
+            updateUI()
+        } catch {
+            print("❌ Failed to save annotation event: \(error)")
+        }
+    }
+}
+
+// MARK: - AnnotationOverlayDelegate
+extension MainViewController: AnnotationOverlayDelegate {
+    func annotationDidStart() {
+        print("🎨 User started drawing")
+    }
+    
+    func annotationDidEnd(paths: [AnnotationPath], snapshot: NSImage?) {
+        print("🎨 User finished drawing with \(paths.count) paths")
     }
 }
 
