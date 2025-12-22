@@ -6651,7 +6651,6 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         let isPauseEvent = eventType == "recording_paused"
         let isResumeEvent = eventType == "recording_resumed"
         
-        print("🔍 updateTimelineInfo - eventType: '\(eventType)', isMarker: \(isMarkerEvent), keys: \(event.keys)")
         
         if let stackView = timelineDetailStackView {
             stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -6742,6 +6741,71 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 
                 stackView.addArrangedSubview(screenshotCard)
                 screenshotCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            } else if eventType == "VoiceOverSpeech" || event["source"] as? String == "voiceover" {
+                timelineDetailLabel?.isHidden = true
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+                
+                let data = event["data"] as? [String: Any] ?? [:]
+                let spokenText = data["text"] as? String ?? "Unknown"
+                
+                let (speechCard, speechContent) = createDetailCard(title: "VoiceOver Announcement", icon: "🔊")
+                
+                let textBox = NSView()
+                textBox.wantsLayer = true
+                textBox.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.15).cgColor
+                textBox.layer?.cornerRadius = 8
+                textBox.translatesAutoresizingMaskIntoConstraints = false
+                
+                let speechLabel = NSTextField(wrappingLabelWithString: spokenText)
+                speechLabel.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+                speechLabel.textColor = .labelColor
+                speechLabel.translatesAutoresizingMaskIntoConstraints = false
+                speechLabel.maximumNumberOfLines = 0
+                speechLabel.lineBreakMode = .byWordWrapping
+                textBox.addSubview(speechLabel)
+                
+                NSLayoutConstraint.activate([
+                    speechLabel.topAnchor.constraint(equalTo: textBox.topAnchor, constant: 12),
+                    speechLabel.leadingAnchor.constraint(equalTo: textBox.leadingAnchor, constant: 12),
+                    speechLabel.trailingAnchor.constraint(equalTo: textBox.trailingAnchor, constant: -12),
+                    speechLabel.bottomAnchor.constraint(equalTo: textBox.bottomAnchor, constant: -12)
+                ])
+                
+                speechContent.addArrangedSubview(textBox)
+                
+                if let timestamp = event["timestamp"] as? Double {
+                    speechContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp), valueColor: .secondaryLabelColor))
+                }
+                
+                if let element = data["element"] as? [String: Any] {
+                    let (elementCard, elementContent) = createDetailCard(title: "Element", icon: "🎯")
+                    
+                    if let role = element["role"] as? String {
+                        let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                        elementContent.addArrangedSubview(createDetailRow(label: "Role", value: cleanRole, valueColor: .systemPurple))
+                    }
+                    if let roleDesc = element["roleDescription"] as? String, !roleDesc.isEmpty {
+                        elementContent.addArrangedSubview(createDetailRow(label: "Type", value: roleDesc))
+                    }
+                    if let title = element["title"] as? String, !title.isEmpty {
+                        elementContent.addArrangedSubview(createDetailRow(label: "Title", value: title))
+                    }
+                    if let value = element["value"] as? String, !value.isEmpty {
+                        elementContent.addArrangedSubview(createDetailRow(label: "Value", value: value))
+                    }
+                    if let enabled = element["enabled"] as? Bool {
+                        elementContent.addArrangedSubview(createDetailRow(label: "Enabled", value: enabled ? "Yes" : "No", valueColor: enabled ? .systemGreen : .systemRed))
+                    }
+                    if let focused = element["focused"] as? Bool {
+                        elementContent.addArrangedSubview(createDetailRow(label: "Focused", value: focused ? "Yes" : "No", valueColor: focused ? .systemGreen : .secondaryLabelColor))
+                    }
+                    
+                    stackView.addArrangedSubview(elementCard)
+                    elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+                }
+                
+                stackView.insertArrangedSubview(speechCard, at: 0)
+                speechCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
             } else if let data = event["data"] as? [String: Any] {
                 timelineDetailLabel?.isHidden = true
                 timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
@@ -7696,10 +7760,10 @@ class EnhancedTimelineView: NSView {
                 barHeight = markerBarHeight
             } else if isScreenshotEvent {
                 eventColor = .systemPink
-                barHeight = markerBarHeight
+                barHeight = normalHeight
             } else if isVoiceOverEvent {
                 eventColor = .systemCyan
-                barHeight = markerBarHeight
+                barHeight = normalHeight
             } else if let typeColor = typeColors[eventType] {
                 eventColor = typeColor
                 barHeight = normalHeight
@@ -7748,43 +7812,6 @@ class EnhancedTimelineView: NSView {
                 markerColor.withAlphaComponent(0.9).setFill()
                 NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
                 markerName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
-            }
-            
-            if isScreenshotEvent {
-                let screenshotName = (event["data"] as? [String: Any])?["name"] as? String ?? "Screenshot"
-                let labelAttrs: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: max(9, 10 * zoomLevel / 2), weight: .medium),
-                    .foregroundColor: NSColor.white
-                ]
-                let labelSize = screenshotName.size(withAttributes: labelAttrs)
-                let labelRect = NSRect(
-                    x: baseX - labelSize.width / 2 - 3,
-                    y: barRect.maxY + 4,
-                    width: labelSize.width + 6,
-                    height: labelSize.height + 2
-                )
-                NSColor.systemPink.withAlphaComponent(0.9).setFill()
-                NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
-                screenshotName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
-            }
-            
-            if isVoiceOverEvent {
-                let voText = (event["data"] as? [String: Any])?["text"] as? String ?? "VoiceOver"
-                let displayText = voText.count > 20 ? String(voText.prefix(20)) + "..." : voText
-                let labelAttrs: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: max(9, 10 * zoomLevel / 2), weight: .medium),
-                    .foregroundColor: NSColor.white
-                ]
-                let labelSize = displayText.size(withAttributes: labelAttrs)
-                let labelRect = NSRect(
-                    x: baseX - labelSize.width / 2 - 3,
-                    y: barRect.maxY + 4,
-                    width: labelSize.width + 6,
-                    height: labelSize.height + 2
-                )
-                NSColor.systemCyan.withAlphaComponent(0.9).setFill()
-                NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
-                displayText.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
             }
             
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)
