@@ -114,6 +114,9 @@ class SessionDetailViewController: NSViewController {
     private var isUserSelectedEvent: Bool = false  // True when user clicked an event (disables auto-update until playback)
     private var isVideoPlaying: Bool = false  // Track if video is actively playing
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []  // Pause gaps for video/event time conversion
+    private var screenshotWindows: [NSWindow] = []  // Keep references to screenshot viewer windows
+    private var screenshotPaths: [Int: String] = [:]  // Map button tag to screenshot path
+    private var scrollViewRefs: [Int: NSScrollView] = [:]  // Map button tag to scroll view
     
     private var currentNotePanel: NSPanel?
     private var currentNoteTextView: NSTextView?
@@ -4019,6 +4022,20 @@ class SessionDetailViewController: NSViewController {
                 
                 let eventsStartTime = sessionJson["startTime"] as? Double
                 
+                // Load screenshots.json and merge with events
+                let screenshotsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(self.sessionId)/screenshots.json"
+                if FileManager.default.fileExists(atPath: screenshotsPath) {
+                    do {
+                        let screenshotsData = try Data(contentsOf: URL(fileURLWithPath: screenshotsPath))
+                        if let screenshotEvents = try JSONSerialization.jsonObject(with: screenshotsData) as? [[String: Any]] {
+                            eventsArray.append(contentsOf: screenshotEvents)
+                            print("✅ Loaded \(screenshotEvents.count) screenshot events from screenshots.json")
+                        }
+                    } catch {
+                        print("⚠️ Failed to load screenshots.json: \(error)")
+                    }
+                }
+                
                 DispatchQueue.main.async {
                     self.events = eventsArray.sorted { 
                         ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0)
@@ -6534,6 +6551,44 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 }
                 stackView.addArrangedSubview(markerCard)
                 markerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            } else if eventType == "screenshot" {
+                timelineDetailLabel?.isHidden = true
+                timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+                
+                let (screenshotCard, screenshotContent) = createDetailCard(title: "Screenshot", icon: "📸")
+                
+                if let data = event["data"] as? [String: Any] {
+                    if let name = data["name"] as? String {
+                        screenshotContent.addArrangedSubview(createDetailRow(label: "Name", value: name, valueColor: .systemPink))
+                    }
+                    if let screenshotType = data["screenshotType"] as? String {
+                        let typeDisplay = screenshotType.replacingOccurrences(of: "ScreenshotType.", with: "")
+                            .replacingOccurrences(of: "fullScreen", with: "Full Screen")
+                            .replacingOccurrences(of: "region", with: "Selected Region")
+                            .replacingOccurrences(of: "browserFullPage", with: "Browser Full Page")
+                        screenshotContent.addArrangedSubview(createDetailRow(label: "Type", value: typeDisplay))
+                    }
+                    
+                    if let timestamp = event["timestamp"] as? Double {
+                        screenshotContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp)))
+                    }
+                    
+                    if let note = data["note"] as? String, !note.isEmpty {
+                        screenshotContent.addArrangedSubview(createDetailRow(label: "Note", value: note))
+                    }
+                    
+                    if let imagePath = data["imagePath"] as? String {
+                        let fullPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/\(imagePath)"
+                        if FileManager.default.fileExists(atPath: fullPath),
+                           let image = NSImage(contentsOfFile: fullPath) {
+                            let thumbnailView = createScreenshotThumbnail(image: image, fullPath: fullPath)
+                            screenshotContent.addArrangedSubview(thumbnailView)
+                        }
+                    }
+                }
+                
+                stackView.addArrangedSubview(screenshotCard)
+                screenshotCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
             } else if let data = event["data"] as? [String: Any] {
                 timelineDetailLabel?.isHidden = true
                 timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
@@ -6572,6 +6627,194 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             return attributedString.string
         }
         return nil
+    }
+    
+    private func createScreenshotThumbnail(image: NSImage, fullPath: String) -> NSView {
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        
+        let imageView = NSImageView()
+        imageView.image = image
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.wantsLayer = true
+        imageView.layer?.cornerRadius = 6
+        imageView.layer?.masksToBounds = true
+        imageView.layer?.borderWidth = 1
+        imageView.layer?.borderColor = NSColor.separatorColor.cgColor
+        container.addSubview(imageView)
+        
+        let buttonTag = screenshotPaths.count
+        screenshotPaths[buttonTag] = fullPath
+        
+        let openButton = NSButton(title: "Open Full Size", target: self, action: #selector(openScreenshotFullSize(_:)))
+        openButton.bezelStyle = .rounded
+        openButton.translatesAutoresizingMaskIntoConstraints = false
+        openButton.tag = buttonTag
+        container.addSubview(openButton)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            imageView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            imageView.heightAnchor.constraint(equalToConstant: 120),
+            
+            openButton.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            openButton.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            openButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
+        ])
+        
+        container.heightAnchor.constraint(equalToConstant: 160).isActive = true
+        
+        return container
+    }
+    
+    @objc private func openScreenshotFullSize(_ sender: NSButton) {
+        guard let fullPath = screenshotPaths[sender.tag],
+              let image = NSImage(contentsOfFile: fullPath) else {
+            print("❌ Could not find screenshot path for tag \(sender.tag)")
+            return
+        }
+        
+        let imageSize = image.size
+        let maxWidth: CGFloat = 1200
+        let maxHeight: CGFloat = 800
+        
+        var windowWidth = imageSize.width
+        var windowHeight = imageSize.height
+        
+        if windowWidth > maxWidth {
+            let scale = maxWidth / windowWidth
+            windowWidth = maxWidth
+            windowHeight *= scale
+        }
+        if windowHeight > maxHeight {
+            let scale = maxHeight / windowHeight
+            windowHeight = maxHeight
+            windowWidth *= scale
+        }
+        
+        windowWidth = max(400, windowWidth)
+        windowHeight = max(300, windowHeight)
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight + 40),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        let filename = (fullPath as NSString).lastPathComponent
+        window.title = "Screenshot: \(filename)"
+        window.center()
+        window.isReleasedWhenClosed = false
+        
+        let contentView = NSView()
+        contentView.wantsLayer = true
+        
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.allowsMagnification = true
+        scrollView.minMagnification = 0.1
+        scrollView.maxMagnification = 10.0
+        
+        let imageView = NSImageView()
+        imageView.image = image
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        imageView.frame = NSRect(x: 0, y: 0, width: imageSize.width, height: imageSize.height)
+        
+        scrollView.documentView = imageView
+        contentView.addSubview(scrollView)
+        
+        let toolbar = NSView()
+        toolbar.wantsLayer = true
+        toolbar.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(toolbar)
+        
+        let zoomLabel = NSTextField(labelWithString: "Zoom:")
+        zoomLabel.translatesAutoresizingMaskIntoConstraints = false
+        toolbar.addSubview(zoomLabel)
+        
+        let windowTag = screenshotWindows.count
+        scrollViewRefs[windowTag] = scrollView
+        screenshotPaths[windowTag + 10000] = fullPath  // Offset to avoid collision with thumbnail buttons
+        
+        let fitButton = NSButton(title: "Fit", target: self, action: #selector(screenshotFitToWindow(_:)))
+        fitButton.bezelStyle = .rounded
+        fitButton.translatesAutoresizingMaskIntoConstraints = false
+        fitButton.tag = windowTag
+        toolbar.addSubview(fitButton)
+        
+        let actualButton = NSButton(title: "100%", target: self, action: #selector(screenshotActualSize(_:)))
+        actualButton.bezelStyle = .rounded
+        actualButton.translatesAutoresizingMaskIntoConstraints = false
+        actualButton.tag = windowTag
+        toolbar.addSubview(actualButton)
+        
+        let saveButton = NSButton(title: "Save As...", target: self, action: #selector(screenshotSaveAs(_:)))
+        saveButton.bezelStyle = .rounded
+        saveButton.translatesAutoresizingMaskIntoConstraints = false
+        saveButton.tag = windowTag + 10000
+        toolbar.addSubview(saveButton)
+        
+        NSLayoutConstraint.activate([
+            toolbar.topAnchor.constraint(equalTo: contentView.topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            toolbar.heightAnchor.constraint(equalToConstant: 40),
+            
+            zoomLabel.leadingAnchor.constraint(equalTo: toolbar.leadingAnchor, constant: 12),
+            zoomLabel.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            
+            fitButton.leadingAnchor.constraint(equalTo: zoomLabel.trailingAnchor, constant: 8),
+            fitButton.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            
+            actualButton.leadingAnchor.constraint(equalTo: fitButton.trailingAnchor, constant: 8),
+            actualButton.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            
+            saveButton.trailingAnchor.constraint(equalTo: toolbar.trailingAnchor, constant: -12),
+            saveButton.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            
+            scrollView.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+        
+        window.contentView = contentView
+        screenshotWindows.append(window)
+        window.makeKeyAndOrderFront(nil)
+    }
+    
+    @objc private func screenshotFitToWindow(_ sender: NSButton) {
+        guard let scrollView = scrollViewRefs[sender.tag] else { return }
+        scrollView.magnification = scrollView.minMagnification
+    }
+    
+    @objc private func screenshotActualSize(_ sender: NSButton) {
+        guard let scrollView = scrollViewRefs[sender.tag] else { return }
+        scrollView.magnification = 1.0
+    }
+    
+    @objc private func screenshotSaveAs(_ sender: NSButton) {
+        guard let imagePath = screenshotPaths[sender.tag] else { return }
+        
+        let savePanel = NSSavePanel()
+        savePanel.nameFieldStringValue = (imagePath as NSString).lastPathComponent
+        savePanel.allowedContentTypes = [.png]
+        
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            do {
+                try FileManager.default.copyItem(atPath: imagePath, toPath: url.path)
+                print("📸 Screenshot saved to: \(url.path)")
+            } catch {
+                print("❌ Failed to save screenshot: \(error)")
+            }
+        }
     }
     
     private func showTimelineEventContextMenu(event: [String: Any], eventIndex: Int, nsEvent: NSEvent) {
@@ -7259,7 +7502,8 @@ class EnhancedTimelineView: NSView {
             "unload": .systemYellow,
             "error": .systemRed,
             "input": .systemPurple,
-            "change": .systemPurple
+            "change": .systemPurple,
+            "screenshot": .systemPink
         ]
         
         let markerColor: NSColor = .systemRed
@@ -7281,6 +7525,7 @@ class EnhancedTimelineView: NSView {
             let source = event["source"] as? String ?? "unknown"
             let eventType = event["type"] as? String ?? "unknown"
             let isMarkerEvent = eventType == "marker"
+            let isScreenshotEvent = eventType == "screenshot"
             
             if let existingX = drawnPositions[timestamp] {
                 baseX = existingX + barWidth + spacing
@@ -7292,6 +7537,9 @@ class EnhancedTimelineView: NSView {
             
             if isMarkerEvent {
                 eventColor = markerColor
+                barHeight = markerBarHeight
+            } else if isScreenshotEvent {
+                eventColor = .systemPink
                 barHeight = markerBarHeight
             } else if let typeColor = typeColors[eventType] {
                 eventColor = typeColor
@@ -7341,6 +7589,24 @@ class EnhancedTimelineView: NSView {
                 markerColor.withAlphaComponent(0.9).setFill()
                 NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
                 markerName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
+            }
+            
+            if isScreenshotEvent {
+                let screenshotName = (event["data"] as? [String: Any])?["name"] as? String ?? "Screenshot"
+                let labelAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: max(9, 10 * zoomLevel / 2), weight: .medium),
+                    .foregroundColor: NSColor.white
+                ]
+                let labelSize = screenshotName.size(withAttributes: labelAttrs)
+                let labelRect = NSRect(
+                    x: baseX - labelSize.width / 2 - 3,
+                    y: barRect.maxY + 4,
+                    width: labelSize.width + 6,
+                    height: labelSize.height + 2
+                )
+                NSColor.systemPink.withAlphaComponent(0.9).setFill()
+                NSBezierPath(roundedRect: labelRect, xRadius: 3, yRadius: 3).fill()
+                screenshotName.draw(at: NSPoint(x: labelRect.minX + 3, y: labelRect.minY + 1), withAttributes: labelAttrs)
             }
             
             let clickableRect = barRect.insetBy(dx: -4, dy: -4)

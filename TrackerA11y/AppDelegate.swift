@@ -109,6 +109,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         
         sessionMenu.addItem(withTitle: "Start Recording", action: #selector(startRecording), keyEquivalent: "r")
         sessionMenu.addItem(withTitle: "Stop Recording", action: #selector(stopRecording), keyEquivalent: "s")
+        sessionMenu.addItem(withTitle: "Pause Recording", action: #selector(pauseRecording), keyEquivalent: "p")
+        sessionMenu.addItem(withTitle: "Resume Recording", action: #selector(resumeRecording), keyEquivalent: "")
+        sessionMenu.addItem(NSMenuItem.separator())
+        
+        // Screenshot submenu
+        let screenshotMenuItem = NSMenuItem(title: "Take Screenshot", action: nil, keyEquivalent: "")
+        let screenshotMenu = NSMenu()
+        screenshotMenu.addItem(withTitle: "Full Screen", action: #selector(takeFullScreenshot), keyEquivalent: "1")
+        screenshotMenu.addItem(withTitle: "Select Region...", action: #selector(takeRegionScreenshot), keyEquivalent: "2")
+        screenshotMenu.addItem(withTitle: "Browser Full Page", action: #selector(takeBrowserScreenshot), keyEquivalent: "3")
+        screenshotMenuItem.submenu = screenshotMenu
+        sessionMenu.addItem(screenshotMenuItem)
+        
         sessionMenu.addItem(NSMenuItem.separator())
         sessionMenu.addItem(withTitle: "New Session", action: #selector(newSession), keyEquivalent: "n")
         sessionMenu.addItem(withTitle: "Export Session...", action: #selector(exportSession), keyEquivalent: "e")
@@ -204,10 +217,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case .recording:
             statusMenu.addItem(withTitle: "⏸ Pause Recording", action: #selector(statusBarPauseRecording), keyEquivalent: "p")
             statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
+            statusMenu.addItem(NSMenuItem.separator())
+            addScreenshotSubmenu(to: statusMenu)
             
         case .paused:
             statusMenu.addItem(withTitle: "▶️ Resume Recording", action: #selector(statusBarResumeRecording), keyEquivalent: "r")
             statusMenu.addItem(withTitle: "⏹ Stop Recording", action: #selector(statusBarStopRecording), keyEquivalent: "s")
+            statusMenu.addItem(NSMenuItem.separator())
+            addScreenshotSubmenu(to: statusMenu)
         }
         
         statusMenu.addItem(NSMenuItem.separator())
@@ -281,6 +298,56 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func quitApplication() {
         // Properly quit the application
         NSApplication.shared.terminate(nil)
+    }
+    
+    @objc private func pauseRecording() {
+        mainViewController?.pauseRecording()
+    }
+    
+    @objc private func resumeRecording() {
+        mainViewController?.resumeRecording()
+    }
+    
+    // MARK: - Screenshot Actions
+    
+    @objc private func takeFullScreenshot() {
+        print("📸 Menu: Full screen screenshot requested")
+        mainViewController?.takeScreenshot(type: .fullScreen)
+    }
+    
+    @objc private func takeRegionScreenshot() {
+        print("📸 Menu: Region screenshot requested")
+        mainViewController?.takeScreenshot(type: .region)
+    }
+    
+    @objc private func takeBrowserScreenshot() {
+        print("📸 Menu: Browser full page screenshot requested")
+        mainViewController?.takeScreenshot(type: .browserFullPage)
+    }
+    
+    private func addScreenshotSubmenu(to menu: NSMenu) {
+        let screenshotMenuItem = NSMenuItem(title: "📸 Take Screenshot", action: nil, keyEquivalent: "")
+        let screenshotMenu = NSMenu()
+        screenshotMenu.addItem(withTitle: "Full Screen", action: #selector(statusBarFullScreenshot), keyEquivalent: "")
+        screenshotMenu.addItem(withTitle: "Select Region...", action: #selector(statusBarRegionScreenshot), keyEquivalent: "")
+        screenshotMenu.addItem(withTitle: "Browser Full Page", action: #selector(statusBarBrowserScreenshot), keyEquivalent: "")
+        screenshotMenuItem.submenu = screenshotMenu
+        menu.addItem(screenshotMenuItem)
+    }
+    
+    @objc private func statusBarFullScreenshot() {
+        print("📸 Status bar: Full screen screenshot requested")
+        mainViewController?.takeScreenshot(type: .fullScreen)
+    }
+    
+    @objc private func statusBarRegionScreenshot() {
+        print("📸 Status bar: Region screenshot requested")
+        mainViewController?.takeScreenshot(type: .region)
+    }
+    
+    @objc private func statusBarBrowserScreenshot() {
+        print("📸 Status bar: Browser full page screenshot requested")
+        mainViewController?.takeScreenshot(type: .browserFullPage)
     }
     
     // MARK: - Status Bar Actions

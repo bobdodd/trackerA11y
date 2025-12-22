@@ -130,6 +130,7 @@ export class BrowserExtensionBridge extends EventEmitter {
   private clients: Set<WebSocket> = new Set();
   private isRunning = false;
   private lastEventSignature = '';
+  private pendingScreenshotRequest: { requestId: string; resolve: (dataUrl: string | null) => void } | null = null;
 
   async start(): Promise<void> {
     if (this.isRunning) return;
@@ -204,6 +205,59 @@ export class BrowserExtensionBridge extends EventEmitter {
             } catch (e) {
               res.writeHead(400);
               res.end('Invalid JSON');
+            }
+          });
+        } else if (req.method === 'GET' && req.url === '/screenshot-request') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          if (this.pendingScreenshotRequest) {
+            res.end(JSON.stringify({ 
+              requestScreenshot: true, 
+              requestId: this.pendingScreenshotRequest.requestId 
+            }));
+          } else {
+            res.end(JSON.stringify({ requestScreenshot: false }));
+          }
+        } else if (req.method === 'POST' && req.url === '/screenshot-data') {
+          let body = '';
+          req.on('data', chunk => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const data = JSON.parse(body);
+              if (this.pendingScreenshotRequest && data.requestId === this.pendingScreenshotRequest.requestId) {
+                console.log('📸 Received screenshot data from extension');
+                this.pendingScreenshotRequest.resolve(data.dataUrl);
+                this.pendingScreenshotRequest = null;
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true }));
+            } catch (e) {
+              res.writeHead(400);
+              res.end('Invalid JSON');
+            }
+          });
+        } else if (req.method === 'POST' && req.url === '/request-screenshot') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          const requestId = Date.now().toString();
+          console.log('📸 Screenshot requested, waiting for extension...');
+          
+          const timeoutPromise = new Promise<string | null>((resolve) => {
+            setTimeout(() => {
+              if (this.pendingScreenshotRequest?.requestId === requestId) {
+                this.pendingScreenshotRequest = null;
+                resolve(null);
+              }
+            }, 30000);
+          });
+
+          const screenshotPromise = new Promise<string | null>((resolve) => {
+            this.pendingScreenshotRequest = { requestId, resolve };
+          });
+
+          Promise.race([screenshotPromise, timeoutPromise]).then((dataUrl) => {
+            if (dataUrl) {
+              res.end(JSON.stringify({ success: true, dataUrl }));
+            } else {
+              res.end(JSON.stringify({ success: false, error: 'Timeout or no response' }));
             }
           });
         } else {

@@ -354,5 +354,90 @@
     sendFocusEvent(document.activeElement, 'initial');
   }
 
+  async function captureFullPage() {
+    const scrollWidth = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
+    const scrollHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const originalScrollX = window.scrollX;
+    const originalScrollY = window.scrollY;
+
+    console.log('TrackerA11y: Capturing full page', scrollWidth, 'x', scrollHeight);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = scrollWidth;
+    canvas.height = scrollHeight;
+    const ctx = canvas.getContext('2d');
+
+    const rows = Math.ceil(scrollHeight / viewportHeight);
+    const cols = Math.ceil(scrollWidth / viewportWidth);
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const x = col * viewportWidth;
+        const y = row * viewportHeight;
+
+        window.scrollTo(x, y);
+        await new Promise(r => setTimeout(r, 150));
+
+        const actualX = window.scrollX;
+        const actualY = window.scrollY;
+
+        try {
+          const response = await fetch('http://localhost:9877/capture-viewport', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'capture_viewport',
+              x: actualX,
+              y: actualY,
+              viewportWidth,
+              viewportHeight,
+              totalWidth: scrollWidth,
+              totalHeight: scrollHeight,
+              row,
+              col,
+              rows,
+              cols
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.imageData) {
+              const img = new Image();
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = 'data:image/png;base64,' + data.imageData;
+              });
+              ctx.drawImage(img, actualX, actualY);
+            }
+          }
+        } catch (e) {
+          console.log('TrackerA11y: viewport capture failed', e);
+        }
+      }
+    }
+
+    window.scrollTo(originalScrollX, originalScrollY);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+  
+  browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'capture_full_page') {
+      console.log('TrackerA11y: Received capture request');
+      captureFullPage().then(dataUrl => {
+        sendResponse({ success: true, dataUrl });
+      }).catch(err => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+    }
+  });
+
   console.log('TrackerA11y content script loaded on', window.location.href);
 })();

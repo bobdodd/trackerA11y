@@ -1,5 +1,12 @@
 import Cocoa
 import AVFoundation
+import PDFKit
+
+enum ScreenshotType {
+    case fullScreen
+    case region
+    case browserFullPage
+}
 
 class MainViewController: NSViewController {
     
@@ -556,6 +563,578 @@ class MainViewController: NSViewController {
         sessionWindows.removeAll()
         
         print("🧹 MainViewController cleaned up")
+    }
+    
+    // MARK: - Screenshot Feature
+    
+    func takeScreenshot(type: ScreenshotType) {
+        guard isTracking, let sessionId = currentSession else {
+            showAlert(title: "No Active Recording", message: "Please start a recording before taking a screenshot.")
+            return
+        }
+        
+        let wasRecording = !isPaused
+        
+        if wasRecording {
+            pauseRecording()
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.captureScreenshot(type: type, sessionId: sessionId) { [weak self] imageURL in
+                guard let self = self, let imageURL = imageURL else {
+                    if wasRecording {
+                        self?.resumeRecording()
+                    }
+                    return
+                }
+                
+                self.showScreenshotDialog(imageURL: imageURL, sessionId: sessionId) { name, note in
+                    self.saveScreenshotEvent(imageURL: imageURL, name: name, note: note, sessionId: sessionId, type: type)
+                    
+                    if wasRecording {
+                        self.resumeRecording()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func captureScreenshot(type: ScreenshotType, sessionId: String, completion: @escaping (URL?) -> Void) {
+        let recordingsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+        let screenshotsPath = "\(recordingsPath)/screenshots"
+        
+        do {
+            try FileManager.default.createDirectory(atPath: screenshotsPath, withIntermediateDirectories: true)
+        } catch {
+            print("❌ Failed to create screenshots directory: \(error)")
+            completion(nil)
+            return
+        }
+        
+        let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+        let filename = "screenshot_\(timestamp).png"
+        let outputPath = "\(screenshotsPath)/\(filename)"
+        
+        switch type {
+        case .fullScreen:
+            captureFullScreen(outputPath: outputPath, completion: completion)
+        case .region:
+            captureRegion(outputPath: outputPath, completion: completion)
+        case .browserFullPage:
+            captureBrowserFullPage(outputPath: outputPath, completion: completion)
+        }
+    }
+    
+    private func captureFullScreen(outputPath: String, completion: @escaping (URL?) -> Void) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        task.arguments = ["-x", outputPath]
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            if task.terminationStatus == 0 {
+                print("📸 Full screen screenshot saved to: \(outputPath)")
+                completion(URL(fileURLWithPath: outputPath))
+            } else {
+                print("❌ Screenshot failed with status: \(task.terminationStatus)")
+                completion(nil)
+            }
+        } catch {
+            print("❌ Failed to run screencapture: \(error)")
+            completion(nil)
+        }
+    }
+    
+    private func captureRegion(outputPath: String, completion: @escaping (URL?) -> Void) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        task.arguments = ["-i", outputPath]
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            if task.terminationStatus == 0 && FileManager.default.fileExists(atPath: outputPath) {
+                print("📸 Region screenshot saved to: \(outputPath)")
+                completion(URL(fileURLWithPath: outputPath))
+            } else {
+                print("⚠️ Region screenshot cancelled or failed")
+                completion(nil)
+            }
+        } catch {
+            print("❌ Failed to run screencapture: \(error)")
+            completion(nil)
+        }
+    }
+    
+    private func captureBrowserFullPage(outputPath: String, completion: @escaping (URL?) -> Void) {
+        let detectScript = """
+        tell application "System Events"
+            set frontApp to name of first application process whose frontmost is true
+        end tell
+        
+        if frontApp is "Safari" then
+            return "Safari"
+        else if frontApp contains "Chrome" then
+            return "Chrome"
+        else
+            return "NotBrowser"
+        end if
+        """
+        
+        let detectTask = Process()
+        detectTask.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        detectTask.arguments = ["-e", detectScript]
+        
+        let detectPipe = Pipe()
+        detectTask.standardOutput = detectPipe
+        
+        do {
+            try detectTask.run()
+            detectTask.waitUntilExit()
+            
+            let detectData = detectPipe.fileHandleForReading.readDataToEndOfFile()
+            let browser = String(data: detectData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            
+            if browser == "NotBrowser" || browser.isEmpty {
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Browser Not Focused", message: "Please focus Safari or Chrome to capture a full page screenshot.")
+                    completion(nil)
+                }
+                return
+            }
+            
+            if browser == "Safari" {
+                captureSafariFullPage(outputPath: outputPath, completion: completion)
+            } else if browser == "Chrome" {
+                captureChromeFullPage(outputPath: outputPath, completion: completion)
+            } else {
+                self.captureFullScreen(outputPath: outputPath, completion: completion)
+            }
+        } catch {
+            print("❌ Failed to detect browser: \(error)")
+            completion(nil)
+        }
+    }
+    
+    private func captureSafariFullPage(outputPath: String, completion: @escaping (URL?) -> Void) {
+        print("📸 Capturing Safari full page via Export as PDF...")
+        
+        let tempDir = NSTemporaryDirectory()
+        let pdfPath = "\(tempDir)safari_fullpage_\(Int(Date().timeIntervalSince1970)).pdf"
+        
+        let script = """
+        tell application "Safari"
+            activate
+            delay 0.3
+        end tell
+        
+        tell application "System Events"
+            tell process "Safari"
+                keystroke "e" using {command down}
+                delay 0.5
+                
+                keystroke "g" using {command down, shift down}
+                delay 0.3
+                keystroke "\(pdfPath)"
+                delay 0.2
+                keystroke return
+                delay 0.3
+                
+                keystroke return
+                delay 1.5
+            end tell
+        end tell
+        
+        return "DONE"
+        """
+        
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        task.arguments = ["-e", script]
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if FileManager.default.fileExists(atPath: pdfPath) {
+                    if let pdfImage = self.renderPDFToImage(pdfPath: pdfPath) {
+                        if let tiffData = pdfImage.tiffRepresentation,
+                           let bitmap = NSBitmapImageRep(data: tiffData),
+                           let pngData = bitmap.representation(using: .png, properties: [:]) {
+                            do {
+                                try pngData.write(to: URL(fileURLWithPath: outputPath))
+                                try? FileManager.default.removeItem(atPath: pdfPath)
+                                print("📸 Full page screenshot saved: \(outputPath)")
+                                completion(URL(fileURLWithPath: outputPath))
+                                return
+                            } catch {
+                                print("❌ Failed to save PNG: \(error)")
+                            }
+                        }
+                    }
+                    try? FileManager.default.removeItem(atPath: pdfPath)
+                }
+                
+                print("⚠️ PDF export failed, falling back to screen capture")
+                self.captureFullScreen(outputPath: outputPath, completion: completion)
+            }
+        } catch {
+            print("❌ Safari export failed: \(error)")
+            self.captureFullScreen(outputPath: outputPath, completion: completion)
+        }
+    }
+    
+    private func renderPDFToImage(pdfPath: String) -> NSImage? {
+        guard let pdfDoc = PDFDocument(url: URL(fileURLWithPath: pdfPath)) else {
+            print("❌ Could not load PDF")
+            return nil
+        }
+        
+        let pageCount = pdfDoc.pageCount
+        guard pageCount > 0, let firstPage = pdfDoc.page(at: 0) else {
+            return nil
+        }
+        
+        let firstBounds = firstPage.bounds(for: .mediaBox)
+        let scale: CGFloat = 2.0
+        let pageWidth = firstBounds.width * scale
+        
+        var totalHeight: CGFloat = 0
+        for i in 0..<pageCount {
+            if let page = pdfDoc.page(at: i) {
+                totalHeight += page.bounds(for: .mediaBox).height * scale
+            }
+        }
+        
+        let finalImage = NSImage(size: NSSize(width: pageWidth, height: totalHeight))
+        finalImage.lockFocus()
+        
+        NSColor.white.setFill()
+        NSRect(x: 0, y: 0, width: pageWidth, height: totalHeight).fill()
+        
+        var yOffset = totalHeight
+        for i in 0..<pageCount {
+            if let page = pdfDoc.page(at: i) {
+                let pageBounds = page.bounds(for: .mediaBox)
+                let pageHeight = pageBounds.height * scale
+                yOffset -= pageHeight
+                
+                if let cgImage = page.thumbnail(of: CGSize(width: pageWidth, height: pageHeight), for: .mediaBox).cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: pageWidth, height: pageHeight))
+                    nsImage.draw(in: NSRect(x: 0, y: yOffset, width: pageWidth, height: pageHeight))
+                }
+            }
+        }
+        
+        finalImage.unlockFocus()
+        return finalImage
+    }
+    
+    private func captureChromeFullPage(outputPath: String, completion: @escaping (URL?) -> Void) {
+        captureSafariFullPage(outputPath: outputPath, completion: completion)
+    }
+    
+    private func captureByScrolling(browser: String, docHeight: Int, viewHeight: Int, originalScrollY: Int, outputPath: String, completion: @escaping (URL?) -> Void) {
+        let tempDir = (outputPath as NSString).deletingLastPathComponent
+        let overlap = 100
+        let effectiveViewHeight = viewHeight - overlap
+        let numCaptures = Int(ceil(Double(docHeight) / Double(effectiveViewHeight)))
+        
+        print("📸 Will capture \(numCaptures) segments for \(docHeight)px page")
+        
+        let windowIdScript = """
+        tell application "\(browser)" to id of front window
+        """
+        let windowIdTask = Process()
+        windowIdTask.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        windowIdTask.arguments = ["-e", windowIdScript]
+        let windowIdPipe = Pipe()
+        windowIdTask.standardOutput = windowIdPipe
+        var browserWindowId: String? = nil
+        do {
+            try windowIdTask.run()
+            windowIdTask.waitUntilExit()
+            let data = windowIdPipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !output.isEmpty {
+                browserWindowId = output
+                print("📸 Browser window ID: \(output)")
+            }
+        } catch {
+            print("⚠️ Could not get window ID: \(error)")
+        }
+        
+        var capturedImages: [(position: Int, image: NSImage)] = []
+        var currentCapture = 0
+        
+        func performCapture() {
+            if currentCapture >= numCaptures {
+                finishCapture()
+                return
+            }
+            
+            let scrollPosition = min(currentCapture * effectiveViewHeight, max(0, docHeight - viewHeight))
+            
+            let scrollScript: String
+            if browser == "Safari" {
+                scrollScript = "tell application \"Safari\" to do JavaScript \"window.scrollTo(0, \(scrollPosition))\" in current tab of front window"
+            } else {
+                scrollScript = "tell application \"Google Chrome\" to execute front window's active tab javascript \"window.scrollTo(0, \(scrollPosition))\""
+            }
+            
+            let scrollTask = Process()
+            scrollTask.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            scrollTask.arguments = ["-e", scrollScript]
+            
+            do {
+                try scrollTask.run()
+                scrollTask.waitUntilExit()
+            } catch {
+                print("❌ Scroll failed: \(error)")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                let tempPath = "\(tempDir)/temp_scroll_\(currentCapture).png"
+                
+                let captureTask = Process()
+                captureTask.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                if let windowId = browserWindowId {
+                    captureTask.arguments = ["-x", "-o", "-l", windowId, tempPath]
+                } else {
+                    captureTask.arguments = ["-x", tempPath]
+                }
+                
+                do {
+                    try captureTask.run()
+                    captureTask.waitUntilExit()
+                    
+                    if FileManager.default.fileExists(atPath: tempPath),
+                       let image = NSImage(contentsOfFile: tempPath) {
+                        capturedImages.append((position: scrollPosition, image: image))
+                        print("📸 Captured segment \(currentCapture + 1)/\(numCaptures) at y=\(scrollPosition), size: \(image.size)")
+                        try? FileManager.default.removeItem(atPath: tempPath)
+                    }
+                } catch {
+                    print("❌ Capture failed: \(error)")
+                }
+                
+                currentCapture += 1
+                performCapture()
+            }
+        }
+        
+        func finishCapture() {
+            let restoreScript: String
+            if browser == "Safari" {
+                restoreScript = "tell application \"Safari\" to do JavaScript \"window.scrollTo(0, \(originalScrollY))\" in current tab of front window"
+            } else {
+                restoreScript = "tell application \"Google Chrome\" to execute front window's active tab javascript \"window.scrollTo(0, \(originalScrollY))\""
+            }
+            
+            let restoreTask = Process()
+            restoreTask.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            restoreTask.arguments = ["-e", restoreScript]
+            try? restoreTask.run()
+            restoreTask.waitUntilExit()
+            
+            if capturedImages.isEmpty {
+                print("⚠️ No images captured")
+                self.captureFullScreen(outputPath: outputPath, completion: completion)
+                return
+            }
+            
+            if capturedImages.count == 1 {
+                saveImage(capturedImages[0].image, to: outputPath, completion: completion)
+                return
+            }
+            
+            stitchImages(capturedImages, docHeight: docHeight, viewHeight: viewHeight, overlap: overlap, to: outputPath, completion: completion)
+        }
+        
+        performCapture()
+    }
+    
+    private func saveImage(_ image: NSImage, to path: String, completion: @escaping (URL?) -> Void) {
+        if let tiffData = image.tiffRepresentation,
+           let bitmap = NSBitmapImageRep(data: tiffData),
+           let pngData = bitmap.representation(using: .png, properties: [:]) {
+            do {
+                try pngData.write(to: URL(fileURLWithPath: path))
+                print("📸 Saved image to: \(path)")
+                completion(URL(fileURLWithPath: path))
+            } catch {
+                print("❌ Failed to save: \(error)")
+                completion(nil)
+            }
+        } else {
+            completion(nil)
+        }
+    }
+    
+    private func stitchImages(_ images: [(position: Int, image: NSImage)], docHeight: Int, viewHeight: Int, overlap: Int, to outputPath: String, completion: @escaping (URL?) -> Void) {
+        guard let firstImage = images.first?.image else {
+            completion(nil)
+            return
+        }
+        
+        let sortedImages = images.sorted { $0.position < $1.position }
+        let imageWidth = firstImage.size.width
+        let windowImageHeight = firstImage.size.height
+        
+        let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let scaledViewHeight = CGFloat(viewHeight) * scale
+        let chromeHeight = windowImageHeight - scaledViewHeight
+        
+        print("📸 Stitching: windowHeight=\(windowImageHeight), viewportHeight=\(scaledViewHeight), chromeHeight=\(chromeHeight)")
+        
+        let effectiveHeight = scaledViewHeight - CGFloat(overlap) * scale
+        let totalHeight = CGFloat(docHeight) * scale
+        
+        print("📸 Creating stitched image: \(imageWidth) x \(totalHeight)")
+        
+        let stitchedImage = NSImage(size: NSSize(width: imageWidth, height: totalHeight))
+        stitchedImage.lockFocus()
+        
+        NSColor.white.setFill()
+        NSRect(x: 0, y: 0, width: imageWidth, height: totalHeight).fill()
+        
+        for (index, item) in sortedImages.enumerated() {
+            let scaledPosition = CGFloat(item.position) * scale
+            let yPositionInStitched = totalHeight - scaledPosition - scaledViewHeight
+            
+            let sourceRect = NSRect(
+                x: 0,
+                y: 0,
+                width: imageWidth,
+                height: scaledViewHeight
+            )
+            
+            let destRect = NSRect(
+                x: 0,
+                y: max(0, yPositionInStitched),
+                width: imageWidth,
+                height: scaledViewHeight
+            )
+            
+            print("📸 Drawing segment \(index) at y=\(destRect.origin.y), scrollPos=\(item.position)")
+            
+            item.image.draw(
+                in: destRect,
+                from: sourceRect,
+                operation: .copy,
+                fraction: 1.0
+            )
+        }
+        
+        stitchedImage.unlockFocus()
+        
+        saveImage(stitchedImage, to: outputPath, completion: completion)
+    }
+    
+    private func showScreenshotDialog(imageURL: URL, sessionId: String, completion: @escaping (String, String?) -> Void) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Save Screenshot"
+            alert.informativeText = "Enter a name for this screenshot:"
+            alert.alertStyle = .informational
+            
+            let containerView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
+            
+            let nameLabel = NSTextField(labelWithString: "Name:")
+            nameLabel.frame = NSRect(x: 0, y: 150, width: 60, height: 20)
+            containerView.addSubview(nameLabel)
+            
+            let nameField = NSTextField(frame: NSRect(x: 65, y: 148, width: 330, height: 24))
+            nameField.placeholderString = "Screenshot name"
+            containerView.addSubview(nameField)
+            
+            let noteLabel = NSTextField(labelWithString: "Note:")
+            noteLabel.frame = NSRect(x: 0, y: 115, width: 60, height: 20)
+            containerView.addSubview(noteLabel)
+            
+            let noteScrollView = NSScrollView(frame: NSRect(x: 65, y: 0, width: 330, height: 110))
+            let noteTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: 315, height: 110))
+            noteTextView.isRichText = true
+            noteTextView.allowsUndo = true
+            noteTextView.font = NSFont.systemFont(ofSize: 13)
+            noteScrollView.documentView = noteTextView
+            noteScrollView.hasVerticalScroller = true
+            noteScrollView.borderType = .bezelBorder
+            containerView.addSubview(noteScrollView)
+            
+            alert.accessoryView = containerView
+            alert.addButton(withTitle: "Save")
+            alert.addButton(withTitle: "Cancel")
+            
+            nameField.becomeFirstResponder()
+            
+            let response = alert.runModal()
+            
+            if response == .alertFirstButtonReturn {
+                let name = nameField.stringValue.isEmpty ? "Screenshot" : nameField.stringValue
+                let note = noteTextView.string.isEmpty ? nil : noteTextView.string
+                completion(name, note)
+            } else {
+                try? FileManager.default.removeItem(at: imageURL)
+                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                    if appDelegate.recordingState == .paused {
+                        self.resumeRecording()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func saveScreenshotEvent(imageURL: URL, name: String, note: String?, sessionId: String, type: ScreenshotType) {
+        let screenshotsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screenshots.json"
+        
+        var screenshots: [[String: Any]] = []
+        
+        if FileManager.default.fileExists(atPath: screenshotsPath) {
+            do {
+                let data = try Data(contentsOf: URL(fileURLWithPath: screenshotsPath))
+                if let existing = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    screenshots = existing
+                }
+            } catch {
+                print("⚠️ Failed to load existing screenshots.json: \(error)")
+            }
+        }
+        
+        let timestamp = Date().timeIntervalSince1970 * 1_000_000
+        
+        var screenshotEvent: [String: Any] = [
+            "type": "screenshot",
+            "timestamp": timestamp,
+            "source": "system",
+            "data": [
+                "name": name,
+                "imagePath": "screenshots/\(imageURL.lastPathComponent)",
+                "screenshotType": String(describing: type)
+            ]
+        ]
+        
+        if let note = note {
+            var data = screenshotEvent["data"] as? [String: Any] ?? [:]
+            data["note"] = note
+            screenshotEvent["data"] = data
+        }
+        
+        screenshots.append(screenshotEvent)
+        
+        do {
+            let updatedData = try JSONSerialization.data(withJSONObject: screenshots, options: .prettyPrinted)
+            try updatedData.write(to: URL(fileURLWithPath: screenshotsPath))
+            print("📸 Screenshot event saved to screenshots.json: \(name)")
+            
+            eventCount += 1
+            updateUI()
+        } catch {
+            print("❌ Failed to save screenshot event: \(error)")
+        }
     }
 }
 
