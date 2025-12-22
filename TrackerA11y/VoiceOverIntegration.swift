@@ -22,6 +22,10 @@ class VoiceOverIntegration {
     private var isCapturingAudio = false
     private var audioOutputURL: URL?
     
+    private var lastAnnouncementText: String = ""
+    private var lastAnnouncementTimestamp: Double = 0
+    private let deduplicationWindow: Double = 500_000
+    
     init() {
         systemWideElement = AXUIElementCreateSystemWide()
     }
@@ -206,6 +210,11 @@ class VoiceOverIntegration {
         case kAXFocusedUIElementChangedNotification:
             let description = buildVoiceOverDescription(from: elementInfo)
             if !description.isEmpty {
+                if description == lastAnnouncementText && (timestamp - lastAnnouncementTimestamp) < deduplicationWindow {
+                    return
+                }
+                lastAnnouncementText = description
+                lastAnnouncementTimestamp = timestamp
                 delegate?.voiceOverDidAnnounce(text: description, element: elementInfo, timestamp: timestamp)
             }
             
@@ -213,6 +222,11 @@ class VoiceOverIntegration {
             var announcement: CFTypeRef?
             AXUIElementCopyAttributeValue(element, kAXAnnouncementKey as CFString, &announcement)
             if let text = announcement as? String, !text.isEmpty {
+                if text == lastAnnouncementText && (timestamp - lastAnnouncementTimestamp) < deduplicationWindow {
+                    return
+                }
+                lastAnnouncementText = text
+                lastAnnouncementTimestamp = timestamp
                 delegate?.voiceOverDidAnnounce(text: text, element: elementInfo, timestamp: timestamp)
             }
             

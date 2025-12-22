@@ -1147,7 +1147,7 @@ class SessionDetailViewController: NSViewController {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.edgeInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         
-        let clipView = NSClipView()
+        let clipView = FlippedClipView()
         clipView.documentView = stackView
         clipView.drawsBackground = false
         scrollView.contentView = clipView
@@ -5531,6 +5531,10 @@ class SessionDetailViewController: NSViewController {
     }
     
     private func formatEventData(_ data: [String: Any]) -> String {
+        if let text = data["text"] as? String {
+            return text
+        }
+        
         if let appName = data["applicationName"] as? String {
             return "App: \(appName)"
         }
@@ -5990,6 +5994,9 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 textField.textColor = .systemOrange
             case "system":
                 textField.textColor = .systemGray
+            case "voiceover":
+                textField.stringValue = "VoiceOver"
+                textField.textColor = .systemCyan
             case "editor":
                 if eventType == "marker" {
                     textField.textColor = .systemRed
@@ -6104,6 +6111,59 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             
             stackView.addArrangedSubview(pauseCard)
             pauseCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        } else if eventType == "VoiceOverSpeech" || event["source"] as? String == "voiceover" {
+            let (announcementCard, announcementContent) = createDetailCard(title: "VoiceOver Announcement", icon: "🔊")
+            
+            if let data = event["data"] as? [String: Any], let text = data["text"] as? String {
+                let textBox = NSView()
+                textBox.wantsLayer = true
+                textBox.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.3).cgColor
+                textBox.layer?.cornerRadius = 8
+                
+                let textLabel = NSTextField(wrappingLabelWithString: text)
+                textLabel.font = NSFont.systemFont(ofSize: 18, weight: .medium)
+                textLabel.textColor = .white
+                textLabel.translatesAutoresizingMaskIntoConstraints = false
+                textBox.addSubview(textLabel)
+                
+                NSLayoutConstraint.activate([
+                    textLabel.topAnchor.constraint(equalTo: textBox.topAnchor, constant: 12),
+                    textLabel.bottomAnchor.constraint(equalTo: textBox.bottomAnchor, constant: -12),
+                    textLabel.leadingAnchor.constraint(equalTo: textBox.leadingAnchor, constant: 12),
+                    textLabel.trailingAnchor.constraint(equalTo: textBox.trailingAnchor, constant: -12)
+                ])
+                
+                textBox.translatesAutoresizingMaskIntoConstraints = false
+                announcementContent.addArrangedSubview(textBox)
+            }
+            
+            if let timestamp = event["timestamp"] as? Double {
+                announcementContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(timestamp), valueColor: .secondaryLabelColor))
+            }
+            
+            stackView.addArrangedSubview(announcementCard)
+            announcementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            
+            if let data = event["data"] as? [String: Any], let element = data["element"] as? [String: Any] {
+                let (elementCard, elementContent) = createDetailCard(title: "Element", icon: "🎯")
+                
+                if let role = element["role"] as? String {
+                    let cleanRole = role.replacingOccurrences(of: "AX", with: "")
+                    elementContent.addArrangedSubview(createDetailRow(label: "Role", value: cleanRole, valueColor: .systemPurple))
+                }
+                if let roleDesc = element["roleDescription"] as? String {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Type", value: roleDesc))
+                }
+                if let title = element["title"] as? String, !title.isEmpty {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Title", value: title))
+                }
+                if let focused = element["focused"] as? Bool {
+                    elementContent.addArrangedSubview(createDetailRow(label: "Focused", value: focused ? "Yes" : "No"))
+                }
+                
+                stackView.addArrangedSubview(elementCard)
+                elementCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+            }
         } else if isMarkerEvent {
             let (markerCard, markerContent) = createDetailCard(title: "Marker", icon: "🚩")
             
