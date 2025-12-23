@@ -137,6 +137,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         sessionMenuItem.submenu = sessionMenu
         mainMenu.addItem(sessionMenuItem)
         
+        // Edit menu
+        let editMenuItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        let editMenu = NSMenu()
+        
+        let undoItem = NSMenuItem(title: "Undo", action: #selector(undoEdit), keyEquivalent: "z")
+        undoItem.target = self
+        editMenu.addItem(undoItem)
+        
+        let redoItem = NSMenuItem(title: "Redo", action: #selector(redoEdit), keyEquivalent: "Z")
+        redoItem.target = self
+        editMenu.addItem(redoItem)
+        
+        editMenuItem.submenu = editMenu
+        mainMenu.addItem(editMenuItem)
+        
         // Tools menu
         let toolsMenuItem = NSMenuItem(title: "Tools", action: nil, keyEquivalent: "")
         let toolsMenu = NSMenu()
@@ -353,6 +368,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     @objc private func toggleVoiceOver() {
         mainViewController?.toggleVoiceOver()
+    }
+    
+    // MARK: - Edit Actions
+    
+    @objc private func undoEdit() {
+        mainViewController?.undoEdit()
+    }
+    
+    @objc private func redoEdit() {
+        mainViewController?.redoEdit()
     }
     
     @objc private func statusBarToggleVoiceOver() {

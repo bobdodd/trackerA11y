@@ -113,7 +113,9 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     private var lastAutoShownEventTimestamp: Double = 0  // Track last event shown during playback
     private var isUserSelectedEvent: Bool = false  // True when user clicked an event (disables auto-update until playback)
     private var isVideoPlaying: Bool = false  // Track if video is actively playing
+    private var isSuppressingPlayheadUpdates: Bool = false  // Suppress playhead updates during video reload after crop
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []  // Pause gaps for video/event time conversion
+    private var cropGaps: [(start: Double, end: Double, duration: Double, eventBackup: [[String: Any]])] = []  // Cropped time ranges
     private var screenshotWindows: [NSWindow] = []  // Keep references to screenshot viewer windows
     private var screenshotPaths: [Int: String] = [:]  // Map button tag to screenshot path
     private var scrollViewRefs: [Int: NSScrollView] = [:]  // Map button tag to scroll view
@@ -137,6 +139,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     private var isAddingAnnotation: Bool = false
     private var pendingAnnotationType: AnnotationType?
     private var currentAnnotationColor: NSColor = .systemRed
+    
+    // Undo/Redo stack for event editing
+    private var undoStack: [[String: Any]] = []
+    private var redoStack: [[String: Any]] = []
+    private let maxUndoStackSize: Int = 100
     
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
@@ -208,6 +215,25 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         let newItem = AVPlayerItem(url: videoURL)
         videoPlayer?.replaceCurrentItem(with: newItem)
         print("🎬 Video reloaded: \(videoPath)")
+    }
+    
+    private func calculateFoldedVideoTime(for timestamp: Double) -> Double {
+        var videoTime = (timestamp - videoStartTimestamp) / 1_000_000
+        
+        let allGaps = (pauseGaps + cropGaps.map { (start: $0.start, end: $0.end, duration: $0.duration) }).sorted { $0.start < $1.start }
+        
+        for gap in allGaps {
+            let gapStartSecs = (gap.start - videoStartTimestamp) / 1_000_000
+            let gapDurationSecs = gap.duration / 1_000_000
+            
+            if timestamp > gap.end {
+                videoTime -= gapDurationSecs
+            } else if timestamp > gap.start {
+                videoTime -= (timestamp - gap.start) / 1_000_000
+            }
+        }
+        
+        return max(0, videoTime)
     }
     
     private func setupUI() {
@@ -2052,7 +2078,537 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         addTagItem.submenu = addTagMenu
         menu.addItem(addTagItem)
         
+        menu.addItem(NSMenuItem.separator())
+        
+        let deleteEventItem = NSMenuItem(title: "Delete Event", action: #selector(deleteEventAction(_:)), keyEquivalent: "")
+        deleteEventItem.target = self
+        deleteEventItem.representedObject = eventIndex
+        menu.addItem(deleteEventItem)
+        
         return menu
+    }
+    
+    @objc private func deleteEventAction(_ sender: NSMenuItem) {
+        guard let eventIndex = sender.representedObject as? Int,
+              eventIndex < events.count else { return }
+        
+        let event = events[eventIndex]
+        let eventType = event["type"] as? String ?? "event"
+        
+        let alert = NSAlert()
+        alert.messageText = "Delete Event"
+        alert.informativeText = "Are you sure you want to delete this \(eventType) event? This can be undone with Edit > Undo."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            deleteEvent(at: eventIndex)
+        }
+    }
+    
+    private func countEventsInRange(start: Double, end: Double) -> Int {
+        return events.filter { event in
+            guard let timestamp = event["timestamp"] as? Double else { return false }
+            return timestamp >= start && timestamp <= end
+        }.count
+    }
+    
+    private func showRangeContextMenu(start: Double, end: Double, nsEvent: NSEvent) {
+        let menu = NSMenu()
+        
+        let eventCount = countEventsInRange(start: start, end: end)
+        let durationSecs = (end - start) / 1_000_000
+        let durationStr = String(format: "%.1fs", durationSecs)
+        
+        let infoItem = NSMenuItem(title: "\(eventCount) event(s) in \(durationStr)", action: nil, keyEquivalent: "")
+        infoItem.isEnabled = false
+        menu.addItem(infoItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let cropItem = NSMenuItem(title: "Crop Time Range", action: #selector(cropRangeAction(_:)), keyEquivalent: "")
+        cropItem.target = self
+        cropItem.representedObject = ["start": start, "end": end]
+        menu.addItem(cropItem)
+        
+        let deleteItem = NSMenuItem(title: "Delete Events Only", action: #selector(deleteRangeAction(_:)), keyEquivalent: "")
+        deleteItem.target = self
+        deleteItem.representedObject = ["start": start, "end": end]
+        deleteItem.isEnabled = eventCount > 0
+        menu.addItem(deleteItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let clearSelectionItem = NSMenuItem(title: "Clear Selection", action: #selector(clearRangeSelectionAction(_:)), keyEquivalent: "")
+        clearSelectionItem.target = self
+        menu.addItem(clearSelectionItem)
+        
+        if let timelineView = self.timelineView {
+            NSMenu.popUpContextMenu(menu, with: nsEvent, for: timelineView)
+        }
+    }
+    
+    @objc private func cropRangeAction(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: Double],
+              let start = info["start"],
+              let end = info["end"] else { return }
+        
+        let eventCount = countEventsInRange(start: start, end: end)
+        let durationSecs = (end - start) / 1_000_000
+        let durationStr = String(format: "%.1fs", durationSecs)
+        
+        let alert = NSAlert()
+        alert.messageText = "Crop Time Range"
+        alert.informativeText = "This will remove \(durationStr) from the recording, including \(eventCount) event(s), and re-stitch the video. The timeline will collapse this gap like a pause. This can be undone."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Crop")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            cropTimeRange(start: start, end: end)
+            timelineView?.clearRangeSelection()
+        }
+    }
+    
+    @objc private func deleteRangeAction(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: Double],
+              let start = info["start"],
+              let end = info["end"] else { return }
+        
+        let eventCount = countEventsInRange(start: start, end: end)
+        
+        let alert = NSAlert()
+        alert.messageText = "Delete Events in Range"
+        alert.informativeText = "Are you sure you want to delete \(eventCount) event(s) in this time range? This can be undone with Edit > Undo."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            deleteEventsInRange(start: start, end: end)
+            timelineView?.clearRangeSelection()
+        }
+    }
+    
+    @objc private func clearRangeSelectionAction(_ sender: NSMenuItem) {
+        timelineView?.clearRangeSelection()
+    }
+    
+    private func cropTimeRange(start: Double, end: Double) {
+        let duration = end - start
+        
+        let currentPlayhead = timelineView?.playheadTimestamp ?? videoStartTimestamp
+        let newPlayheadPosition: Double
+        if currentPlayhead >= start && currentPlayhead <= end {
+            newPlayheadPosition = start
+        } else if currentPlayhead > end {
+            newPlayheadPosition = currentPlayhead - duration
+        } else {
+            newPlayheadPosition = currentPlayhead
+        }
+        
+        var eventsToRemove: [[String: Any]] = []
+        var indicesToRemove: [Int] = []
+        
+        for (index, event) in events.enumerated() {
+            guard let timestamp = event["timestamp"] as? Double else { continue }
+            if timestamp >= start && timestamp <= end {
+                eventsToRemove.append(event)
+                indicesToRemove.append(index)
+            }
+        }
+        
+        let newCropGap = (start: start, end: end, duration: duration, eventBackup: eventsToRemove)
+        
+        let undoInfo: [String: Any] = [
+            "action": "crop",
+            "start": start,
+            "end": end,
+            "duration": duration,
+            "removedEvents": eventsToRemove,
+            "removedIndices": indicesToRemove,
+            "previousPlayhead": currentPlayhead
+        ]
+        addToUndoStack(undoInfo)
+        
+        for index in indicesToRemove.reversed() {
+            events.remove(at: index)
+            shiftTagsAndNotesAfterDelete(at: index)
+        }
+        
+        cropGaps.append(newCropGap)
+        cropGaps.sort { $0.start < $1.start }
+        
+        let simpleCropGaps = cropGaps.map { (start: $0.start, end: $0.end, duration: $0.duration) }
+        timelineView?.setCropGaps(simpleCropGaps)
+        
+        saveCropGapsToMetadata()
+        saveEventsToFile()
+        applyEventsFilters()
+        saveTags()
+        eventsTableView?.reloadData()
+        updateTimelineWithCurrentEvents()
+        
+        timelineView?.setPlayheadTimestamp(newPlayheadPosition)
+        
+        cropVideoAsync(gaps: simpleCropGaps, restorePlayhead: newPlayheadPosition)
+        cropVoiceOverAudioAsync(gaps: simpleCropGaps)
+        
+        print("✂️ Cropped time range: \(start) - \(end) (\(eventsToRemove.count) events removed)")
+    }
+    
+    private func cropVoiceOverAudioAsync(gaps: [(start: Double, end: Double, duration: Double)]) {
+        let audioPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/voiceover_audio.caf"
+        guard FileManager.default.fileExists(atPath: audioPath) else {
+            print("⚠️ No VoiceOver audio to crop")
+            return
+        }
+        
+        print("🔊 Starting VoiceOver audio crop...")
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let inputURL = URL(fileURLWithPath: audioPath)
+            let backupPath = audioPath.replacingOccurrences(of: ".caf", with: "_original.caf")
+            let tempOutputPath = audioPath.replacingOccurrences(of: ".caf", with: "_cropped.caf")
+            
+            do {
+                if !FileManager.default.fileExists(atPath: backupPath) {
+                    try FileManager.default.copyItem(atPath: audioPath, toPath: backupPath)
+                    print("📦 Original VoiceOver audio backed up")
+                }
+            } catch {
+                print("❌ Failed to backup VoiceOver audio: \(error)")
+                return
+            }
+            
+            let asset = AVURLAsset(url: inputURL)
+            let composition = AVMutableComposition()
+            
+            guard let audioTrack = asset.tracks(withMediaType: .audio).first,
+                  let compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                print("❌ Failed to get VoiceOver audio track")
+                return
+            }
+            
+            let audioDuration = asset.duration.seconds
+            let sortedGaps = gaps.sorted { $0.start < $1.start }
+            
+            var segments: [(start: Double, end: Double)] = []
+            var currentStart: Double = 0
+            
+            for gap in sortedGaps {
+                let gapStartSecs = (gap.start - self.videoStartTimestamp) / 1_000_000
+                let gapEndSecs = (gap.end - self.videoStartTimestamp) / 1_000_000
+                
+                let clampedGapStart = max(0, min(audioDuration, gapStartSecs))
+                let clampedGapEnd = max(0, min(audioDuration, gapEndSecs))
+                
+                if clampedGapStart > currentStart {
+                    segments.append((start: currentStart, end: clampedGapStart))
+                }
+                currentStart = clampedGapEnd
+            }
+            
+            if currentStart < audioDuration {
+                segments.append((start: currentStart, end: audioDuration))
+            }
+            
+            var insertTime = CMTime.zero
+            
+            for segment in segments {
+                let startTime = CMTime(seconds: segment.start, preferredTimescale: 44100)
+                let endTime = CMTime(seconds: segment.end, preferredTimescale: 44100)
+                let duration = endTime - startTime
+                
+                do {
+                    try compositionAudioTrack.insertTimeRange(CMTimeRange(start: startTime, duration: duration), of: audioTrack, at: insertTime)
+                    insertTime = insertTime + duration
+                } catch {
+                    print("❌ Failed to insert VoiceOver segment: \(error)")
+                }
+            }
+            
+            guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A) else {
+                print("❌ Failed to create VoiceOver export session")
+                return
+            }
+            
+            let m4aOutputPath = audioPath.replacingOccurrences(of: ".caf", with: "_cropped.m4a")
+            exportSession.outputURL = URL(fileURLWithPath: m4aOutputPath)
+            exportSession.outputFileType = .m4a
+            
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            exportSession.exportAsynchronously {
+                defer { semaphore.signal() }
+                
+                switch exportSession.status {
+                case .completed:
+                    do {
+                        try FileManager.default.removeItem(atPath: audioPath)
+                        try FileManager.default.moveItem(atPath: m4aOutputPath, toPath: audioPath)
+                        print("✅ VoiceOver audio cropped successfully")
+                        
+                        DispatchQueue.main.async {
+                            self.loadVoiceOverAudioTrack()
+                        }
+                    } catch {
+                        print("❌ Failed to replace VoiceOver audio: \(error)")
+                    }
+                case .failed:
+                    print("❌ VoiceOver export failed: \(String(describing: exportSession.error))")
+                case .cancelled:
+                    print("⚠️ VoiceOver export cancelled")
+                default:
+                    print("⚠️ VoiceOver export status: \(exportSession.status.rawValue)")
+                }
+            }
+            
+            semaphore.wait()
+        }
+    }
+    
+    private func saveCropGapsToMetadata() {
+        let eventsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/events.json"
+        
+        do {
+            let data = try Data(contentsOf: URL(fileURLWithPath: eventsPath))
+            if var eventLog = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                var metadata = eventLog["metadata"] as? [String: Any] ?? [:]
+                
+                let cropGapsData = cropGaps.map { gap -> [String: Any] in
+                    return [
+                        "start": gap.start,
+                        "end": gap.end,
+                        "duration": gap.duration,
+                        "eventBackup": gap.eventBackup
+                    ]
+                }
+                metadata["cropGaps"] = cropGapsData
+                metadata["totalCroppedDuration"] = cropGaps.reduce(0.0) { $0 + $1.duration }
+                
+                eventLog["metadata"] = metadata
+                
+                let updatedData = try JSONSerialization.data(withJSONObject: eventLog, options: .prettyPrinted)
+                try updatedData.write(to: URL(fileURLWithPath: eventsPath))
+                print("💾 Crop gaps saved to metadata")
+            }
+        } catch {
+            print("❌ Failed to save crop gaps: \(error)")
+        }
+    }
+    
+    private func cropVideoAsync(gaps: [(start: Double, end: Double, duration: Double)], restorePlayhead: Double? = nil) {
+        guard !gaps.isEmpty else { return }
+        
+        let videoPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screen_recording.mp4"
+        guard FileManager.default.fileExists(atPath: videoPath) else {
+            print("⚠️ No video file to crop")
+            return
+        }
+        
+        print("🎬 Starting video crop operation...")
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let inputURL = URL(fileURLWithPath: videoPath)
+            let backupPath = videoPath.replacingOccurrences(of: ".mp4", with: "_original.mp4")
+            let tempOutputPath = videoPath.replacingOccurrences(of: ".mp4", with: "_cropped.mp4")
+            
+            do {
+                if !FileManager.default.fileExists(atPath: backupPath) {
+                    try FileManager.default.copyItem(atPath: videoPath, toPath: backupPath)
+                    print("📦 Original video backed up")
+                }
+            } catch {
+                print("❌ Failed to backup video: \(error)")
+            }
+            
+            let asset = AVURLAsset(url: inputURL)
+            let composition = AVMutableComposition()
+            
+            guard let videoTrack = asset.tracks(withMediaType: .video).first,
+                  let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                print("❌ Failed to get video track")
+                return
+            }
+            
+            var compositionAudioTrack: AVMutableCompositionTrack? = nil
+            if let audioTrack = asset.tracks(withMediaType: .audio).first {
+                compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            }
+            
+            let videoDuration = asset.duration.seconds
+            let sortedGaps = gaps.sorted { $0.start < $1.start }
+            
+            var segments: [(start: Double, end: Double)] = []
+            var currentStart: Double = 0
+            
+            for gap in sortedGaps {
+                let gapStartSecs = (gap.start - self.videoStartTimestamp) / 1_000_000
+                let gapEndSecs = (gap.end - self.videoStartTimestamp) / 1_000_000
+                
+                let clampedGapStart = max(0, min(videoDuration, gapStartSecs))
+                let clampedGapEnd = max(0, min(videoDuration, gapEndSecs))
+                
+                if clampedGapStart > currentStart {
+                    segments.append((start: currentStart, end: clampedGapStart))
+                }
+                currentStart = clampedGapEnd
+            }
+            
+            if currentStart < videoDuration {
+                segments.append((start: currentStart, end: videoDuration))
+            }
+            
+            var insertTime = CMTime.zero
+            
+            for segment in segments {
+                let startTime = CMTime(seconds: segment.start, preferredTimescale: 600)
+                let endTime = CMTime(seconds: segment.end, preferredTimescale: 600)
+                let duration = endTime - startTime
+                
+                do {
+                    try compositionVideoTrack.insertTimeRange(CMTimeRange(start: startTime, duration: duration), of: videoTrack, at: insertTime)
+                    
+                    if let audioTrack = asset.tracks(withMediaType: .audio).first,
+                       let compAudioTrack = compositionAudioTrack {
+                        try compAudioTrack.insertTimeRange(CMTimeRange(start: startTime, duration: duration), of: audioTrack, at: insertTime)
+                    }
+                    
+                    insertTime = insertTime + duration
+                } catch {
+                    print("❌ Failed to insert segment: \(error)")
+                }
+            }
+            
+            guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+                print("❌ Failed to create export session")
+                return
+            }
+            
+            exportSession.outputURL = URL(fileURLWithPath: tempOutputPath)
+            exportSession.outputFileType = .mp4
+            
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            exportSession.exportAsynchronously {
+                defer { semaphore.signal() }
+                
+                switch exportSession.status {
+                case .completed:
+                    do {
+                        try FileManager.default.removeItem(atPath: videoPath)
+                        try FileManager.default.moveItem(atPath: tempOutputPath, toPath: videoPath)
+                        print("✅ Video cropped successfully")
+                        
+                        DispatchQueue.main.async {
+                            self.isSuppressingPlayheadUpdates = true
+                            self.reloadVideo()
+                            if let playhead = restorePlayhead {
+                                self.timelineView?.setPlayheadTimestamp(playhead)
+                                let foldedVideoTime = self.calculateFoldedVideoTime(for: playhead)
+                                self.videoPlayer?.seek(to: CMTime(seconds: max(0, foldedVideoTime), preferredTimescale: 600))
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.isSuppressingPlayheadUpdates = false
+                            }
+                        }
+                    } catch {
+                        print("❌ Failed to replace video: \(error)")
+                    }
+                case .failed:
+                    print("❌ Video export failed: \(String(describing: exportSession.error))")
+                case .cancelled:
+                    print("⚠️ Video export cancelled")
+                default:
+                    print("⚠️ Video export status: \(exportSession.status.rawValue)")
+                }
+            }
+            
+            semaphore.wait()
+        }
+    }
+    
+    private func deleteEventsInRange(start: Double, end: Double) {
+        var deletedEvents: [(index: Int, event: [String: Any], tags: Set<String>?, note: Data?)] = []
+        
+        for (index, event) in events.enumerated().reversed() {
+            guard let timestamp = event["timestamp"] as? Double else { continue }
+            if timestamp >= start && timestamp <= end {
+                deletedEvents.append((
+                    index: index,
+                    event: event,
+                    tags: eventTags[index],
+                    note: eventNotes[index]
+                ))
+            }
+        }
+        
+        guard !deletedEvents.isEmpty else { return }
+        
+        let undoInfo: [String: Any] = [
+            "action": "deleteRange",
+            "start": start,
+            "end": end,
+            "deletedEvents": deletedEvents.map { item -> [String: Any] in
+                var dict: [String: Any] = [
+                    "index": item.index,
+                    "event": item.event
+                ]
+                if let tags = item.tags {
+                    dict["tags"] = Array(tags)
+                }
+                if let note = item.note {
+                    dict["note"] = note
+                }
+                return dict
+            }
+        ]
+        addToUndoStack(undoInfo)
+        
+        for item in deletedEvents {
+            events.remove(at: item.index)
+            shiftTagsAndNotesAfterDelete(at: item.index)
+        }
+        
+        saveEventsToFile()
+        applyEventsFilters()
+        saveTags()
+        eventsTableView?.reloadData()
+        updateTimelineWithCurrentEvents()
+        
+        print("🗑️ Deleted \(deletedEvents.count) events in range")
+    }
+    
+    private func deleteEvent(at eventIndex: Int) {
+        guard eventIndex < events.count else { return }
+        
+        let deletedEvent = events[eventIndex]
+        
+        let undoInfo: [String: Any] = [
+            "action": "delete",
+            "eventIndex": eventIndex,
+            "event": deletedEvent,
+            "tags": eventTags[eventIndex] as Any,
+            "note": eventNotes[eventIndex] as Any
+        ]
+        addToUndoStack(undoInfo)
+        
+        events.remove(at: eventIndex)
+        shiftTagsAndNotesAfterDelete(at: eventIndex)
+        
+        saveEventsToFile()
+        applyEventsFilters()
+        saveTags()
+        eventsTableView?.reloadData()
+        updateTimelineWithCurrentEvents()
+        
+        print("🗑️ Deleted event at index \(eventIndex)")
     }
     
     @objc private func tagsNotesAddNote(_ sender: NSMenuItem) {
@@ -3010,6 +3566,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
             self.annotationManager?.updateAnnotation(updated)
             self.updateAnnotationOverlay()
         }
+        timeline.onRangeSelected = { [weak self] start, end in
+            let eventCount = self?.countEventsInRange(start: start, end: end) ?? 0
+            print("📍 Range selected: \(start) - \(end) (\(eventCount) events)")
+        }
+        timeline.onRangeRightClicked = { [weak self] start, end, nsEvent in
+            self?.showRangeContextMenu(start: start, end: end, nsEvent: nsEvent)
+        }
         
         // Set video start timestamp as datum IMMEDIATELY
         print("🎬 VC videoStartTimestamp: \(videoStartTimestamp)")
@@ -3329,6 +3892,8 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     }
     
     private func videoTimeDidChange(_ time: CMTime) {
+        guard !isSuppressingPlayheadUpdates else { return }
+        
         let videoSeconds = time.seconds
         
         // Calculate event timestamp from video time
@@ -4335,6 +4900,26 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
                         self.timelineView?.setPauseGaps(pauseGapsArray)
                     }
                     
+                    // Load crop gaps if present
+                    if let metadata = sessionJson["metadata"] as? [String: Any],
+                       let cropGapsData = metadata["cropGaps"] as? [[String: Any]] {
+                        var cropGapsArray: [(start: Double, end: Double, duration: Double, eventBackup: [[String: Any]])] = []
+                        for gap in cropGapsData {
+                            if let start = gap["start"] as? Double,
+                               let end = gap["end"] as? Double,
+                               let duration = gap["duration"] as? Double {
+                                let backup = gap["eventBackup"] as? [[String: Any]] ?? []
+                                cropGapsArray.append((start: start, end: end, duration: duration, eventBackup: backup))
+                            }
+                        }
+                        self.cropGaps = cropGapsArray
+                        if !cropGapsArray.isEmpty {
+                            let simpleCropGaps = cropGapsArray.map { (start: $0.start, end: $0.end, duration: $0.duration) }
+                            self.timelineView?.setCropGaps(simpleCropGaps)
+                            print("✅ Loaded \(cropGapsArray.count) crop gaps")
+                        }
+                    }
+                    
                     // Set initial playhead position
                     // If session is paused, start at beginning of last segment (where we left off)
                     // Otherwise start at the beginning
@@ -4475,6 +5060,317 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         }
         eventTags = newTags
         eventNotes = newNotes
+    }
+    
+    private func addToUndoStack(_ info: [String: Any]) {
+        undoStack.append(info)
+        if undoStack.count > maxUndoStackSize {
+            undoStack.removeFirst()
+        }
+        redoStack.removeAll()
+    }
+    
+    func undoEdit() {
+        guard !undoStack.isEmpty else {
+            print("⚠️ Nothing to undo")
+            return
+        }
+        
+        let undoInfo = undoStack.removeLast()
+        guard let action = undoInfo["action"] as? String else { return }
+        
+        switch action {
+        case "delete":
+            guard let eventIndex = undoInfo["eventIndex"] as? Int,
+                  let event = undoInfo["event"] as? [String: Any] else { return }
+            
+            redoStack.append(undoInfo)
+            
+            if eventIndex <= events.count {
+                events.insert(event, at: eventIndex)
+            } else {
+                events.append(event)
+            }
+            
+            if let tags = undoInfo["tags"] as? Set<String> {
+                shiftTagsAndNotesAfterInsert(at: eventIndex)
+                eventTags[eventIndex] = tags
+            }
+            if let note = undoInfo["note"] as? Data {
+                eventNotes[eventIndex] = note
+            }
+            
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            print("↩️ Undid delete at index \(eventIndex)")
+            
+        case "deleteRange":
+            guard let deletedEventsData = undoInfo["deletedEvents"] as? [[String: Any]] else { return }
+            
+            redoStack.append(undoInfo)
+            
+            let sortedEvents = deletedEventsData.sorted { 
+                ($0["index"] as? Int ?? 0) < ($1["index"] as? Int ?? 0) 
+            }
+            
+            for item in sortedEvents {
+                guard let index = item["index"] as? Int,
+                      let event = item["event"] as? [String: Any] else { continue }
+                
+                if index <= events.count {
+                    events.insert(event, at: index)
+                } else {
+                    events.append(event)
+                }
+                
+                shiftTagsAndNotesAfterInsert(at: index)
+                
+                if let tagsArray = item["tags"] as? [String] {
+                    eventTags[index] = Set(tagsArray)
+                }
+                if let note = item["note"] as? Data {
+                    eventNotes[index] = note
+                }
+            }
+            
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            print("↩️ Undid delete range (\(deletedEventsData.count) events)")
+            
+        case "crop":
+            guard let start = undoInfo["start"] as? Double,
+                  let end = undoInfo["end"] as? Double,
+                  let removedEvents = undoInfo["removedEvents"] as? [[String: Any]],
+                  let removedIndices = undoInfo["removedIndices"] as? [Int] else { return }
+            
+            let currentPlayhead = timelineView?.playheadTimestamp ?? videoStartTimestamp
+            
+            redoStack.append(undoInfo)
+            
+            cropGaps.removeAll { $0.start == start && $0.end == end }
+            
+            let sortedPairs = zip(removedIndices, removedEvents).sorted { $0.0 < $1.0 }
+            for (index, event) in sortedPairs {
+                if index <= events.count {
+                    events.insert(event, at: index)
+                } else {
+                    events.append(event)
+                }
+                shiftTagsAndNotesAfterInsert(at: index)
+            }
+            
+            let simpleCropGaps = cropGaps.map { (start: $0.start, end: $0.end, duration: $0.duration) }
+            timelineView?.setCropGaps(simpleCropGaps)
+            
+            saveCropGapsToMetadata()
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            restoreOriginalVideo(restorePlayhead: currentPlayhead)
+            
+            print("↩️ Undid crop (\(removedEvents.count) events restored)")
+            
+        default:
+            print("⚠️ Unknown undo action: \(action)")
+        }
+    }
+    
+    func redoEdit() {
+        guard !redoStack.isEmpty else {
+            print("⚠️ Nothing to redo")
+            return
+        }
+        
+        let redoInfo = redoStack.removeLast()
+        guard let action = redoInfo["action"] as? String else { return }
+        
+        switch action {
+        case "delete":
+            guard let eventIndex = redoInfo["eventIndex"] as? Int else { return }
+            
+            undoStack.append(redoInfo)
+            
+            if eventIndex < events.count {
+                events.remove(at: eventIndex)
+                shiftTagsAndNotesAfterDelete(at: eventIndex)
+            }
+            
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            print("↪️ Redid delete at index \(eventIndex)")
+            
+        case "deleteRange":
+            guard let start = redoInfo["start"] as? Double,
+                  let end = redoInfo["end"] as? Double else { return }
+            
+            undoStack.append(redoInfo)
+            
+            var indicesToDelete: [Int] = []
+            for (index, event) in events.enumerated() {
+                guard let timestamp = event["timestamp"] as? Double else { continue }
+                if timestamp >= start && timestamp <= end {
+                    indicesToDelete.append(index)
+                }
+            }
+            
+            for index in indicesToDelete.reversed() {
+                events.remove(at: index)
+                shiftTagsAndNotesAfterDelete(at: index)
+            }
+            
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            print("↪️ Redid delete range (\(indicesToDelete.count) events)")
+            
+        case "crop":
+            guard let start = redoInfo["start"] as? Double,
+                  let end = redoInfo["end"] as? Double,
+                  let duration = redoInfo["duration"] as? Double,
+                  let removedEvents = redoInfo["removedEvents"] as? [[String: Any]] else { return }
+            
+            let currentPlayhead = timelineView?.playheadTimestamp ?? videoStartTimestamp
+            let newPlayheadPosition: Double
+            if currentPlayhead >= start && currentPlayhead <= end {
+                newPlayheadPosition = start
+            } else if currentPlayhead > end {
+                newPlayheadPosition = currentPlayhead - duration
+            } else {
+                newPlayheadPosition = currentPlayhead
+            }
+            
+            undoStack.append(redoInfo)
+            
+            var indicesToDelete: [Int] = []
+            for (index, event) in events.enumerated() {
+                guard let timestamp = event["timestamp"] as? Double else { continue }
+                if timestamp >= start && timestamp <= end {
+                    indicesToDelete.append(index)
+                }
+            }
+            
+            for index in indicesToDelete.reversed() {
+                events.remove(at: index)
+                shiftTagsAndNotesAfterDelete(at: index)
+            }
+            
+            let newCropGap = (start: start, end: end, duration: duration, eventBackup: removedEvents)
+            cropGaps.append(newCropGap)
+            cropGaps.sort { $0.start < $1.start }
+            
+            let simpleCropGaps = cropGaps.map { (start: $0.start, end: $0.end, duration: $0.duration) }
+            timelineView?.setCropGaps(simpleCropGaps)
+            
+            saveCropGapsToMetadata()
+            saveEventsToFile()
+            applyEventsFilters()
+            saveTags()
+            eventsTableView?.reloadData()
+            updateTimelineWithCurrentEvents()
+            
+            timelineView?.setPlayheadTimestamp(newPlayheadPosition)
+            cropVideoAsync(gaps: simpleCropGaps, restorePlayhead: newPlayheadPosition)
+            
+            print("↪️ Redid crop (\(indicesToDelete.count) events)")
+            
+        default:
+            print("⚠️ Unknown redo action: \(action)")
+        }
+    }
+    
+    private func restoreOriginalVideo(restorePlayhead: Double? = nil) {
+        let videoPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screen_recording.mp4"
+        let backupPath = videoPath.replacingOccurrences(of: ".mp4", with: "_original.mp4")
+        
+        if FileManager.default.fileExists(atPath: backupPath) {
+            do {
+                if FileManager.default.fileExists(atPath: videoPath) {
+                    try FileManager.default.removeItem(atPath: videoPath)
+                }
+                try FileManager.default.copyItem(atPath: backupPath, toPath: videoPath)
+                
+                if cropGaps.isEmpty {
+                    try FileManager.default.removeItem(atPath: backupPath)
+                }
+                
+                isSuppressingPlayheadUpdates = true
+                reloadVideo()
+                if let playhead = restorePlayhead {
+                    timelineView?.setPlayheadTimestamp(playhead)
+                    let foldedVideoTime = calculateFoldedVideoTime(for: playhead)
+                    videoPlayer?.seek(to: CMTime(seconds: max(0, foldedVideoTime), preferredTimescale: 600))
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.isSuppressingPlayheadUpdates = false
+                }
+                print("✅ Original video restored")
+            } catch {
+                print("❌ Failed to restore video: \(error)")
+            }
+        }
+        
+        restoreOriginalVoiceOverAudio()
+    }
+    
+    private func restoreOriginalVoiceOverAudio() {
+        let audioPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/voiceover_audio.caf"
+        let backupPath = audioPath.replacingOccurrences(of: ".caf", with: "_original.caf")
+        
+        guard FileManager.default.fileExists(atPath: backupPath) else {
+            return
+        }
+        
+        do {
+            if FileManager.default.fileExists(atPath: audioPath) {
+                try FileManager.default.removeItem(atPath: audioPath)
+            }
+            try FileManager.default.copyItem(atPath: backupPath, toPath: audioPath)
+            
+            if cropGaps.isEmpty {
+                try FileManager.default.removeItem(atPath: backupPath)
+            }
+            
+            loadVoiceOverAudioTrack()
+            print("✅ Original VoiceOver audio restored")
+        } catch {
+            print("❌ Failed to restore VoiceOver audio: \(error)")
+        }
+    }
+    
+    private func saveEventsToFile() {
+        let eventsPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/events.json"
+        
+        do {
+            let data = try Data(contentsOf: URL(fileURLWithPath: eventsPath))
+            if var eventLog = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                eventLog["events"] = events
+                eventLog["lastEdited"] = Date().timeIntervalSince1970 * 1000
+                
+                let updatedData = try JSONSerialization.data(withJSONObject: eventLog, options: .prettyPrinted)
+                try updatedData.write(to: URL(fileURLWithPath: eventsPath))
+                print("💾 Events saved to file")
+            }
+        } catch {
+            print("❌ Failed to save events: \(error)")
+        }
     }
     
     private func saveTags() {
@@ -7827,9 +8723,22 @@ class EnhancedTimelineView: NSView {
     // Pause gaps - periods where recording was paused
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []
     
-    // Folded timeline: collapses pause gaps to small markers
+    // Crop gaps - periods that have been cropped/removed from recording
+    private var cropGaps: [(start: Double, end: Double, duration: Double)] = []
+    
+    // Folded timeline: collapses pause/crop gaps to small markers
     private var foldPauses: Bool = true
+    private var foldCrops: Bool = true
     private let pauseMarkerWidth: CGFloat = 12  // Width of collapsed pause marker
+    private let cropMarkerWidth: CGFloat = 12   // Width of collapsed crop marker
+    
+    // Time range selection
+    private var isSelectingRange: Bool = false
+    private var rangeSelectionStart: Double? = nil
+    private var rangeSelectionEnd: Double? = nil
+    private var rangeSelectionStartX: CGFloat = 0
+    var onRangeSelected: ((Double, Double) -> Void)?
+    var onRangeRightClicked: ((Double, Double, NSEvent) -> Void)?
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -7927,10 +8836,20 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    func setCropGaps(_ gaps: [(start: Double, end: Double, duration: Double)]) {
+        self.cropGaps = gaps
+        needsDisplay = true
+    }
+    
     private func getEffectiveDuration() -> Double {
-        guard foldPauses else { return endTime - startTime }
-        let totalPauseDuration = pauseGaps.reduce(0.0) { $0 + $1.duration }
-        return max(1, (endTime - startTime) - totalPauseDuration)
+        var totalGapDuration: Double = 0
+        if foldPauses {
+            totalGapDuration += pauseGaps.reduce(0.0) { $0 + $1.duration }
+        }
+        if foldCrops {
+            totalGapDuration += cropGaps.reduce(0.0) { $0 + $1.duration }
+        }
+        return max(1, (endTime - startTime) - totalGapDuration)
     }
     
     private func getPauseDurationBefore(_ timestamp: Double) -> Double {
@@ -7946,25 +8865,57 @@ class EnhancedTimelineView: NSView {
         return totalPause
     }
     
+    private func getCropDurationBefore(_ timestamp: Double) -> Double {
+        guard foldCrops else { return 0 }
+        var totalCrop: Double = 0
+        for gap in cropGaps {
+            if timestamp > gap.end {
+                totalCrop += gap.duration
+            } else if timestamp > gap.start {
+                totalCrop += (timestamp - gap.start)
+            }
+        }
+        return totalCrop
+    }
+    
+    private func getAllGapDurationBefore(_ timestamp: Double) -> Double {
+        return getPauseDurationBefore(timestamp) + getCropDurationBefore(timestamp)
+    }
+    
+    private func getAllGaps() -> [(start: Double, end: Double, duration: Double, isPause: Bool)] {
+        var allGaps: [(start: Double, end: Double, duration: Double, isPause: Bool)] = []
+        if foldPauses {
+            allGaps.append(contentsOf: pauseGaps.map { (start: $0.start, end: $0.end, duration: $0.duration, isPause: true) })
+        }
+        if foldCrops {
+            allGaps.append(contentsOf: cropGaps.map { (start: $0.start, end: $0.end, duration: $0.duration, isPause: false) })
+        }
+        return allGaps.sorted { $0.start < $1.start }
+    }
+    
     private func timestampToFoldedX(_ timestamp: Double, in timelineRect: NSRect) -> CGFloat {
         let effectiveDuration = getEffectiveDuration()
         guard effectiveDuration > 0 else { return timelineRect.minX }
         
-        if foldPauses && !pauseGaps.isEmpty {
-            let totalMarkerWidth = CGFloat(pauseGaps.count) * pauseMarkerWidth
+        let allGaps = getAllGaps()
+        
+        if !allGaps.isEmpty {
+            let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
             let contentWidth = timelineRect.width - totalMarkerWidth
-            let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
             
             var currentX = timelineRect.minX
             var previousGapEnd = startTime
             
-            for gap in sortedGaps {
+            for gap in allGaps {
                 let segmentDuration = gap.start - previousGapEnd
                 let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
                 
                 if timestamp < gap.start {
-                    let progressInSegment = (timestamp - previousGapEnd) / segmentDuration
-                    return currentX + segmentWidth * CGFloat(progressInSegment)
+                    if segmentDuration > 0 {
+                        let progressInSegment = (timestamp - previousGapEnd) / segmentDuration
+                        return currentX + segmentWidth * CGFloat(progressInSegment)
+                    }
+                    return currentX
                 }
                 
                 if timestamp >= gap.start && timestamp < gap.end {
@@ -7994,23 +8945,27 @@ class EnhancedTimelineView: NSView {
         let effectiveDuration = getEffectiveDuration()
         guard effectiveDuration > 0 else { return startTime }
         
-        if foldPauses && !pauseGaps.isEmpty {
-            let totalMarkerWidth = CGFloat(pauseGaps.count) * pauseMarkerWidth
+        let allGaps = getAllGaps()
+        
+        if !allGaps.isEmpty {
+            let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
             let contentWidth = timelineRect.width - totalMarkerWidth
-            let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
             
             var currentX = timelineRect.minX
             var currentEventTime = startTime
             var previousGapEnd = startTime
             
-            for (index, gap) in sortedGaps.enumerated() {
+            for gap in allGaps {
                 let segmentDuration = gap.start - previousGapEnd
                 let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
                 let segmentEndX = currentX + segmentWidth
                 
                 if x < segmentEndX {
-                    let progressInSegment = (x - currentX) / segmentWidth
-                    return currentEventTime + segmentDuration * Double(progressInSegment)
+                    if segmentWidth > 0 {
+                        let progressInSegment = (x - currentX) / segmentWidth
+                        return currentEventTime + segmentDuration * Double(progressInSegment)
+                    }
+                    return currentEventTime
                 }
                 
                 currentEventTime = gap.start
@@ -8098,8 +9053,38 @@ class EnhancedTimelineView: NSView {
         
         // Double-click anywhere on timeline moves playhead to that position
         if event.clickCount == 2 {
+            clearRangeSelection()
             updatePlayheadFromMouseLocation(locationInView)
             return
+        }
+        
+        // Shift+click starts range selection
+        if event.modifierFlags.contains(.shift) {
+            let leftMargin: CGFloat = 20
+            let rightMargin: CGFloat = 20
+            let topMargin: CGFloat = 50
+            let bottomMargin: CGFloat = 20
+            
+            let timelineRect = NSRect(
+                x: leftMargin,
+                y: bottomMargin,
+                width: bounds.width - leftMargin - rightMargin,
+                height: bounds.height - topMargin - bottomMargin
+            )
+            
+            isSelectingRange = true
+            rangeSelectionStartX = locationInView.x
+            let timestamp = foldedXToTimestamp(locationInView.x, in: timelineRect)
+            rangeSelectionStart = timestamp
+            rangeSelectionEnd = timestamp
+            NSCursor.crosshair.push()
+            needsDisplay = true
+            return
+        }
+        
+        // Clear range selection on regular click
+        if rangeSelectionStart != nil {
+            clearRangeSelection()
         }
         
         // Check if clicking on an annotation bar first
@@ -8163,6 +9148,26 @@ class EnhancedTimelineView: NSView {
     
     override func mouseDragged(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
+        
+        // Handle range selection drag
+        if isSelectingRange {
+            let leftMargin: CGFloat = 20
+            let rightMargin: CGFloat = 20
+            let topMargin: CGFloat = 50
+            let bottomMargin: CGFloat = 20
+            
+            let timelineRect = NSRect(
+                x: leftMargin,
+                y: bottomMargin,
+                width: bounds.width - leftMargin - rightMargin,
+                height: bounds.height - topMargin - bottomMargin
+            )
+            
+            let timestamp = foldedXToTimestamp(locationInView.x, in: timelineRect)
+            rangeSelectionEnd = timestamp
+            needsDisplay = true
+            return
+        }
         
         if isDraggingAnnotation, let annotation = draggingAnnotation {
             let leftMargin: CGFloat = 20
@@ -8341,6 +9346,27 @@ class EnhancedTimelineView: NSView {
     }
     
     override func mouseUp(with event: NSEvent) {
+        // Handle range selection completion
+        if isSelectingRange {
+            NSCursor.pop()
+            isSelectingRange = false
+            
+            if let start = rangeSelectionStart, let end = rangeSelectionEnd {
+                let actualStart = min(start, end)
+                let actualEnd = max(start, end)
+                
+                if actualEnd - actualStart > 1000 {
+                    rangeSelectionStart = actualStart
+                    rangeSelectionEnd = actualEnd
+                    onRangeSelected?(actualStart, actualEnd)
+                } else {
+                    clearRangeSelection()
+                }
+            }
+            needsDisplay = true
+            return
+        }
+        
         if isDraggingAnnotation, let annotation = draggingAnnotation {
             NSCursor.pop()
             onAnnotationDurationChanged?(annotation, annotation.startTime, annotation.duration)
@@ -8354,6 +9380,21 @@ class EnhancedTimelineView: NSView {
         stopEdgePanning()
         lastDragLocation = nil
         lastDragTime = nil
+    }
+    
+    func clearRangeSelection() {
+        rangeSelectionStart = nil
+        rangeSelectionEnd = nil
+        needsDisplay = true
+    }
+    
+    func hasRangeSelection() -> Bool {
+        return rangeSelectionStart != nil && rangeSelectionEnd != nil
+    }
+    
+    func getSelectedRange() -> (start: Double, end: Double)? {
+        guard let start = rangeSelectionStart, let end = rangeSelectionEnd else { return nil }
+        return (min(start, end), max(start, end))
     }
     
     private func isClickOnPlayhead(_ location: NSPoint) -> Bool {
@@ -8404,6 +9445,27 @@ class EnhancedTimelineView: NSView {
     
     override func rightMouseDown(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
+        
+        // Check if right-clicking within a selected range
+        if let range = getSelectedRange() {
+            let leftMargin: CGFloat = 20
+            let rightMargin: CGFloat = 20
+            let topMargin: CGFloat = 50
+            let bottomMargin: CGFloat = 20
+            
+            let timelineRect = NSRect(
+                x: leftMargin,
+                y: bottomMargin,
+                width: bounds.width - leftMargin - rightMargin,
+                height: bounds.height - topMargin - bottomMargin
+            )
+            
+            let clickTimestamp = foldedXToTimestamp(locationInView.x, in: timelineRect)
+            if clickTimestamp >= range.start && clickTimestamp <= range.end {
+                onRangeRightClicked?(range.start, range.end, event)
+                return
+            }
+        }
         
         for eventRect in eventRects {
             if eventRect.rect.contains(locationInView) {
@@ -8457,12 +9519,56 @@ class EnhancedTimelineView: NSView {
         context?.saveGState()
         
         drawTimelineBackground()
+        drawRangeSelection()
         drawEventTracks()
         drawPlayhead()
         drawTimeAxis()
         drawHoveredEventTooltip()
         
         context?.restoreGState()
+    }
+    
+    private func drawRangeSelection() {
+        guard let start = rangeSelectionStart, let end = rangeSelectionEnd else { return }
+        
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
+        
+        let timelineRect = NSRect(
+            x: leftMargin,
+            y: bottomMargin,
+            width: bounds.width - leftMargin - rightMargin,
+            height: bounds.height - topMargin - bottomMargin
+        )
+        
+        let actualStart = min(start, end)
+        let actualEnd = max(start, end)
+        
+        let startX = timestampToFoldedX(actualStart, in: timelineRect)
+        let endX = timestampToFoldedX(actualEnd, in: timelineRect)
+        
+        let selectionRect = NSRect(
+            x: startX,
+            y: timelineRect.minY,
+            width: endX - startX,
+            height: timelineRect.height
+        )
+        
+        NSColor.systemBlue.withAlphaComponent(0.2).setFill()
+        selectionRect.fill()
+        
+        NSColor.systemBlue.withAlphaComponent(0.6).setStroke()
+        let borderPath = NSBezierPath(rect: selectionRect)
+        borderPath.lineWidth = 2.0
+        borderPath.stroke()
+        
+        NSColor.systemBlue.setFill()
+        let leftHandle = NSRect(x: startX - 3, y: timelineRect.minY, width: 6, height: timelineRect.height)
+        let rightHandle = NSRect(x: endX - 3, y: timelineRect.minY, width: 6, height: timelineRect.height)
+        leftHandle.fill()
+        rightHandle.fill()
     }
     
     private func drawEmptyState() {
@@ -8647,6 +9753,7 @@ class EnhancedTimelineView: NSView {
         }
         
         drawPauseGaps(in: timelineRect, duration: duration)
+        drawCropGaps(in: timelineRect, duration: duration)
         drawAnnotationBars(in: timelineRect)
     }
     
@@ -8738,55 +9845,69 @@ class EnhancedTimelineView: NSView {
         let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
         
         for gap in sortedGaps {
-            let markerX = timestampToFoldedX(gap.start, in: timelineRect)
-            
-            let markerRect = NSRect(
-                x: markerX - pauseMarkerWidth / 2,
-                y: timelineRect.minY,
-                width: pauseMarkerWidth,
-                height: timelineRect.height
-            )
-            
-            NSColor.systemYellow.withAlphaComponent(0.3).setFill()
-            markerRect.fill()
-            
-            NSColor.systemYellow.withAlphaComponent(0.8).setStroke()
-            let leftLine = NSBezierPath()
-            leftLine.move(to: NSPoint(x: markerRect.minX, y: timelineRect.minY))
-            leftLine.line(to: NSPoint(x: markerRect.minX, y: timelineRect.maxY))
-            leftLine.lineWidth = 1.5
-            leftLine.stroke()
-            
-            let rightLine = NSBezierPath()
-            rightLine.move(to: NSPoint(x: markerRect.maxX, y: timelineRect.minY))
-            rightLine.line(to: NSPoint(x: markerRect.maxX, y: timelineRect.maxY))
-            rightLine.lineWidth = 1.5
-            rightLine.stroke()
-            
-            let pauseIcon = "⏸"
-            let pauseAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 9, weight: .medium),
-                .foregroundColor: NSColor.systemYellow
-            ]
-            let iconSize = pauseIcon.size(withAttributes: pauseAttrs)
-            pauseIcon.draw(at: NSPoint(x: markerX - iconSize.width / 2, y: baselineY - iconSize.height / 2), withAttributes: pauseAttrs)
-            
-            let durationSecs = gap.duration / 1_000_000
-            let durationText: String
-            if durationSecs >= 60 {
-                let mins = Int(durationSecs) / 60
-                let secs = Int(durationSecs) % 60
-                durationText = "\(mins)m\(secs)s"
-            } else {
-                durationText = String(format: "%.1fs", durationSecs)
-            }
-            let durationAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 8, weight: .regular),
-                .foregroundColor: NSColor.secondaryLabelColor
-            ]
-            let durationSize = durationText.size(withAttributes: durationAttrs)
-            durationText.draw(at: NSPoint(x: markerX - durationSize.width / 2, y: markerRect.maxY + 2), withAttributes: durationAttrs)
+            drawGapMarker(gap: gap, in: timelineRect, baselineY: baselineY, color: .systemYellow, icon: "⏸")
         }
+    }
+    
+    private func drawCropGaps(in timelineRect: NSRect, duration: Double) {
+        guard !cropGaps.isEmpty else { return }
+        
+        let baselineY = timelineRect.minY + timelineRect.height * 0.5
+        let sortedGaps = cropGaps.sorted { $0.start < $1.start }
+        
+        for gap in sortedGaps {
+            drawGapMarker(gap: gap, in: timelineRect, baselineY: baselineY, color: .systemOrange, icon: "✂️")
+        }
+    }
+    
+    private func drawGapMarker(gap: (start: Double, end: Double, duration: Double), in timelineRect: NSRect, baselineY: CGFloat, color: NSColor, icon: String) {
+        let markerX = timestampToFoldedX(gap.start, in: timelineRect)
+        
+        let markerRect = NSRect(
+            x: markerX - pauseMarkerWidth / 2,
+            y: timelineRect.minY,
+            width: pauseMarkerWidth,
+            height: timelineRect.height
+        )
+        
+        color.withAlphaComponent(0.3).setFill()
+        markerRect.fill()
+        
+        color.withAlphaComponent(0.8).setStroke()
+        let leftLine = NSBezierPath()
+        leftLine.move(to: NSPoint(x: markerRect.minX, y: timelineRect.minY))
+        leftLine.line(to: NSPoint(x: markerRect.minX, y: timelineRect.maxY))
+        leftLine.lineWidth = 1.5
+        leftLine.stroke()
+        
+        let rightLine = NSBezierPath()
+        rightLine.move(to: NSPoint(x: markerRect.maxX, y: timelineRect.minY))
+        rightLine.line(to: NSPoint(x: markerRect.maxX, y: timelineRect.maxY))
+        rightLine.lineWidth = 1.5
+        rightLine.stroke()
+        
+        let iconAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 9, weight: .medium),
+            .foregroundColor: color
+        ]
+        let iconSize = icon.size(withAttributes: iconAttrs)
+        icon.draw(at: NSPoint(x: markerX - iconSize.width / 2, y: baselineY - iconSize.height / 2), withAttributes: iconAttrs)
+        
+        let durationSecs = gap.duration / 1_000_000
+        let durationText: String
+        if durationSecs >= 60 {
+            let mins = Int(durationSecs) / 60
+            let secs = Int(durationSecs) % 60
+            durationText = "\(mins)m\(secs)s"
+        } else {
+            durationText = String(format: "%.1fs", durationSecs)
+        }
+        let durationAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 8, weight: .regular),
+            .foregroundColor: NSColor.secondaryLabelColor
+        ]
+        let durationSize = durationText.size(withAttributes: durationAttrs)
+        durationText.draw(at: NSPoint(x: markerX - durationSize.width / 2, y: markerRect.maxY + 2), withAttributes: durationAttrs)
     }
     
     private func drawPlayhead() {

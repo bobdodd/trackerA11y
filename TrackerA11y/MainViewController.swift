@@ -603,6 +603,40 @@ class MainViewController: NSViewController {
         print("🧹 MainViewController cleaned up")
     }
     
+    // MARK: - Edit Actions
+    
+    func undoEdit() {
+        if let sessionDetailVC = findActiveSessionDetailViewController() {
+            sessionDetailVC.undoEdit()
+        } else {
+            print("⚠️ No active session to undo")
+        }
+    }
+    
+    func redoEdit() {
+        if let sessionDetailVC = findActiveSessionDetailViewController() {
+            sessionDetailVC.redoEdit()
+        } else {
+            print("⚠️ No active session to redo")
+        }
+    }
+    
+    private func findActiveSessionDetailViewController() -> SessionDetailViewController? {
+        if let keyWindow = NSApplication.shared.keyWindow,
+           let contentVC = keyWindow.contentViewController as? SessionDetailViewController {
+            return contentVC
+        }
+        
+        for window in sessionWindows {
+            if window.isKeyWindow,
+               let contentVC = window.contentViewController as? SessionDetailViewController {
+                return contentVC
+            }
+        }
+        
+        return nil
+    }
+    
     // MARK: - Screenshot Feature
     
     func takeScreenshot(type: ScreenshotType) {

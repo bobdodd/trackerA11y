@@ -10,8 +10,9 @@ import { FocusManager } from '@/core/FocusManager';
 import { InteractionManager } from '@/interaction/InteractionManager';
 import { ScreenshotCapture } from './ScreenshotCapture';
 import { DOMCapture } from './DOMCapture';
-import { RecorderConfig, RecordedEvent, EventLog } from './types';
+import { RecorderConfig, RecordedEvent, EventLog, EditManagerState } from './types';
 import { SimpleMongoStore } from '@/database/SimpleMongoStore';
+import { EditManager } from './EditManager';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -37,6 +38,8 @@ export class EventRecorder extends EventEmitter {
   private pauseStartTimestamp: number = 0;
   private totalPausedDuration: number = 0;
   private pauseGaps: Array<{ start: number; end: number; duration: number }> = [];
+  
+  private editManager: EditManager;
 
   constructor(config: RecorderConfig) {
     super();
@@ -86,6 +89,31 @@ export class EventRecorder extends EventEmitter {
         version: '1.0.0'
       }
     };
+    
+    // Initialize edit manager
+    this.editManager = new EditManager(this.sessionId, this.outputDir);
+    this.setupEditManagerHandlers();
+  }
+
+  private setupEditManagerHandlers(): void {
+    this.editManager.on('edit', (data) => {
+      this.eventBuffer = data.events;
+      this.emit('eventsEdited', data);
+    });
+
+    this.editManager.on('undo', (data) => {
+      this.eventBuffer = data.events;
+      this.emit('editUndone', data);
+    });
+
+    this.editManager.on('redo', (data) => {
+      this.eventBuffer = data.events;
+      this.emit('editRedone', data);
+    });
+
+    this.editManager.on('saved', (data) => {
+      this.emit('eventsSaved', data);
+    });
   }
 
   /**
@@ -343,6 +371,66 @@ export class EventRecorder extends EventEmitter {
     };
   }
 
+  /**
+   * Delete a single event by ID (reversible)
+   */
+  deleteEvent(eventId: string): RecordedEvent[] {
+    this.editManager.setEvents(this.eventBuffer);
+    return this.editManager.deleteEvent(eventId);
+  }
+
+  /**
+   * Delete multiple events by IDs (reversible)
+   */
+  deleteEvents(eventIds: string[]): RecordedEvent[] {
+    this.editManager.setEvents(this.eventBuffer);
+    return this.editManager.deleteEvents(eventIds);
+  }
+
+  /**
+   * Delete all events in a time range (reversible)
+   */
+  deleteTimeRange(startTime: number, endTime: number): RecordedEvent[] {
+    this.editManager.setEvents(this.eventBuffer);
+    return this.editManager.deleteTimeRange(startTime, endTime);
+  }
+
+  /**
+   * Undo the last edit operation
+   */
+  undoEdit(): RecordedEvent[] | null {
+    return this.editManager.undo();
+  }
+
+  /**
+   * Redo a previously undone edit operation
+   */
+  redoEdit(): RecordedEvent[] | null {
+    return this.editManager.redo();
+  }
+
+  /**
+   * Get the current edit state (can undo/redo, stack sizes)
+   */
+  getEditState(): EditManagerState {
+    return this.editManager.getState();
+  }
+
+  /**
+   * Save current event state after edits
+   */
+  async saveEdits(): Promise<void> {
+    await this.editManager.saveEvents();
+    await this.editManager.saveEditHistory();
+  }
+
+  /**
+   * Get the edit manager for advanced operations
+   */
+  getEditManager(): EditManager {
+    return this.editManager;
+  }
+
   private setupEventHandlers(): void {
     // Focus change events
     this.focusManager.on('focusChanged', async (event) => {
@@ -430,7 +518,7 @@ export class EventRecorder extends EventEmitter {
     const timestamp = this.timeSync.now();
     
     return {
-      id: `${source}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `${source}_${timestamp}_${Math.random().toString(36).substring(2, 11)}`,
       timestamp,
       source,
       type,

@@ -103,3 +103,38 @@ export interface RecordingSession {
   domStateCount: number;
   status: 'recording' | 'stopped' | 'error';
 }
+
+export type EditOperationType = 'delete_event' | 'delete_range' | 'restore_event' | 'restore_range';
+
+export interface EditOperation {
+  id: string;
+  type: EditOperationType;
+  timestamp: number;
+  sessionId: string;
+  targetEventIds: string[];
+  affectedEvents: RecordedEvent[];
+  timeRange?: { start: number; end: number };
+  description: string;
+}
+
+export interface EditCommand {
+  execute(): RecordedEvent[];
+  undo(): RecordedEvent[];
+  getOperation(): EditOperation;
+}
+
+export interface EditHistory {
+  sessionId: string;
+  operations: EditOperation[];
+  currentIndex: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface EditManagerState {
+  canUndo: boolean;
+  canRedo: boolean;
+  undoStackSize: number;
+  redoStackSize: number;
+  lastOperation?: EditOperation;
+}
