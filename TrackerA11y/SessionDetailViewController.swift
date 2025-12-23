@@ -36,7 +36,7 @@ class TagsNotesCellView: NSView {
     }
 }
 
-class SessionDetailViewController: NSViewController {
+class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     
     private let sessionId: String
     private let sessionData: [String: Any]
@@ -129,6 +129,14 @@ class SessionDetailViewController: NSViewController {
     private var voiceOverVolumeSlider: NSSlider?
     private var voiceOverToggleButton: NSButton?
     private var isVoiceOverAudioEnabled: Bool = true
+    
+    // Video annotation/callout system
+    private var annotationManager: AnnotationManager?
+    private var annotationOverlayView: VideoAnnotationOverlayView?
+    private var selectedAnnotation: Annotation?
+    private var isAddingAnnotation: Bool = false
+    private var pendingAnnotationType: AnnotationType?
+    private var currentAnnotationColor: NSColor = .systemRed
     
     init(sessionId: String, sessionData: [String: Any]) {
         self.sessionId = sessionId
@@ -2868,6 +2876,86 @@ class SessionDetailViewController: NSViewController {
         addMarkerBtn.font = NSFont.systemFont(ofSize: 13)
         headerStack.addArrangedSubview(addMarkerBtn)
         
+        // Annotation tools separator
+        let annotationSeparator = NSBox()
+        annotationSeparator.boxType = .separator
+        annotationSeparator.translatesAutoresizingMaskIntoConstraints = false
+        headerStack.addArrangedSubview(annotationSeparator)
+        annotationSeparator.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        annotationSeparator.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        
+        // Annotation tool buttons
+        let annotationLabel = NSTextField(labelWithString: "Callouts:")
+        annotationLabel.font = NSFont.systemFont(ofSize: 12)
+        annotationLabel.textColor = .secondaryLabelColor
+        headerStack.addArrangedSubview(annotationLabel)
+        
+        let rectBtn = NSButton(title: "▢", target: self, action: #selector(addRectangleAnnotation(_:)))
+        rectBtn.bezelStyle = .rounded
+        rectBtn.toolTip = "Add Rectangle"
+        headerStack.addArrangedSubview(rectBtn)
+        
+        let ellipseBtn = NSButton(title: "○", target: self, action: #selector(addEllipseAnnotation(_:)))
+        ellipseBtn.bezelStyle = .rounded
+        ellipseBtn.toolTip = "Add Ellipse"
+        headerStack.addArrangedSubview(ellipseBtn)
+        
+        let arrowBtn = NSButton(title: "➔", target: self, action: #selector(addArrowAnnotation(_:)))
+        arrowBtn.bezelStyle = .rounded
+        arrowBtn.toolTip = "Add Arrow"
+        headerStack.addArrangedSubview(arrowBtn)
+        
+        let textBtn = NSButton(title: "T", target: self, action: #selector(addTextAnnotation(_:)))
+        textBtn.bezelStyle = .rounded
+        textBtn.toolTip = "Add Text"
+        headerStack.addArrangedSubview(textBtn)
+        
+        let highlightBtn = NSButton(title: "🖍", target: self, action: #selector(addHighlightAnnotation(_:)))
+        highlightBtn.bezelStyle = .rounded
+        highlightBtn.toolTip = "Add Highlight"
+        headerStack.addArrangedSubview(highlightBtn)
+        
+        let colorSeparator = NSBox()
+        colorSeparator.boxType = .separator
+        colorSeparator.translatesAutoresizingMaskIntoConstraints = false
+        headerStack.addArrangedSubview(colorSeparator)
+        
+        let colorLabel = NSTextField(labelWithString: "Color:")
+        colorLabel.font = NSFont.systemFont(ofSize: 12)
+        colorLabel.textColor = .secondaryLabelColor
+        headerStack.addArrangedSubview(colorLabel)
+        
+        let colors: [(NSColor, String)] = [
+            (.systemRed, "Red"),
+            (.systemOrange, "Orange"),
+            (.systemYellow, "Yellow"),
+            (.systemGreen, "Green"),
+            (.systemBlue, "Blue"),
+            (.systemPurple, "Purple"),
+            (.white, "White"),
+            (.black, "Black")
+        ]
+        
+        for (index, (color, name)) in colors.enumerated() {
+            let colorBtn = NSButton(frame: NSRect(x: 0, y: 0, width: 24, height: 24))
+            colorBtn.title = ""
+            colorBtn.bezelStyle = .rounded
+            colorBtn.wantsLayer = true
+            colorBtn.layer?.backgroundColor = color.cgColor
+            colorBtn.layer?.cornerRadius = 4
+            colorBtn.tag = index
+            colorBtn.target = self
+            colorBtn.action = #selector(annotationColorSelected(_:))
+            colorBtn.toolTip = name
+            if index == 0 {
+                colorBtn.layer?.borderWidth = 2
+                colorBtn.layer?.borderColor = NSColor.controlAccentColor.cgColor
+            }
+            headerStack.addArrangedSubview(colorBtn)
+            colorBtn.widthAnchor.constraint(equalToConstant: 24).isActive = true
+            colorBtn.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        }
+        
         containerView.addSubview(headerStack)
         
         // Video player section (top half)
@@ -2908,6 +2996,19 @@ class SessionDetailViewController: NSViewController {
             if let timestamp = self.timelineView?.playheadTimestamp {
                 self.scrollTimelineToKeepPlayheadVisible(timestamp: timestamp, movingForward: true)
             }
+        }
+        timeline.onAnnotationSelected = { [weak self] annotation in
+            self?.selectedAnnotation = annotation
+            self?.annotationOverlayView?.selectAnnotation(id: annotation.id)
+            self?.showAnnotationProperties(annotation)
+        }
+        timeline.onAnnotationDurationChanged = { [weak self] annotation, newStart, newDuration in
+            guard let self = self else { return }
+            var updated = annotation
+            updated.startTime = newStart
+            updated.duration = newDuration
+            self.annotationManager?.updateAnnotation(updated)
+            self.updateAnnotationOverlay()
         }
         
         // Set video start timestamp as datum IMMEDIATELY
@@ -2999,6 +3100,14 @@ class SessionDetailViewController: NSViewController {
         self.videoPlayerView = playerView
         container.addSubview(playerView)
         
+        // Annotation overlay view (on top of video) - hidden by default to not block player controls
+        let annotationOverlay = VideoAnnotationOverlayView(frame: .zero)
+        annotationOverlay.translatesAutoresizingMaskIntoConstraints = false
+        annotationOverlay.delegate = self
+        annotationOverlay.isHidden = true
+        self.annotationOverlayView = annotationOverlay
+        container.addSubview(annotationOverlay)
+        
         // VoiceOver audio controls bar
         let audioControlsBar = NSView()
         audioControlsBar.wantsLayer = true
@@ -3050,6 +3159,11 @@ class SessionDetailViewController: NSViewController {
             playerView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             playerView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             playerView.bottomAnchor.constraint(equalTo: audioControlsBar.topAnchor),
+            
+            annotationOverlay.topAnchor.constraint(equalTo: playerView.topAnchor),
+            annotationOverlay.leadingAnchor.constraint(equalTo: playerView.leadingAnchor),
+            annotationOverlay.trailingAnchor.constraint(equalTo: playerView.trailingAnchor),
+            annotationOverlay.bottomAnchor.constraint(equalTo: playerView.bottomAnchor),
             
             audioControlsBar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             audioControlsBar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
@@ -3114,6 +3228,9 @@ class SessionDetailViewController: NSViewController {
         
         // Load VoiceOver audio track if available
         loadVoiceOverAudioTrack()
+        
+        // Load annotations for this session
+        loadAnnotations()
         
         print("📹 Screen recording loaded successfully")
     }
@@ -3224,6 +3341,9 @@ class SessionDetailViewController: NSViewController {
         
         // Always update playhead position
         timelineView?.setPlayheadTimestamp(eventTimestamp)
+        
+        // Update annotation overlay with current timestamp
+        annotationOverlayView?.setCurrentTimestamp(eventTimestamp)
         
         // Auto-show event details during playback (if not user-selected)
         if isVideoPlaying && !isUserSelectedEvent {
@@ -3894,7 +4014,8 @@ class SessionDetailViewController: NSViewController {
             ("Focus", .systemBlue),
             ("System", .systemOrange),
             ("Marker", .systemRed),
-            ("VoiceOver", .systemCyan)
+            ("VoiceOver", .systemCyan),
+            ("Callout", .systemPink)
         ]
         
         for (name, color) in sources {
@@ -7119,6 +7240,538 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         
         return details.joined(separator: "\n")
     }
+    
+    // MARK: - Annotation Actions
+    
+    @objc private func addRectangleAnnotation(_ sender: Any) {
+        startAnnotationCreation(type: .rectangle)
+    }
+    
+    @objc private func addEllipseAnnotation(_ sender: Any) {
+        startAnnotationCreation(type: .ellipse)
+    }
+    
+    @objc private func addArrowAnnotation(_ sender: Any) {
+        startAnnotationCreation(type: .arrow)
+    }
+    
+    @objc private func addTextAnnotation(_ sender: Any) {
+        startAnnotationCreation(type: .text)
+    }
+    
+    @objc private func addHighlightAnnotation(_ sender: Any) {
+        startAnnotationCreation(type: .highlight)
+    }
+    
+    @objc private func annotationColorSelected(_ sender: NSButton) {
+        let colors: [NSColor] = [.systemRed, .systemOrange, .systemYellow, .systemGreen, .systemBlue, .systemPurple, .white, .black]
+        guard sender.tag >= 0 && sender.tag < colors.count else { return }
+        
+        currentAnnotationColor = colors[sender.tag]
+        annotationOverlayView?.currentColor = currentAnnotationColor
+        
+        if let headerStack = sender.superview as? NSStackView {
+            for view in headerStack.arrangedSubviews {
+                if let btn = view as? NSButton, btn.action == #selector(annotationColorSelected(_:)) {
+                    btn.layer?.borderWidth = btn.tag == sender.tag ? 2 : 0
+                    btn.layer?.borderColor = NSColor.controlAccentColor.cgColor
+                }
+            }
+        }
+    }
+    
+    private func startAnnotationCreation(type: AnnotationType) {
+        if annotationManager == nil {
+            let sessionPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+            annotationManager = AnnotationManager(sessionPath: sessionPath)
+        }
+        
+        isAddingAnnotation = true
+        pendingAnnotationType = type
+        annotationOverlayView?.isEditMode = true
+        annotationOverlayView?.pendingAnnotationType = type
+        annotationOverlayView?.currentColor = currentAnnotationColor
+        annotationOverlayView?.isHidden = false
+        
+        NSCursor.crosshair.push()
+    }
+    
+    private func finishAnnotationCreation() {
+        isAddingAnnotation = false
+        pendingAnnotationType = nil
+        annotationOverlayView?.isEditMode = false
+        annotationOverlayView?.pendingAnnotationType = nil
+        updateAnnotationOverlayVisibility()
+        NSCursor.pop()
+    }
+    
+    private func updateAnnotationOverlayVisibility() {
+        guard let overlay = annotationOverlayView else { return }
+        let hasVisibleAnnotations = !(annotationManager?.getAllAnnotations().isEmpty ?? true)
+        overlay.isHidden = !hasVisibleAnnotations && !isAddingAnnotation
+    }
+    
+    private func updateAnnotationOverlay() {
+        guard let manager = annotationManager else { return }
+        let allAnnotations = manager.getAllAnnotations()
+        annotationOverlayView?.setAnnotations(allAnnotations)
+        timelineView?.setAnnotations(allAnnotations)
+        updateAnnotationOverlayVisibility()
+    }
+    
+    private func loadAnnotations() {
+        let sessionPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)"
+        annotationManager = AnnotationManager(sessionPath: sessionPath)
+        updateAnnotationOverlay()
+    }
+}
+
+// MARK: - VideoAnnotationOverlayDelegate
+extension SessionDetailViewController: VideoAnnotationOverlayDelegate {
+    func annotationOverlay(_ overlay: VideoAnnotationOverlayView, didSelectAnnotation annotation: Annotation?) {
+        selectedAnnotation = annotation
+        if let annotation = annotation {
+            showAnnotationProperties(annotation)
+        }
+    }
+    
+    func annotationOverlay(_ overlay: VideoAnnotationOverlayView, didCreateAnnotation annotation: Annotation) {
+        var newAnnotation = annotation
+        
+        if annotation.type == .text || annotation.type == .callout {
+            let alert = NSAlert()
+            alert.messageText = "Enter Text"
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+            
+            let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+            textField.placeholderString = "Enter annotation text..."
+            alert.accessoryView = textField
+            
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                newAnnotation.text = textField.stringValue.isEmpty ? "Text" : textField.stringValue
+            } else {
+                finishAnnotationCreation()
+                return
+            }
+        }
+        
+        annotationManager?.addAnnotation(newAnnotation)
+        updateAnnotationOverlay()
+        finishAnnotationCreation()
+    }
+    
+    func annotationOverlay(_ overlay: VideoAnnotationOverlayView, didUpdateAnnotation annotation: Annotation) {
+        annotationManager?.updateAnnotation(annotation)
+        selectedAnnotation = annotation
+        updateAnnotationOverlay()
+        updateAnnotationPropertiesText(annotation)
+    }
+    
+    private func updateAnnotationPropertiesText(_ annotation: Annotation) {
+        guard let stackView = timelineDetailStackView else { return }
+        
+        for card in stackView.arrangedSubviews {
+            for subview in card.subviews {
+                if let contentStack = subview as? NSStackView {
+                    for row in contentStack.arrangedSubviews {
+                        if let scrollView = row.subviews.compactMap({ $0 as? NSScrollView }).first,
+                           let textView = scrollView.documentView as? NSTextView,
+                           let identifier = textView.identifier?.rawValue,
+                           identifier.hasPrefix("annotationText_") {
+                            if textView.string != annotation.text {
+                                textView.string = annotation.text ?? ""
+                                resizeTextScrollView(scrollView: scrollView, textView: textView)
+                            }
+                            return
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func resizeTextScrollView(scrollView: NSScrollView, textView: NSTextView) {
+        textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+        let usedRect = textView.layoutManager?.usedRect(for: textView.textContainer!) ?? .zero
+        let newHeight = max(usedRect.height + 16, 60)
+        
+        for constraint in scrollView.constraints {
+            if constraint.identifier == "textScrollViewHeight" {
+                constraint.constant = newHeight
+                break
+            }
+        }
+        scrollView.superview?.superview?.superview?.needsLayout = true
+        timelineDetailStackView?.needsLayout = true
+    }
+    
+    private func showAnnotationProperties(_ annotation: Annotation) {
+        guard let stackView = timelineDetailStackView else { return }
+        
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        timelineDetailLabel?.isHidden = true
+        timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+        
+        let typeNames: [AnnotationType: String] = [
+            .rectangle: "Rectangle",
+            .ellipse: "Ellipse",
+            .arrow: "Arrow",
+            .line: "Line",
+            .text: "Text",
+            .highlight: "Highlight",
+            .blur: "Blur",
+            .callout: "Callout"
+        ]
+        let typeIcons: [AnnotationType: String] = [
+            .rectangle: "▢",
+            .ellipse: "○",
+            .arrow: "➔",
+            .line: "╱",
+            .text: "T",
+            .highlight: "🖍",
+            .blur: "▦",
+            .callout: "💬"
+        ]
+        
+        let typeName = typeNames[annotation.type] ?? "Annotation"
+        let typeIcon = typeIcons[annotation.type] ?? "📝"
+        
+        let (headerCard, headerContent) = createDetailCard(title: typeName, icon: typeIcon)
+        
+        let startTime = annotation.startTime - videoStartTimestamp
+        let startSeconds = startTime / 1_000_000
+        headerContent.addArrangedSubview(createEditableTimeRow(label: "Start", seconds: startSeconds, tag: 1001))
+        
+        let durationSeconds = annotation.duration / 1_000_000
+        headerContent.addArrangedSubview(createEditableTimeRow(label: "Duration", seconds: durationSeconds, tag: 1002))
+        
+        if annotation.type == .text || annotation.type == .callout {
+            let textRow = createEditableTextRow(label: "Text", value: annotation.text ?? "", tag: 1003)
+            headerContent.addArrangedSubview(textRow)
+            textRow.widthAnchor.constraint(equalTo: headerContent.widthAnchor).isActive = true
+        } else if let text = annotation.text, !text.isEmpty {
+            headerContent.addArrangedSubview(createDetailRow(label: "Text", value: text))
+        }
+        
+        stackView.addArrangedSubview(headerCard)
+        headerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        
+        let (styleCard, styleContent) = createDetailCard(title: "Style", icon: "🎨")
+        
+        let strokeColor = annotation.style.strokeColor.nsColor
+        styleContent.addArrangedSubview(createColorPickerRow(label: "Stroke", color: strokeColor, tag: 2001))
+        styleContent.addArrangedSubview(createDetailRow(label: "Stroke Width", value: String(format: "%.1f pt", annotation.style.strokeWidth)))
+        
+        let fillColor = annotation.style.fillColor?.nsColor ?? .clear
+        styleContent.addArrangedSubview(createColorPickerRow(label: "Fill", color: fillColor, tag: 2002))
+        
+        styleContent.addArrangedSubview(createDetailRow(label: "Opacity", value: String(format: "%.0f%%", annotation.style.opacity * 100)))
+        
+        if let fontSize = annotation.style.fontSize {
+            styleContent.addArrangedSubview(createDetailRow(label: "Font Size", value: String(format: "%.0f pt", fontSize)))
+        }
+        
+        stackView.addArrangedSubview(styleCard)
+        styleCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        
+        let actionsCard = NSView()
+        actionsCard.wantsLayer = true
+        actionsCard.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        actionsCard.layer?.cornerRadius = 8
+        actionsCard.layer?.borderWidth = 1
+        actionsCard.layer?.borderColor = NSColor.separatorColor.cgColor
+        actionsCard.translatesAutoresizingMaskIntoConstraints = false
+        
+        let deleteButton = NSButton(title: "Delete Annotation", target: self, action: #selector(deleteSelectedAnnotation))
+        deleteButton.bezelStyle = .rounded
+        deleteButton.contentTintColor = .systemRed
+        deleteButton.translatesAutoresizingMaskIntoConstraints = false
+        actionsCard.addSubview(deleteButton)
+        
+        NSLayoutConstraint.activate([
+            deleteButton.topAnchor.constraint(equalTo: actionsCard.topAnchor, constant: 12),
+            deleteButton.centerXAnchor.constraint(equalTo: actionsCard.centerXAnchor),
+            deleteButton.bottomAnchor.constraint(equalTo: actionsCard.bottomAnchor, constant: -12)
+        ])
+        
+        stackView.addArrangedSubview(actionsCard)
+        actionsCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+    }
+    
+    private func createEditableTimeRow(label: String, seconds: Double, tag: Int) -> NSView {
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        
+        let labelField = NSTextField(labelWithString: label)
+        labelField.font = NSFont.systemFont(ofSize: 13)
+        labelField.textColor = .secondaryLabelColor
+        labelField.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(labelField)
+        
+        let mins = Int(seconds) / 60
+        let secs = seconds.truncatingRemainder(dividingBy: 60)
+        let timeStr = String(format: "%02d:%05.2f", mins, secs)
+        
+        let textField = NSTextField(string: timeStr)
+        textField.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        textField.textColor = tag == 1001 ? .systemBlue : .systemGreen
+        textField.isBordered = true
+        textField.bezelStyle = .roundedBezel
+        textField.isEditable = true
+        textField.tag = tag
+        textField.target = self
+        textField.action = #selector(annotationTimeFieldChanged(_:))
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(textField)
+        
+        NSLayoutConstraint.activate([
+            labelField.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            labelField.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            
+            textField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            textField.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            textField.widthAnchor.constraint(equalToConstant: 90),
+            
+            row.heightAnchor.constraint(equalToConstant: 28)
+        ])
+        
+        return row
+    }
+    
+    private func createEditableTextRow(label: String, value: String, tag: Int) -> NSView {
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        
+        let labelField = NSTextField(labelWithString: label)
+        labelField.font = NSFont.systemFont(ofSize: 13)
+        labelField.textColor = .secondaryLabelColor
+        labelField.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(labelField)
+        
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .bezelBorder
+        scrollView.autohidesScrollers = true
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(scrollView)
+        
+        let textStorage = NSTextStorage()
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+        
+        let textContainer = NSTextContainer(containerSize: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.widthTracksTextView = true
+        layoutManager.addTextContainer(textContainer)
+        
+        let textView = NSTextView(frame: .zero, textContainer: textContainer)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.isRichText = false
+        textView.font = NSFont.systemFont(ofSize: 13)
+        textView.textColor = .labelColor
+        textView.backgroundColor = .textBackgroundColor
+        textView.drawsBackground = true
+        textView.string = value
+        textView.delegate = self
+        textView.identifier = NSUserInterfaceItemIdentifier("annotationText_\(tag)")
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        
+        scrollView.documentView = textView
+        
+        let heightConstraint = scrollView.heightAnchor.constraint(equalToConstant: 60)
+        heightConstraint.identifier = "textScrollViewHeight"
+        
+        NSLayoutConstraint.activate([
+            labelField.topAnchor.constraint(equalTo: row.topAnchor),
+            labelField.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            labelField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            
+            scrollView.topAnchor.constraint(equalTo: labelField.bottomAnchor, constant: 4),
+            scrollView.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: row.bottomAnchor),
+            heightConstraint,
+            
+            textView.leadingAnchor.constraint(equalTo: scrollView.contentView.leadingAnchor),
+            textView.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
+            textView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor)
+        ])
+        
+        DispatchQueue.main.async {
+            self.resizeTextScrollView(scrollView: scrollView, textView: textView)
+        }
+        
+        return row
+    }
+    
+    private func createColorPickerRow(label: String, color: NSColor, tag: Int) -> NSView {
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        
+        let labelField = NSTextField(labelWithString: label)
+        labelField.font = NSFont.systemFont(ofSize: 13)
+        labelField.textColor = .secondaryLabelColor
+        labelField.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(labelField)
+        
+        let colorWell = NSColorWell(frame: NSRect(x: 0, y: 0, width: 44, height: 24))
+        colorWell.color = color
+        colorWell.tag = tag
+        colorWell.target = self
+        colorWell.action = #selector(annotationColorWellChanged(_:))
+        colorWell.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(colorWell)
+        
+        NSLayoutConstraint.activate([
+            labelField.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            labelField.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            
+            colorWell.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            colorWell.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            colorWell.widthAnchor.constraint(equalToConstant: 44),
+            colorWell.heightAnchor.constraint(equalToConstant: 24),
+            
+            row.heightAnchor.constraint(equalToConstant: 32)
+        ])
+        
+        return row
+    }
+    
+    @objc private func annotationColorWellChanged(_ sender: NSColorWell) {
+        guard var annotation = selectedAnnotation else { return }
+        
+        if sender.tag == 2001 {
+            annotation.style.strokeColor = CodableColor(sender.color)
+        } else if sender.tag == 2002 {
+            annotation.style.fillColor = CodableColor(sender.color)
+        }
+        
+        selectedAnnotation = annotation
+        annotationManager?.updateAnnotation(annotation)
+        updateAnnotationOverlay()
+    }
+    
+    @objc private func annotationTimeFieldChanged(_ sender: NSTextField) {
+        guard var annotation = selectedAnnotation else { return }
+        
+        let timeStr = sender.stringValue
+        guard let seconds = parseTimeString(timeStr) else {
+            showAnnotationProperties(annotation)
+            return
+        }
+        
+        let microseconds = seconds * 1_000_000
+        
+        if sender.tag == 1001 {
+            annotation.startTime = videoStartTimestamp + microseconds
+        } else if sender.tag == 1002 {
+            annotation.duration = max(100_000, microseconds)
+        }
+        
+        selectedAnnotation = annotation
+        annotationManager?.updateAnnotation(annotation)
+        updateAnnotationOverlay()
+        showAnnotationProperties(annotation)
+    }
+    
+    @objc private func annotationTextFieldChanged(_ sender: NSTextField) {
+        guard var annotation = selectedAnnotation else { return }
+        
+        annotation.text = sender.stringValue
+        selectedAnnotation = annotation
+        annotationManager?.updateAnnotation(annotation)
+        updateAnnotationOverlay()
+    }
+    
+    func textDidChange(_ notification: Notification) {
+        guard let textView = notification.object as? NSTextView,
+              let identifier = textView.identifier?.rawValue,
+              identifier.hasPrefix("annotationText_"),
+              var annotation = selectedAnnotation else { return }
+        
+        annotation.text = textView.string
+        selectedAnnotation = annotation
+        annotationManager?.updateAnnotation(annotation)
+        updateAnnotationOverlay()
+        
+        if let scrollView = textView.enclosingScrollView {
+            resizeTextScrollView(scrollView: scrollView, textView: textView)
+        }
+    }
+    
+    private func parseTimeString(_ str: String) -> Double? {
+        let parts = str.split(separator: ":")
+        if parts.count == 2 {
+            guard let mins = Int(parts[0]),
+                  let secs = Double(parts[1]) else { return nil }
+            return Double(mins) * 60 + secs
+        } else if parts.count == 1 {
+            return Double(str)
+        }
+        return nil
+    }
+    
+    private func createColorRow(label: String, color: NSColor) -> NSView {
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        
+        let labelField = NSTextField(labelWithString: label)
+        labelField.font = NSFont.systemFont(ofSize: 13)
+        labelField.textColor = .secondaryLabelColor
+        labelField.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(labelField)
+        
+        let colorWell = NSView()
+        colorWell.wantsLayer = true
+        colorWell.layer?.backgroundColor = color.cgColor
+        colorWell.layer?.cornerRadius = 4
+        colorWell.layer?.borderWidth = 1
+        colorWell.layer?.borderColor = NSColor.separatorColor.cgColor
+        colorWell.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(colorWell)
+        
+        NSLayoutConstraint.activate([
+            labelField.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            labelField.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            
+            colorWell.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            colorWell.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            colorWell.widthAnchor.constraint(equalToConstant: 24),
+            colorWell.heightAnchor.constraint(equalToConstant: 24),
+            
+            row.heightAnchor.constraint(equalToConstant: 28)
+        ])
+        
+        return row
+    }
+    
+    @objc private func deleteSelectedAnnotation() {
+        guard let annotation = selectedAnnotation else { return }
+        
+        let alert = NSAlert()
+        alert.messageText = "Delete Annotation?"
+        alert.informativeText = "This action cannot be undone."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            annotationManager?.deleteAnnotation(id: annotation.id)
+            selectedAnnotation = nil
+            annotationOverlayView?.selectAnnotation(id: nil)
+            updateAnnotationOverlay()
+            
+            timelineDetailLabel?.isHidden = false
+            timelineDetailLabel?.stringValue = "Select an event from the timeline to view details"
+            timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = true
+        }
+    }
 }
 
 // MARK: - Enhanced Timeline View
@@ -7135,6 +7788,25 @@ class EnhancedTimelineView: NSView {
     private var hoveredEventIndex: Int? = nil
     var onEventSelected: (([String: Any]) -> Void)?
     var onEventRightClicked: (([String: Any], Int, NSEvent) -> Void)?
+    
+    // Annotations
+    private var annotations: [Annotation] = []
+    private var annotationRects: [(rect: NSRect, annotation: Annotation)] = []
+    var onAnnotationSelected: ((Annotation) -> Void)?
+    var onAnnotationDurationChanged: ((Annotation, Double, Double) -> Void)?
+    private var isDraggingAnnotation: Bool = false
+    private var draggingAnnotation: Annotation?
+    private var annotationDragMode: AnnotationDragMode = .none
+    private var annotationDragStartX: CGFloat = 0
+    private var annotationOriginalStart: Double = 0
+    private var annotationOriginalDuration: Double = 0
+    
+    enum AnnotationDragMode {
+        case none
+        case move
+        case resizeStart
+        case resizeEnd
+    }
     
     // Playhead for video sync
     private var playheadPosition: Double? = nil  // Timestamp of current video position
@@ -7242,6 +7914,11 @@ class EnhancedTimelineView: NSView {
         print("🎬 EnhancedTimelineView.setVideoStartTime: \(timestamp)")
         videoStartTime = timestamp
         startTime = timestamp
+        needsDisplay = true
+    }
+    
+    func setAnnotations(_ annotations: [Annotation]) {
+        self.annotations = annotations.sorted { $0.startTime < $1.startTime }
         needsDisplay = true
     }
     
@@ -7425,6 +8102,43 @@ class EnhancedTimelineView: NSView {
             return
         }
         
+        // Check if clicking on an annotation bar first
+        for annotationRect in annotationRects {
+            let handleSize: CGFloat = 10
+            let leftHandleRect = NSRect(x: annotationRect.rect.minX - handleSize/2, y: annotationRect.rect.minY, width: handleSize, height: annotationRect.rect.height)
+            let rightHandleRect = NSRect(x: annotationRect.rect.maxX - handleSize/2, y: annotationRect.rect.minY, width: handleSize, height: annotationRect.rect.height)
+            
+            if leftHandleRect.contains(locationInView) {
+                isDraggingAnnotation = true
+                draggingAnnotation = annotationRect.annotation
+                annotationDragMode = .resizeStart
+                annotationDragStartX = locationInView.x
+                annotationOriginalStart = annotationRect.annotation.startTime
+                annotationOriginalDuration = annotationRect.annotation.duration
+                NSCursor.resizeLeftRight.push()
+                return
+            } else if rightHandleRect.contains(locationInView) {
+                isDraggingAnnotation = true
+                draggingAnnotation = annotationRect.annotation
+                annotationDragMode = .resizeEnd
+                annotationDragStartX = locationInView.x
+                annotationOriginalStart = annotationRect.annotation.startTime
+                annotationOriginalDuration = annotationRect.annotation.duration
+                NSCursor.resizeLeftRight.push()
+                return
+            } else if annotationRect.rect.contains(locationInView) {
+                isDraggingAnnotation = true
+                draggingAnnotation = annotationRect.annotation
+                annotationDragMode = .move
+                annotationDragStartX = locationInView.x
+                annotationOriginalStart = annotationRect.annotation.startTime
+                annotationOriginalDuration = annotationRect.annotation.duration
+                onAnnotationSelected?(annotationRect.annotation)
+                NSCursor.closedHand.push()
+                return
+            }
+        }
+        
         // Check if clicking on an event first (takes priority over scrub area)
         for (index, eventRect) in eventRects.enumerated() {
             if eventRect.rect.contains(locationInView) {
@@ -7448,8 +8162,53 @@ class EnhancedTimelineView: NSView {
     }
     
     override func mouseDragged(with event: NSEvent) {
+        let locationInView = convert(event.locationInWindow, from: nil)
+        
+        if isDraggingAnnotation, let annotation = draggingAnnotation {
+            let leftMargin: CGFloat = 20
+            let rightMargin: CGFloat = 20
+            let topMargin: CGFloat = 50
+            let bottomMargin: CGFloat = 20
+            
+            let timelineRect = NSRect(
+                x: leftMargin,
+                y: bottomMargin,
+                width: bounds.width - leftMargin - rightMargin,
+                height: bounds.height - topMargin - bottomMargin
+            )
+            
+            let deltaX = locationInView.x - annotationDragStartX
+            let currentTimestamp = foldedXToTimestamp(annotationDragStartX + deltaX, in: timelineRect)
+            let startTimestamp = foldedXToTimestamp(annotationDragStartX, in: timelineRect)
+            let deltaTime = currentTimestamp - startTimestamp
+            
+            var updatedAnnotation = annotation
+            
+            switch annotationDragMode {
+            case .move:
+                let newStart = annotationOriginalStart + deltaTime
+                updatedAnnotation.startTime = max(startTime, min(endTime - annotationOriginalDuration, newStart))
+            case .resizeStart:
+                let newStart = annotationOriginalStart + deltaTime
+                let maxStart = annotationOriginalStart + annotationOriginalDuration - 100_000
+                updatedAnnotation.startTime = max(startTime, min(maxStart, newStart))
+                updatedAnnotation.duration = annotationOriginalDuration - (updatedAnnotation.startTime - annotationOriginalStart)
+            case .resizeEnd:
+                let newDuration = annotationOriginalDuration + deltaTime
+                updatedAnnotation.duration = max(100_000, min(endTime - annotationOriginalStart, newDuration))
+            case .none:
+                break
+            }
+            
+            if let index = annotations.firstIndex(where: { $0.id == annotation.id }) {
+                annotations[index] = updatedAnnotation
+                draggingAnnotation = updatedAnnotation
+            }
+            needsDisplay = true
+            return
+        }
+        
         if isDraggingPlayhead {
-            let locationInView = convert(event.locationInWindow, from: nil)
             
             // Calculate current timestamp from mouse position
             let leftMargin: CGFloat = 20
@@ -7582,6 +8341,15 @@ class EnhancedTimelineView: NSView {
     }
     
     override func mouseUp(with event: NSEvent) {
+        if isDraggingAnnotation, let annotation = draggingAnnotation {
+            NSCursor.pop()
+            onAnnotationDurationChanged?(annotation, annotation.startTime, annotation.duration)
+            isDraggingAnnotation = false
+            draggingAnnotation = nil
+            annotationDragMode = .none
+            return
+        }
+        
         isDraggingPlayhead = false
         stopEdgePanning()
         lastDragLocation = nil
@@ -7879,6 +8647,88 @@ class EnhancedTimelineView: NSView {
         }
         
         drawPauseGaps(in: timelineRect, duration: duration)
+        drawAnnotationBars(in: timelineRect)
+    }
+    
+    private func drawAnnotationBars(in timelineRect: NSRect) {
+        guard !annotations.isEmpty else { return }
+        
+        annotationRects.removeAll()
+        
+        let annotationTrackY = timelineRect.maxY - 18
+        let barHeight: CGFloat = 14
+        
+        let typeColors: [AnnotationType: NSColor] = [
+            .rectangle: .systemRed,
+            .ellipse: .systemOrange,
+            .arrow: .systemBlue,
+            .line: .systemIndigo,
+            .text: .systemPurple,
+            .highlight: .systemYellow,
+            .blur: .systemGray,
+            .callout: .systemPink
+        ]
+        
+        for annotation in annotations {
+            let startX = timestampToFoldedX(annotation.startTime, in: timelineRect)
+            let endX = timestampToFoldedX(annotation.endTime, in: timelineRect)
+            let width = max(endX - startX, 8)
+            
+            let barRect = NSRect(
+                x: startX,
+                y: annotationTrackY,
+                width: width,
+                height: barHeight
+            )
+            
+            let color = typeColors[annotation.type] ?? .systemGray
+            
+            color.withAlphaComponent(0.7).setFill()
+            let path = NSBezierPath(roundedRect: barRect, xRadius: 3, yRadius: 3)
+            path.fill()
+            
+            color.setStroke()
+            path.lineWidth = 1
+            path.stroke()
+            
+            let handleSize: CGFloat = 6
+            let leftHandle = NSRect(x: barRect.minX - handleSize/2, y: barRect.midY - handleSize/2, width: handleSize, height: handleSize)
+            let rightHandle = NSRect(x: barRect.maxX - handleSize/2, y: barRect.midY - handleSize/2, width: handleSize, height: handleSize)
+            
+            NSColor.white.setFill()
+            NSBezierPath(ovalIn: leftHandle).fill()
+            NSBezierPath(ovalIn: rightHandle).fill()
+            color.setStroke()
+            let leftPath = NSBezierPath(ovalIn: leftHandle)
+            leftPath.lineWidth = 1
+            leftPath.stroke()
+            let rightPath = NSBezierPath(ovalIn: rightHandle)
+            rightPath.lineWidth = 1
+            rightPath.stroke()
+            
+            let typeIcon: String
+            switch annotation.type {
+            case .rectangle: typeIcon = "▢"
+            case .ellipse: typeIcon = "○"
+            case .arrow: typeIcon = "➔"
+            case .line: typeIcon = "╱"
+            case .text: typeIcon = "T"
+            case .highlight: typeIcon = "🖍"
+            case .blur: typeIcon = "▦"
+            case .callout: typeIcon = "💬"
+            }
+            
+            if width > 20 {
+                let iconAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 9),
+                    .foregroundColor: NSColor.white
+                ]
+                let iconSize = typeIcon.size(withAttributes: iconAttrs)
+                typeIcon.draw(at: NSPoint(x: barRect.midX - iconSize.width/2, y: barRect.midY - iconSize.height/2), withAttributes: iconAttrs)
+            }
+            
+            annotationRects.append((rect: barRect, annotation: annotation))
+        }
     }
     
     private func drawPauseGaps(in timelineRect: NSRect, duration: Double) {

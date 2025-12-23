@@ -19,6 +19,7 @@
 		AA1A1A1A1A1A1A1A1A1A1A2F /* ScreenRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A2E /* ScreenRecorder.swift */; };
 		AA1A1A1A1A1A1A1A1A1A1A31 /* AnnotationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A30 /* AnnotationOverlay.swift */; };
 		AA1A1A1A1A1A1A1A1A1A1A33 /* VoiceOverIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A32 /* VoiceOverIntegration.swift */; };
+		AA1A1A1A1A1A1A1A1A1A1A35 /* Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1A1A1A1A1A1A1A1A1A1A34 /* Annotation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		BB1A1A1A1A1A1A1A1A1A1A2E /* ScreenRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecorder.swift; sourceTree = "<group>"; };
 		BB1A1A1A1A1A1A1A1A1A1A30 /* AnnotationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationOverlay.swift; sourceTree = "<group>"; };
 		BB1A1A1A1A1A1A1A1A1A1A32 /* VoiceOverIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceOverIntegration.swift; sourceTree = "<group>"; };
+		BB1A1A1A1A1A1A1A1A1A1A34 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +80,7 @@
 				BB1A1A1A1A1A1A1A1A1A1A2E /* ScreenRecorder.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A30 /* AnnotationOverlay.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A32 /* VoiceOverIntegration.swift */,
+				BB1A1A1A1A1A1A1A1A1A1A34 /* Annotation.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A1B /* main.swift */,
 				BB1A1A1A1A1A1A1A1A1A1A1D /* Assets.xcassets */,
 				BB1A1A1A1A1A1A1A1A1A1A1F /* Main.storyboard */,
@@ -166,6 +169,7 @@
 				AA1A1A1A1A1A1A1A1A1A1A2F /* ScreenRecorder.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A31 /* AnnotationOverlay.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A33 /* VoiceOverIntegration.swift in Sources */,
+				AA1A1A1A1A1A1A1A1A1A1A35 /* Annotation.swift in Sources */,
 				AA1A1A1A1A1A1A1A1A1A1A1C /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
