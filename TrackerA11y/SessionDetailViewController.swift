@@ -229,6 +229,8 @@ struct AccessibilityMarkerData {
     var remediation: NSAttributedString
     var impactScore: ImpactScore
     var wcagCriteria: [String]
+    var titleOverlayX: CGFloat
+    var titleOverlayY: CGFloat
     
     func toDictionary() -> [String: Any] {
         return [
@@ -241,7 +243,9 @@ struct AccessibilityMarkerData {
             "impactedUsers": attributedStringToHTML(impactedUsers),
             "remediation": attributedStringToHTML(remediation),
             "impactScore": impactScore.rawValue,
-            "wcagCriteria": wcagCriteria
+            "wcagCriteria": wcagCriteria,
+            "titleOverlayX": titleOverlayX,
+            "titleOverlayY": titleOverlayY
         ]
     }
     
@@ -273,6 +277,9 @@ struct AccessibilityMarkerData {
         
         let wcagCriteria = dictionary["wcagCriteria"] as? [String] ?? []
         
+        let titleOverlayX = dictionary["titleOverlayX"] as? CGFloat ?? 0.5
+        let titleOverlayY = dictionary["titleOverlayY"] as? CGFloat ?? 0.05
+        
         return AccessibilityMarkerData(
             id: id,
             timestamp: timestamp,
@@ -283,7 +290,9 @@ struct AccessibilityMarkerData {
             impactedUsers: impactedUsers,
             remediation: remediation,
             impactScore: impactScore,
-            wcagCriteria: wcagCriteria
+            wcagCriteria: wcagCriteria,
+            titleOverlayX: titleOverlayX,
+            titleOverlayY: titleOverlayY
         )
     }
     
@@ -300,6 +309,248 @@ struct AccessibilityMarkerData {
         } catch {
             return NSAttributedString(string: html)
         }
+    }
+}
+
+protocol A11yMarkerTitleOverlayDelegate: AnyObject {
+    func a11yMarkerTitlePositionChanged(markerId: String, x: CGFloat, y: CGFloat)
+}
+
+class A11yMarkerTitleOverlayView: NSView {
+    weak var delegate: A11yMarkerTitleOverlayDelegate?
+    
+    private var markers: [AccessibilityMarkerData] = []
+    private var currentTimestamp: Double = 0
+    private var isDragging: Bool = false
+    private var draggingMarkerId: String?
+    private var dragOffset: NSPoint = .zero
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    func setMarkers(_ markers: [AccessibilityMarkerData]) {
+        self.markers = markers
+        needsDisplay = true
+    }
+    
+    func setCurrentTimestamp(_ timestamp: Double) {
+        self.currentTimestamp = timestamp
+        needsDisplay = true
+    }
+    
+    private func visibleMarkers() -> [AccessibilityMarkerData] {
+        return markers.filter { marker in
+            let endTimestamp = marker.timestamp + marker.duration
+            return currentTimestamp >= marker.timestamp && currentTimestamp <= endTimestamp
+        }
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.clear.setFill()
+        dirtyRect.fill()
+        
+        for marker in visibleMarkers() {
+            drawMarkerTitle(marker)
+        }
+    }
+    
+    private func drawMarkerTitle(_ marker: AccessibilityMarkerData) {
+        let title = marker.title.string.isEmpty ? "Accessibility Issue" : marker.title.string
+        
+        let fontSize: CGFloat = 16
+        let font = NSFont.boldSystemFont(ofSize: fontSize)
+        let textColor = NSColor.white
+        
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
+        shadow.shadowOffset = NSSize(width: 1, height: -1)
+        shadow.shadowBlurRadius = 3
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: textColor,
+            .shadow: shadow,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        let icon = marker.impactScore.icon
+        let iconAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: fontSize),
+            .shadow: shadow
+        ]
+        
+        let textSize = title.size(withAttributes: attributes)
+        let iconSize = icon.size(withAttributes: iconAttrs)
+        
+        let hPadding: CGFloat = 20
+        let vPadding: CGFloat = 12
+        let iconTextGap: CGFloat = 8
+        let cornerRadius: CGFloat = 8
+        
+        let contentWidth = iconSize.width + iconTextGap + textSize.width
+        let contentHeight = max(iconSize.height, textSize.height)
+        
+        let bgWidth = contentWidth + hPadding * 2
+        let bgHeight = contentHeight + vPadding
+        
+        let bgColor = marker.impactScore.color.withAlphaComponent(0.9)
+        
+        let centerX = bounds.width * marker.titleOverlayX
+        let centerY = bounds.height * (1 - marker.titleOverlayY)
+        
+        let bgRect = NSRect(
+            x: centerX - bgWidth / 2,
+            y: centerY - bgHeight / 2,
+            width: bgWidth,
+            height: bgHeight
+        )
+        
+        let bgPath = NSBezierPath(roundedRect: bgRect, xRadius: cornerRadius, yRadius: cornerRadius)
+        bgColor.setFill()
+        bgPath.fill()
+        
+        NSColor.white.withAlphaComponent(0.3).setStroke()
+        bgPath.lineWidth = 1
+        bgPath.stroke()
+        
+        let contentStartX = centerX - contentWidth / 2
+        let baselineY = centerY - contentHeight / 2
+        
+        let iconY = baselineY + (contentHeight - iconSize.height) / 2
+        let iconPoint = NSPoint(x: contentStartX, y: iconY)
+        icon.draw(at: iconPoint, withAttributes: iconAttrs)
+        
+        let textY = baselineY + (contentHeight - textSize.height) / 2
+        let textPoint = NSPoint(x: contentStartX + iconSize.width + iconTextGap, y: textY)
+        title.draw(at: textPoint, withAttributes: attributes)
+    }
+    
+    private func markerAt(point: NSPoint) -> AccessibilityMarkerData? {
+        for marker in visibleMarkers() {
+            let title = marker.title.string.isEmpty ? "Accessibility Issue" : marker.title.string
+            let fontSize: CGFloat = 16
+            let font = NSFont.boldSystemFont(ofSize: fontSize)
+            let textSize = title.size(withAttributes: [.font: font])
+            
+            let icon = marker.impactScore.icon
+            let iconSize = icon.size(withAttributes: [.font: NSFont.systemFont(ofSize: fontSize)])
+            
+            let hPadding: CGFloat = 20
+            let vPadding: CGFloat = 12
+            let iconTextGap: CGFloat = 8
+            
+            let contentWidth = iconSize.width + iconTextGap + textSize.width
+            let contentHeight = max(iconSize.height, textSize.height)
+            
+            let bgWidth = contentWidth + hPadding * 2
+            let bgHeight = contentHeight + vPadding
+            
+            let centerX = bounds.width * marker.titleOverlayX
+            let centerY = bounds.height * (1 - marker.titleOverlayY)
+            
+            let bgRect = NSRect(
+                x: centerX - bgWidth / 2,
+                y: centerY - bgHeight / 2,
+                width: bgWidth,
+                height: bgHeight
+            )
+            
+            if bgRect.contains(point) {
+                return marker
+            }
+        }
+        return nil
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        
+        if let marker = markerAt(point: point) {
+            isDragging = true
+            draggingMarkerId = marker.id
+            
+            let centerX = bounds.width * marker.titleOverlayX
+            let centerY = bounds.height * (1 - marker.titleOverlayY)
+            dragOffset = NSPoint(x: point.x - centerX, y: point.y - centerY)
+            
+            NSCursor.closedHand.push()
+        }
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        guard isDragging, let markerId = draggingMarkerId else { return }
+        
+        let point = convert(event.locationInWindow, from: nil)
+        
+        var newX = (point.x - dragOffset.x) / bounds.width
+        var newY = 1 - ((point.y - dragOffset.y) / bounds.height)
+        
+        newX = max(0.1, min(0.9, newX))
+        newY = max(0.05, min(0.95, newY))
+        
+        if let index = markers.firstIndex(where: { $0.id == markerId }) {
+            markers[index].titleOverlayX = newX
+            markers[index].titleOverlayY = newY
+            needsDisplay = true
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        if isDragging, let markerId = draggingMarkerId {
+            if let marker = markers.first(where: { $0.id == markerId }) {
+                delegate?.a11yMarkerTitlePositionChanged(markerId: markerId, x: marker.titleOverlayX, y: marker.titleOverlayY)
+            }
+        }
+        
+        isDragging = false
+        draggingMarkerId = nil
+        NSCursor.pop()
+    }
+    
+    override func mouseMoved(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        if markerAt(point: point) != nil {
+            NSCursor.openHand.set()
+        } else {
+            NSCursor.arrow.set()
+        }
+    }
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas {
+            removeTrackingArea(area)
+        }
+        let trackingArea = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .mouseMoved, .activeInKeyWindow],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(trackingArea)
+    }
+    
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let localPoint = convert(point, from: superview)
+        if markerAt(point: localPoint) != nil {
+            return self
+        }
+        return nil
     }
 }
 
@@ -860,7 +1111,7 @@ class FlippedView: NSView {
     override var isFlipped: Bool { return true }
 }
 
-class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSTokenFieldDelegate {
+class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSTokenFieldDelegate, A11yMarkerTitleOverlayDelegate {
     
     private let sessionId: String
     private let sessionData: [String: Any]
@@ -961,6 +1212,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     // Video annotation/callout system
     private var annotationManager: AnnotationManager?
     private var annotationOverlayView: VideoAnnotationOverlayView?
+    private var a11yMarkerTitleOverlay: A11yMarkerTitleOverlayView?
     private var selectedAnnotation: Annotation?
     private var isAddingAnnotation: Bool = false
     private var pendingAnnotationType: AnnotationType?
@@ -3657,6 +3909,10 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         
         let markerId = currentA11yMarkerId ?? "a11ymarker_\(Date().timeIntervalSince1970)_\(Int.random(in: 1000...9999))"
         
+        let existingMarker = accessibilityMarkers.first(where: { $0.id == markerId })
+        let overlayX = existingMarker?.titleOverlayX ?? 0.5
+        let overlayY = existingMarker?.titleOverlayY ?? 0.05
+        
         let marker = AccessibilityMarkerData(
             id: markerId,
             timestamp: startTimestamp,
@@ -3667,7 +3923,9 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             impactedUsers: impactedUsers,
             remediation: remediation,
             impactScore: impactScore,
-            wcagCriteria: wcagCriteria
+            wcagCriteria: wcagCriteria,
+            titleOverlayX: overlayX,
+            titleOverlayY: overlayY
         )
         
         if let existingId = currentA11yMarkerId {
@@ -3739,6 +3997,14 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         let simpleMarkers = accessibilityMarkers.map { (id: $0.id, timestamp: $0.timestamp, duration: $0.duration, title: $0.title.string, impactScore: $0.impactScore.rawValue) }
         timelineView?.setAccessibilityMarkers(simpleMarkers)
         timelineView?.needsDisplay = true
+        a11yMarkerTitleOverlay?.setMarkers(accessibilityMarkers)
+    }
+    
+    func a11yMarkerTitlePositionChanged(markerId: String, x: CGFloat, y: CGFloat) {
+        guard let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) else { return }
+        accessibilityMarkers[index].titleOverlayX = x
+        accessibilityMarkers[index].titleOverlayY = y
+        saveAccessibilityMarkersToMetadata()
     }
     
     private func showAccessibilityMarkerDetails(_ marker: (id: String, timestamp: Double, duration: Double, title: String, impactScore: String)) {
@@ -5688,6 +5954,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         self.annotationOverlayView = annotationOverlay
         container.addSubview(annotationOverlay)
         
+        // A11y marker title overlay (on top of everything, always visible when markers are active)
+        let a11yTitleOverlay = A11yMarkerTitleOverlayView(frame: .zero)
+        a11yTitleOverlay.translatesAutoresizingMaskIntoConstraints = false
+        a11yTitleOverlay.delegate = self
+        self.a11yMarkerTitleOverlay = a11yTitleOverlay
+        container.addSubview(a11yTitleOverlay)
+        
         // VoiceOver audio controls bar
         let audioControlsBar = NSView()
         audioControlsBar.wantsLayer = true
@@ -5744,6 +6017,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             annotationOverlay.leadingAnchor.constraint(equalTo: playerView.leadingAnchor),
             annotationOverlay.trailingAnchor.constraint(equalTo: playerView.trailingAnchor),
             annotationOverlay.bottomAnchor.constraint(equalTo: playerView.bottomAnchor),
+            
+            a11yTitleOverlay.topAnchor.constraint(equalTo: playerView.topAnchor),
+            a11yTitleOverlay.leadingAnchor.constraint(equalTo: playerView.leadingAnchor),
+            a11yTitleOverlay.trailingAnchor.constraint(equalTo: playerView.trailingAnchor),
+            a11yTitleOverlay.bottomAnchor.constraint(equalTo: playerView.bottomAnchor),
             
             audioControlsBar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             audioControlsBar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
@@ -5926,6 +6204,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         
         // Update annotation overlay with current timestamp
         annotationOverlayView?.setCurrentTimestamp(eventTimestamp)
+        a11yMarkerTitleOverlay?.setCurrentTimestamp(eventTimestamp)
         
         // Auto-show event details during playback (if not user-selected)
         if isVideoPlaying && !isUserSelectedEvent {
