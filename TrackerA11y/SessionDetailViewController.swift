@@ -198,10 +198,22 @@ struct WCAGCriterion: Hashable {
     
     static func search(_ query: String) -> [WCAGCriterion] {
         let lowercased = query.lowercased()
-        return allCriteria.filter { criterion in
+        let matches = allCriteria.filter { criterion in
             criterion.id.lowercased().contains(lowercased) ||
             criterion.title.lowercased().contains(lowercased) ||
             criterion.level.lowercased().contains(lowercased)
+        }
+        return matches.sorted { a, b in
+            let aStartsWithId = a.id.lowercased().hasPrefix(lowercased)
+            let bStartsWithId = b.id.lowercased().hasPrefix(lowercased)
+            let aStartsWithTitle = a.title.lowercased().hasPrefix(lowercased)
+            let bStartsWithTitle = b.title.lowercased().hasPrefix(lowercased)
+            
+            if aStartsWithId && !bStartsWithId { return true }
+            if !aStartsWithId && bStartsWithId { return false }
+            if aStartsWithTitle && !bStartsWithTitle { return true }
+            if !aStartsWithTitle && bStartsWithTitle { return false }
+            return a.id < b.id
         }
     }
 }
@@ -2947,10 +2959,10 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         issueTextView.allowsUndo = true
         issueTextView.isEditable = true
         issueTextView.font = NSFont.systemFont(ofSize: 13)
-        if let existing = existingMarker {
-            issueTextView.textStorage?.setAttributedString(existing.issue)
-        }
         issueScrollView.documentView = issueTextView
+        if let existing = existingMarker {
+            issueTextView.string = existing.issue.string
+        }
         issueScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_issue")
         contentView.addSubview(issueScrollView)
         yOffset += 90
@@ -2969,10 +2981,10 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         importanceTextView.allowsUndo = true
         importanceTextView.isEditable = true
         importanceTextView.font = NSFont.systemFont(ofSize: 13)
-        if let existing = existingMarker {
-            importanceTextView.textStorage?.setAttributedString(existing.importance)
-        }
         importanceScrollView.documentView = importanceTextView
+        if let existing = existingMarker {
+            importanceTextView.string = existing.importance.string
+        }
         importanceScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_importance")
         contentView.addSubview(importanceScrollView)
         yOffset += 90
@@ -2991,10 +3003,10 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         impactedTextView.allowsUndo = true
         impactedTextView.isEditable = true
         impactedTextView.font = NSFont.systemFont(ofSize: 13)
-        if let existing = existingMarker {
-            impactedTextView.textStorage?.setAttributedString(existing.impactedUsers)
-        }
         impactedScrollView.documentView = impactedTextView
+        if let existing = existingMarker {
+            impactedTextView.string = existing.impactedUsers.string
+        }
         impactedScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_impacted")
         contentView.addSubview(impactedScrollView)
         yOffset += 90
@@ -3013,10 +3025,10 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         remediationTextView.allowsUndo = true
         remediationTextView.isEditable = true
         remediationTextView.font = NSFont.systemFont(ofSize: 13)
-        if let existing = existingMarker {
-            remediationTextView.textStorage?.setAttributedString(existing.remediation)
-        }
         remediationScrollView.documentView = remediationTextView
+        if let existing = existingMarker {
+            remediationTextView.string = existing.remediation.string
+        }
         remediationScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_remediation")
         contentView.addSubview(remediationScrollView)
         yOffset += 90
@@ -3029,6 +3041,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         
         let tokenField = NSTokenField(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 60))
         tokenField.tokenStyle = .rounded
+        tokenField.tokenizingCharacterSet = CharacterSet(charactersIn: "\t\n")
         tokenField.placeholderString = "Type to search WCAG criteria (e.g., '2.4.1' or 'keyboard')"
         tokenField.delegate = self
         tokenField.tag = 207
@@ -3121,7 +3134,12 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         let impactIndex = impactPopup.indexOfSelectedItem
         let impactScore = impactIndex >= 0 && impactIndex < ImpactScore.allCases.count ? ImpactScore.allCases[impactIndex] : .medium
         
-        let wcagCriteria = (tokenField.objectValue as? [String]) ?? []
+        let wcagCriteriaUnsorted = (tokenField.objectValue as? [String]) ?? []
+        let wcagCriteria = wcagCriteriaUnsorted.sorted { a, b in
+            let aId = a.components(separatedBy: " ").first ?? a
+            let bId = b.components(separatedBy: " ").first ?? b
+            return aId.compare(bId, options: .numeric) == .orderedAscending
+        }
         
         let durationSecs = Double(durationField.stringValue) ?? 3.0
         let durationMicros = durationSecs * 1_000_000
@@ -3216,53 +3234,169 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             
             let (a11yCard, a11yContent) = createDetailCard(title: "Accessibility Issue", icon: fullMarker.impactScore.icon)
             
-            a11yContent.addArrangedSubview(createDetailRow(label: "Title", value: fullMarker.title.string.isEmpty ? "(No title)" : fullMarker.title.string))
-            a11yContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(fullMarker.timestamp), valueColor: .systemBlue))
+            let titleText = fullMarker.title.string.isEmpty ? "(Untitled Issue)" : fullMarker.title.string
+            let titleLabel = NSTextField(wrappingLabelWithString: titleText)
+            titleLabel.font = NSFont.boldSystemFont(ofSize: 14)
+            titleLabel.textColor = .labelColor
+            titleLabel.maximumNumberOfLines = 0
+            titleLabel.preferredMaxLayoutWidth = 220
+            a11yContent.addArrangedSubview(titleLabel)
+            
+            let metaStack = NSStackView()
+            metaStack.orientation = .horizontal
+            metaStack.spacing = 12
+            
+            let timeLabel = NSTextField(labelWithString: formatTimestamp(fullMarker.timestamp))
+            timeLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            timeLabel.textColor = .systemBlue
+            metaStack.addArrangedSubview(timeLabel)
             
             let durationSecs = fullMarker.duration / 1_000_000
-            a11yContent.addArrangedSubview(createDetailRow(label: "Duration", value: String(format: "%.1f seconds", durationSecs), valueColor: .systemOrange))
-            a11yContent.addArrangedSubview(createDetailRow(label: "Impact", value: fullMarker.impactScore.rawValue, valueColor: fullMarker.impactScore.color))
+            let durationLabel = NSTextField(labelWithString: String(format: "%.1fs", durationSecs))
+            durationLabel.font = NSFont.systemFont(ofSize: 11)
+            durationLabel.textColor = .systemOrange
+            metaStack.addArrangedSubview(durationLabel)
             
-            if !fullMarker.wcagCriteria.isEmpty {
-                a11yContent.addArrangedSubview(createDetailRow(label: "WCAG", value: fullMarker.wcagCriteria.joined(separator: ", ")))
-            }
+            let impactLabel = NSTextField(labelWithString: "\(fullMarker.impactScore.icon) \(fullMarker.impactScore.rawValue)")
+            impactLabel.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+            impactLabel.textColor = fullMarker.impactScore.color
+            metaStack.addArrangedSubview(impactLabel)
+            
+            a11yContent.addArrangedSubview(metaStack)
+            
+            a11yContent.addArrangedSubview(createA11ySeparator())
             
             if fullMarker.issue.length > 0 {
-                let issueLabel = NSTextField(labelWithString: "Issue:")
-                issueLabel.font = NSFont.boldSystemFont(ofSize: 11)
-                issueLabel.textColor = .secondaryLabelColor
-                a11yContent.addArrangedSubview(issueLabel)
-                let issueValue = NSTextField(labelWithString: fullMarker.issue.string)
-                issueValue.font = NSFont.systemFont(ofSize: 12)
-                issueValue.lineBreakMode = .byWordWrapping
-                issueValue.maximumNumberOfLines = 0
-                a11yContent.addArrangedSubview(issueValue)
+                a11yContent.addArrangedSubview(createA11ySection(title: "What is the issue?", content: fullMarker.issue.string, icon: "⚠️"))
+            }
+            
+            if fullMarker.importance.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "Why is it important?", content: fullMarker.importance.string, icon: "💡"))
+            }
+            
+            if fullMarker.impactedUsers.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "Who is impacted?", content: fullMarker.impactedUsers.string, icon: "👥"))
+            }
+            
+            if !fullMarker.wcagCriteria.isEmpty {
+                let wcagContainer = NSStackView()
+                wcagContainer.orientation = .vertical
+                wcagContainer.alignment = .leading
+                wcagContainer.spacing = 6
+                
+                let wcagHeader = NSStackView()
+                wcagHeader.orientation = .horizontal
+                wcagHeader.spacing = 4
+                let wcagIcon = NSTextField(labelWithString: "📋")
+                wcagIcon.font = NSFont.systemFont(ofSize: 12)
+                wcagHeader.addArrangedSubview(wcagIcon)
+                let wcagLabel = NSTextField(labelWithString: "WCAG Criteria at Risk")
+                wcagLabel.font = NSFont.boldSystemFont(ofSize: 12)
+                wcagLabel.textColor = .secondaryLabelColor
+                wcagHeader.addArrangedSubview(wcagLabel)
+                wcagContainer.addArrangedSubview(wcagHeader)
+                
+                let sortedCriteria = fullMarker.wcagCriteria.sorted { a, b in
+                    let aId = a.components(separatedBy: " ").first ?? a
+                    let bId = b.components(separatedBy: " ").first ?? b
+                    return aId.compare(bId, options: .numeric) == .orderedAscending
+                }
+                
+                for criterion in sortedCriteria {
+                    let tag = createWCAGTag(criterion)
+                    wcagContainer.addArrangedSubview(tag)
+                }
+                a11yContent.addArrangedSubview(wcagContainer)
             }
             
             if fullMarker.remediation.length > 0 {
-                let remLabel = NSTextField(labelWithString: "How to Fix:")
-                remLabel.font = NSFont.boldSystemFont(ofSize: 11)
-                remLabel.textColor = .secondaryLabelColor
-                a11yContent.addArrangedSubview(remLabel)
-                let remValue = NSTextField(labelWithString: fullMarker.remediation.string)
-                remValue.font = NSFont.systemFont(ofSize: 12)
-                remValue.lineBreakMode = .byWordWrapping
-                remValue.maximumNumberOfLines = 0
-                a11yContent.addArrangedSubview(remValue)
+                a11yContent.addArrangedSubview(createA11ySection(title: "How to fix it?", content: fullMarker.remediation.string, icon: "🔧"))
             }
             
-            let editButton = NSButton(title: "Edit Marker", target: self, action: #selector(editSelectedA11yMarker(_:)))
+            a11yContent.addArrangedSubview(createA11ySeparator())
+            
+            let buttonStack = NSStackView()
+            buttonStack.orientation = .horizontal
+            buttonStack.spacing = 8
+            buttonStack.distribution = .fillEqually
+            
+            let editButton = NSButton(title: "Edit", target: self, action: #selector(editSelectedA11yMarker(_:)))
             editButton.bezelStyle = .rounded
-            a11yContent.addArrangedSubview(editButton)
+            buttonStack.addArrangedSubview(editButton)
             
             let deleteButton = NSButton(title: "Delete", target: self, action: #selector(deleteSelectedA11yMarker(_:)))
             deleteButton.bezelStyle = .rounded
             deleteButton.contentTintColor = .systemRed
-            a11yContent.addArrangedSubview(deleteButton)
+            buttonStack.addArrangedSubview(deleteButton)
+            
+            a11yContent.addArrangedSubview(buttonStack)
             
             stackView.addArrangedSubview(a11yCard)
             a11yCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
         }
+    }
+    
+    private func createWCAGTag(_ criterion: String) -> NSView {
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 4
+        container.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.2).cgColor
+        
+        let label = NSTextField(labelWithString: criterion)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
+        label.textColor = .systemBlue
+        container.addSubview(label)
+        
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 3),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -3)
+        ])
+        
+        return container
+    }
+    
+    private func createA11ySeparator() -> NSView {
+        let separator = NSBox()
+        separator.boxType = .separator
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        return separator
+    }
+    
+    private func createA11ySection(title: String, content: String, icon: String) -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 4
+        
+        let headerStack = NSStackView()
+        headerStack.orientation = .horizontal
+        headerStack.spacing = 4
+        
+        let iconLabel = NSTextField(labelWithString: icon)
+        iconLabel.font = NSFont.systemFont(ofSize: 12)
+        headerStack.addArrangedSubview(iconLabel)
+        
+        let titleLabel = NSTextField(labelWithString: title)
+        titleLabel.font = NSFont.boldSystemFont(ofSize: 12)
+        titleLabel.textColor = .secondaryLabelColor
+        headerStack.addArrangedSubview(titleLabel)
+        
+        container.addArrangedSubview(headerStack)
+        
+        let contentLabel = NSTextField(wrappingLabelWithString: content)
+        contentLabel.font = NSFont.systemFont(ofSize: 11)
+        contentLabel.textColor = .labelColor
+        contentLabel.lineBreakMode = .byWordWrapping
+        contentLabel.maximumNumberOfLines = 0
+        contentLabel.preferredMaxLayoutWidth = 220
+        container.addArrangedSubview(contentLabel)
+        
+        return container
     }
     
     @objc private func editSelectedA11yMarker(_ sender: NSButton) {
@@ -10170,14 +10304,17 @@ extension SessionDetailViewController: VideoAnnotationOverlayDelegate {
     }
     
     func tokenField(_ tokenField: NSTokenField, completionsForSubstring substring: String, indexOfToken tokenIndex: Int, indexOfSelectedItem selectedIndex: UnsafeMutablePointer<Int>?) -> [Any]? {
+        guard !substring.isEmpty else { return nil }
         let matches = WCAGCriterion.search(substring)
-        return matches.map { $0.displayString }
+        let results = matches.prefix(10).map { $0.displayString }
+        print("🔍 WCAG search '\(substring)' found \(matches.count) matches, returning: \(results)")
+        return Array(results)
     }
     
     func tokenField(_ tokenField: NSTokenField, displayStringForRepresentedObject representedObject: Any) -> String? {
         if let string = representedObject as? String {
-            if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == string || $0.id == string }) {
-                return criterion.id
+            if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == string || $0.id == string || string.hasPrefix($0.id) }) {
+                return criterion.displayString
             }
             return string
         }
@@ -10185,10 +10322,17 @@ extension SessionDetailViewController: VideoAnnotationOverlayDelegate {
     }
     
     func tokenField(_ tokenField: NSTokenField, representedObjectForEditing editingString: String) -> Any? {
-        if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == editingString || $0.id == editingString || editingString.contains($0.id) }) {
+        if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == editingString || $0.id == editingString || editingString.hasPrefix($0.id) }) {
             return criterion.displayString
         }
         return editingString
+    }
+    
+    func tokenField(_ tokenField: NSTokenField, editingStringForRepresentedObject representedObject: Any) -> String? {
+        if let string = representedObject as? String {
+            return string
+        }
+        return nil
     }
     
     private func parseTimeString(_ str: String) -> Double? {
