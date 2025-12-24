@@ -303,6 +303,526 @@ struct AccessibilityMarkerData {
     }
 }
 
+class RichTextEditorView: NSView {
+    let textView: NSTextView
+    let scrollView: NSScrollView
+    private let toolbar: NSStackView
+    private var fontFamilyPopup: NSPopUpButton!
+    private var fontSizePopup: NSPopUpButton!
+    private var textColorWell: NSColorWell!
+    private var highlightColorWell: NSColorWell!
+    
+    var attributedString: NSAttributedString {
+        get { return textView.attributedString() }
+        set { textView.textStorage?.setAttributedString(newValue) }
+    }
+    
+    var string: String {
+        get { return textView.string }
+        set { textView.string = newValue }
+    }
+    
+    func setAttributedStringFixingColors(_ attrString: NSAttributedString) {
+        let mutable = NSMutableAttributedString(attributedString: attrString)
+        let fullRange = NSRange(location: 0, length: mutable.length)
+        
+        mutable.enumerateAttribute(.foregroundColor, in: fullRange, options: []) { value, range, _ in
+            if let color = value as? NSColor {
+                let brightness = color.redComponent * 0.299 + color.greenComponent * 0.587 + color.blueComponent * 0.114
+                if brightness < 0.5 {
+                    mutable.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
+                }
+            } else {
+                mutable.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
+            }
+        }
+        
+        if mutable.length > 0 && mutable.attribute(.foregroundColor, at: 0, effectiveRange: nil) == nil {
+            mutable.addAttribute(.foregroundColor, value: NSColor.textColor, range: fullRange)
+        }
+        
+        textView.textStorage?.setAttributedString(mutable)
+    }
+    
+    override init(frame: NSRect) {
+        toolbar = NSStackView()
+        scrollView = NSScrollView()
+        textView = NSTextView()
+        
+        super.init(frame: frame)
+        setupUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupUI() {
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+        toolbar.orientation = .horizontal
+        toolbar.spacing = 2
+        toolbar.alignment = .centerY
+        toolbar.distribution = .fillProportionally
+        addSubview(toolbar)
+        
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+        addSubview(scrollView)
+        
+        let contentSize = scrollView.contentSize
+        textView.frame = NSRect(x: 0, y: 0, width: contentSize.width, height: contentSize.height)
+        textView.minSize = NSSize(width: 0, height: contentSize.height)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+        textView.isRichText = true
+        textView.allowsUndo = true
+        textView.isEditable = true
+        textView.font = NSFont.systemFont(ofSize: 13)
+        textView.textColor = .textColor
+        textView.backgroundColor = .controlBackgroundColor
+        textView.drawsBackground = true
+        textView.insertionPointColor = .textColor
+        textView.usesFontPanel = false
+        scrollView.documentView = textView
+        
+        NSLayoutConstraint.activate([
+            toolbar.topAnchor.constraint(equalTo: topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: trailingAnchor),
+            toolbar.heightAnchor.constraint(equalToConstant: 28),
+            
+            scrollView.topAnchor.constraint(equalTo: toolbar.bottomAnchor, constant: 4),
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        setupToolbar()
+    }
+    
+    private func setupToolbar() {
+        let row1 = NSStackView()
+        row1.orientation = .horizontal
+        row1.spacing = 2
+        row1.alignment = .centerY
+        
+        fontFamilyPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fontFamilyPopup.controlSize = .small
+        fontFamilyPopup.font = NSFont.systemFont(ofSize: 10)
+        let families = ["System", "Helvetica Neue", "Arial", "Times New Roman", "Georgia", "Courier New", "Menlo"]
+        for family in families {
+            fontFamilyPopup.addItem(withTitle: family)
+        }
+        fontFamilyPopup.target = self
+        fontFamilyPopup.action = #selector(fontFamilyChanged(_:))
+        fontFamilyPopup.toolTip = "Font Family"
+        row1.addArrangedSubview(fontFamilyPopup)
+        
+        fontSizePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        fontSizePopup.controlSize = .small
+        fontSizePopup.font = NSFont.systemFont(ofSize: 10)
+        let sizes = ["9", "10", "11", "12", "13", "14", "16", "18", "20", "24", "28", "32", "36", "48", "72"]
+        for size in sizes {
+            fontSizePopup.addItem(withTitle: size)
+        }
+        fontSizePopup.selectItem(withTitle: "13")
+        fontSizePopup.target = self
+        fontSizePopup.action = #selector(fontSizeChanged(_:))
+        fontSizePopup.toolTip = "Font Size"
+        row1.addArrangedSubview(fontSizePopup)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        let boldBtn = createToolbarButton(title: "B", action: #selector(toggleBold(_:)), tooltip: "Bold (⌘B)")
+        boldBtn.font = NSFont.boldSystemFont(ofSize: 12)
+        row1.addArrangedSubview(boldBtn)
+        
+        let italicBtn = createToolbarButton(title: "I", action: #selector(toggleItalic(_:)), tooltip: "Italic (⌘I)")
+        italicBtn.attributedTitle = NSAttributedString(string: "I", attributes: [
+            .font: NSFontManager.shared.convert(NSFont.systemFont(ofSize: 12), toHaveTrait: .italicFontMask),
+            .obliqueness: 0.2
+        ])
+        row1.addArrangedSubview(italicBtn)
+        
+        let underlineBtn = createToolbarButton(title: "U", action: #selector(toggleUnderline(_:)), tooltip: "Underline (⌘U)")
+        underlineBtn.attributedTitle = NSAttributedString(string: "U", attributes: [
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .font: NSFont.systemFont(ofSize: 12)
+        ])
+        row1.addArrangedSubview(underlineBtn)
+        
+        let strikeBtn = createToolbarButton(title: "S", action: #selector(toggleStrikethrough(_:)), tooltip: "Strikethrough")
+        strikeBtn.attributedTitle = NSAttributedString(string: "S", attributes: [
+            .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+            .font: NSFont.systemFont(ofSize: 12)
+        ])
+        row1.addArrangedSubview(strikeBtn)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        textColorWell = NSColorWell()
+        textColorWell.color = .white
+        if #available(macOS 13.0, *) {
+            textColorWell.colorWellStyle = .minimal
+        }
+        textColorWell.toolTip = "Text Color - select color then click Apply"
+        textColorWell.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        textColorWell.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        row1.addArrangedSubview(textColorWell)
+        
+        let applyTextColorBtn = createToolbarButton(title: "A", action: #selector(applyTextColor(_:)), tooltip: "Apply Text Color")
+        applyTextColorBtn.font = NSFont.boldSystemFont(ofSize: 11)
+        row1.addArrangedSubview(applyTextColorBtn)
+        
+        highlightColorWell = NSColorWell()
+        highlightColorWell.color = .yellow
+        if #available(macOS 13.0, *) {
+            highlightColorWell.colorWellStyle = .minimal
+        }
+        highlightColorWell.toolTip = "Highlight Color - select color then click Apply"
+        highlightColorWell.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        highlightColorWell.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        row1.addArrangedSubview(highlightColorWell)
+        
+        let applyHighlightBtn = createToolbarButton(title: "H", action: #selector(applyHighlightColor(_:)), tooltip: "Apply Highlight")
+        applyHighlightBtn.font = NSFont.boldSystemFont(ofSize: 11)
+        row1.addArrangedSubview(applyHighlightBtn)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        let bulletBtn = createToolbarButton(title: "•", action: #selector(insertBulletList(_:)), tooltip: "Bullet List")
+        row1.addArrangedSubview(bulletBtn)
+        
+        let numberBtn = createToolbarButton(title: "1.", action: #selector(insertNumberedList(_:)), tooltip: "Numbered List")
+        row1.addArrangedSubview(numberBtn)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        let alignLeftBtn = createToolbarButton(title: "⫷", action: #selector(alignLeft(_:)), tooltip: "Align Left")
+        row1.addArrangedSubview(alignLeftBtn)
+        
+        let alignCenterBtn = createToolbarButton(title: "⫿", action: #selector(alignCenter(_:)), tooltip: "Align Center")
+        row1.addArrangedSubview(alignCenterBtn)
+        
+        let alignRightBtn = createToolbarButton(title: "⫸", action: #selector(alignRight(_:)), tooltip: "Align Right")
+        row1.addArrangedSubview(alignRightBtn)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        let indentDecBtn = createToolbarButton(title: "⇤", action: #selector(decreaseIndent(_:)), tooltip: "Decrease Indent")
+        row1.addArrangedSubview(indentDecBtn)
+        
+        let indentIncBtn = createToolbarButton(title: "⇥", action: #selector(increaseIndent(_:)), tooltip: "Increase Indent")
+        row1.addArrangedSubview(indentIncBtn)
+        
+        row1.addArrangedSubview(createSeparator())
+        
+        let linkBtn = createToolbarButton(title: "🔗", action: #selector(insertLink(_:)), tooltip: "Insert Link")
+        row1.addArrangedSubview(linkBtn)
+        
+        let codeBtn = createToolbarButton(title: "</>", action: #selector(formatAsCode(_:)), tooltip: "Code Format")
+        codeBtn.font = NSFont.monospacedSystemFont(ofSize: 9, weight: .medium)
+        row1.addArrangedSubview(codeBtn)
+        
+        let clearBtn = createToolbarButton(title: "⌧", action: #selector(clearFormatting(_:)), tooltip: "Clear Formatting")
+        row1.addArrangedSubview(clearBtn)
+        
+        toolbar.addArrangedSubview(row1)
+    }
+    
+    private func createToolbarButton(title: String, action: Selector, tooltip: String) -> NSButton {
+        let button = NSButton(title: title, target: self, action: action)
+        button.bezelStyle = .texturedRounded
+        button.controlSize = .small
+        button.widthAnchor.constraint(greaterThanOrEqualToConstant: 24).isActive = true
+        button.toolTip = tooltip
+        return button
+    }
+    
+    private func createSeparator() -> NSView {
+        let sep = NSBox()
+        sep.boxType = .separator
+        sep.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        return sep
+    }
+    
+    @objc private func fontFamilyChanged(_ sender: NSPopUpButton) {
+        guard let familyName = sender.selectedItem?.title else { return }
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        let fontName: String
+        if familyName == "System" {
+            fontName = NSFont.systemFont(ofSize: 13).fontName
+        } else {
+            fontName = familyName
+        }
+        
+        textView.textStorage?.enumerateAttribute(.font, in: range, options: []) { value, attrRange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: 13)
+            let newFont = NSFontManager.shared.convert(currentFont, toFamily: fontName)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: attrRange)
+        }
+    }
+    
+    @objc private func fontSizeChanged(_ sender: NSPopUpButton) {
+        guard let sizeStr = sender.selectedItem?.title, let size = CGFloat(Double(sizeStr) ?? 13) as CGFloat? else { return }
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        textView.textStorage?.enumerateAttribute(.font, in: range, options: []) { value, attrRange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: 13)
+            let newFont = NSFontManager.shared.convert(currentFont, toSize: size)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: attrRange)
+        }
+    }
+    
+    @objc private func toggleBold(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        textView.textStorage?.enumerateAttribute(.font, in: range, options: []) { value, attrRange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: 13)
+            let newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .boldFontMask)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: attrRange)
+        }
+    }
+    
+    @objc private func toggleItalic(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        textView.textStorage?.enumerateAttribute(.font, in: range, options: []) { value, attrRange, _ in
+            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: 13)
+            let newFont = NSFontManager.shared.convert(currentFont, toHaveTrait: .italicFontMask)
+            textView.textStorage?.addAttribute(.font, value: newFont, range: attrRange)
+        }
+    }
+    
+    @objc private func toggleUnderline(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        var hasUnderline = false
+        textView.textStorage?.enumerateAttribute(.underlineStyle, in: range, options: []) { value, _, stop in
+            if let style = value as? Int, style != 0 {
+                hasUnderline = true
+                stop.pointee = true
+            }
+        }
+        
+        let newStyle = hasUnderline ? 0 : NSUnderlineStyle.single.rawValue
+        textView.textStorage?.addAttribute(.underlineStyle, value: newStyle, range: range)
+    }
+    
+    @objc private func toggleStrikethrough(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        var hasStrike = false
+        textView.textStorage?.enumerateAttribute(.strikethroughStyle, in: range, options: []) { value, _, stop in
+            if let style = value as? Int, style != 0 {
+                hasStrike = true
+                stop.pointee = true
+            }
+        }
+        
+        let newStyle = hasStrike ? 0 : NSUnderlineStyle.single.rawValue
+        textView.textStorage?.addAttribute(.strikethroughStyle, value: newStyle, range: range)
+    }
+    
+    @objc private func applyTextColor(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        textView.textStorage?.addAttribute(.foregroundColor, value: textColorWell.color, range: range)
+    }
+    
+    @objc private func applyHighlightColor(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        textView.textStorage?.addAttribute(.backgroundColor, value: highlightColorWell.color, range: range)
+    }
+    
+    @objc private func insertBulletList(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        let text = textView.string as NSString
+        
+        let lineRange = text.lineRange(for: range)
+        let lines = text.substring(with: lineRange).components(separatedBy: "\n")
+        
+        var bulletedLines: [String] = []
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("• ") {
+                bulletedLines.append(String(trimmed.dropFirst(2)))
+            } else if !trimmed.isEmpty {
+                bulletedLines.append("• " + trimmed)
+            } else {
+                bulletedLines.append(line)
+            }
+        }
+        
+        let newText = bulletedLines.joined(separator: "\n")
+        textView.textStorage?.replaceCharacters(in: lineRange, with: newText)
+    }
+    
+    @objc private func insertNumberedList(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        let text = textView.string as NSString
+        
+        let lineRange = text.lineRange(for: range)
+        let lines = text.substring(with: lineRange).components(separatedBy: "\n")
+        
+        var numberedLines: [String] = []
+        var num = 1
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let pattern = "^\\d+\\.\\s*"
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: trimmed, range: NSRange(location: 0, length: trimmed.count)) {
+                let stripped = (trimmed as NSString).substring(from: match.range.upperBound)
+                numberedLines.append("\(num). " + stripped)
+                num += 1
+            } else if !trimmed.isEmpty {
+                numberedLines.append("\(num). " + trimmed)
+                num += 1
+            } else {
+                numberedLines.append(line)
+            }
+        }
+        
+        let newText = numberedLines.joined(separator: "\n")
+        textView.textStorage?.replaceCharacters(in: lineRange, with: newText)
+    }
+    
+    @objc private func alignLeft(_ sender: NSButton) {
+        setAlignment(.left)
+    }
+    
+    @objc private func alignCenter(_ sender: NSButton) {
+        setAlignment(.center)
+    }
+    
+    @objc private func alignRight(_ sender: NSButton) {
+        setAlignment(.right)
+    }
+    
+    private func setAlignment(_ alignment: NSTextAlignment) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        let text = textView.string as NSString
+        let lineRange = text.lineRange(for: range)
+        
+        textView.textStorage?.enumerateAttribute(.paragraphStyle, in: lineRange, options: []) { value, attrRange, _ in
+            let style = (value as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
+            let newStyle = style.mutableCopy() as! NSMutableParagraphStyle
+            newStyle.alignment = alignment
+            textView.textStorage?.addAttribute(.paragraphStyle, value: newStyle, range: attrRange)
+        }
+        
+        if textView.textStorage?.attribute(.paragraphStyle, at: lineRange.location, effectiveRange: nil) == nil {
+            let style = NSMutableParagraphStyle()
+            style.alignment = alignment
+            textView.textStorage?.addAttribute(.paragraphStyle, value: style, range: lineRange)
+        }
+    }
+    
+    @objc private func decreaseIndent(_ sender: NSButton) {
+        adjustIndent(by: -20)
+    }
+    
+    @objc private func increaseIndent(_ sender: NSButton) {
+        adjustIndent(by: 20)
+    }
+    
+    private func adjustIndent(by amount: CGFloat) {
+        let range = textView.selectedRange()
+        let text = textView.string as NSString
+        let lineRange = text.lineRange(for: range)
+        
+        textView.textStorage?.enumerateAttribute(.paragraphStyle, in: lineRange, options: []) { value, attrRange, _ in
+            let style = (value as? NSParagraphStyle) ?? NSParagraphStyle.default
+            let newStyle = style.mutableCopy() as! NSMutableParagraphStyle
+            newStyle.headIndent = max(0, newStyle.headIndent + amount)
+            newStyle.firstLineHeadIndent = max(0, newStyle.firstLineHeadIndent + amount)
+            textView.textStorage?.addAttribute(.paragraphStyle, value: newStyle, range: attrRange)
+        }
+        
+        if textView.textStorage?.attribute(.paragraphStyle, at: lineRange.location, effectiveRange: nil) == nil {
+            let style = NSMutableParagraphStyle()
+            style.headIndent = max(0, amount)
+            style.firstLineHeadIndent = max(0, amount)
+            textView.textStorage?.addAttribute(.paragraphStyle, value: style, range: lineRange)
+        }
+    }
+    
+    @objc private func insertLink(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        let selectedText = range.length > 0 ? (textView.string as NSString).substring(with: range) : ""
+        
+        let alert = NSAlert()
+        alert.messageText = "Insert Link"
+        alert.informativeText = "Enter the URL:"
+        alert.addButton(withTitle: "Insert")
+        alert.addButton(withTitle: "Cancel")
+        
+        let inputField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        inputField.placeholderString = "https://example.com"
+        if selectedText.hasPrefix("http://") || selectedText.hasPrefix("https://") {
+            inputField.stringValue = selectedText
+        }
+        alert.accessoryView = inputField
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            let urlString = inputField.stringValue
+            if let url = URL(string: urlString) {
+                let linkText = range.length > 0 && !selectedText.hasPrefix("http") ? selectedText : urlString
+                let linkAttrString = NSAttributedString(string: linkText, attributes: [
+                    .link: url,
+                    .foregroundColor: NSColor.linkColor,
+                    .underlineStyle: NSUnderlineStyle.single.rawValue
+                ])
+                textView.textStorage?.replaceCharacters(in: range, with: linkAttrString)
+            }
+        }
+    }
+    
+    @objc private func formatAsCode(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        let codeFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        let codeBackground = NSColor(name: nil) { appearance in
+            if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+                return NSColor(white: 0.2, alpha: 1.0)
+            } else {
+                return NSColor(white: 0.92, alpha: 1.0)
+            }
+        }
+        
+        textView.textStorage?.addAttribute(.font, value: codeFont, range: range)
+        textView.textStorage?.addAttribute(.backgroundColor, value: codeBackground, range: range)
+    }
+    
+    @objc private func clearFormatting(_ sender: NSButton) {
+        let range = textView.selectedRange()
+        guard range.length > 0 else { return }
+        
+        let plainText = (textView.string as NSString).substring(with: range)
+        let plainAttrString = NSAttributedString(string: plainText, attributes: [
+            .font: NSFont.systemFont(ofSize: 13),
+            .foregroundColor: NSColor.textColor
+        ])
+        textView.textStorage?.replaceCharacters(in: range, with: plainAttrString)
+    }
+}
+
 class FlippedClipView: NSClipView {
     override var isFlipped: Bool { return true }
 }
@@ -2885,13 +3405,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     private var wcagSuggestions: [WCAGCriterion] = []
     
     private func showAccessibilityMarkerEditor(at timestamp: Double, existingMarker: AccessibilityMarkerData?) {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 750),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 750, height: 920),
                               styleMask: [.titled, .closable, .resizable],
                               backing: .buffered,
                               defer: false)
         window.title = existingMarker != nil ? "Edit Accessibility Marker" : "Add Accessibility Marker"
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 600, height: 650)
+        window.minSize = NSSize(width: 700, height: 800)
         window.center()
         
         let scrollView = NSScrollView()
@@ -2951,21 +3471,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         contentView.addSubview(issueLabel)
         yOffset += 22
         
-        let issueScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
-        issueScrollView.hasVerticalScroller = true
-        issueScrollView.borderType = .bezelBorder
-        let issueTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: issueScrollView.contentSize.width, height: issueScrollView.contentSize.height))
-        issueTextView.isRichText = true
-        issueTextView.allowsUndo = true
-        issueTextView.isEditable = true
-        issueTextView.font = NSFont.systemFont(ofSize: 13)
-        issueScrollView.documentView = issueTextView
+        let issueEditor = RichTextEditorView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 115))
         if let existing = existingMarker {
-            issueTextView.string = existing.issue.string
+            issueEditor.setAttributedStringFixingColors(existing.issue)
         }
-        issueScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_issue")
-        contentView.addSubview(issueScrollView)
-        yOffset += 90
+        issueEditor.scrollView.identifier = NSUserInterfaceItemIdentifier("a11y_issue")
+        contentView.addSubview(issueEditor)
+        yOffset += 125
         
         let importanceLabel = NSTextField(labelWithString: "Why is it important?")
         importanceLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
@@ -2973,21 +3485,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         contentView.addSubview(importanceLabel)
         yOffset += 22
         
-        let importanceScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
-        importanceScrollView.hasVerticalScroller = true
-        importanceScrollView.borderType = .bezelBorder
-        let importanceTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: importanceScrollView.contentSize.width, height: importanceScrollView.contentSize.height))
-        importanceTextView.isRichText = true
-        importanceTextView.allowsUndo = true
-        importanceTextView.isEditable = true
-        importanceTextView.font = NSFont.systemFont(ofSize: 13)
-        importanceScrollView.documentView = importanceTextView
+        let importanceEditor = RichTextEditorView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 115))
         if let existing = existingMarker {
-            importanceTextView.string = existing.importance.string
+            importanceEditor.setAttributedStringFixingColors(existing.importance)
         }
-        importanceScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_importance")
-        contentView.addSubview(importanceScrollView)
-        yOffset += 90
+        importanceEditor.scrollView.identifier = NSUserInterfaceItemIdentifier("a11y_importance")
+        contentView.addSubview(importanceEditor)
+        yOffset += 125
         
         let impactedLabel = NSTextField(labelWithString: "Who is impacted?")
         impactedLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
@@ -2995,21 +3499,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         contentView.addSubview(impactedLabel)
         yOffset += 22
         
-        let impactedScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
-        impactedScrollView.hasVerticalScroller = true
-        impactedScrollView.borderType = .bezelBorder
-        let impactedTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: impactedScrollView.contentSize.width, height: impactedScrollView.contentSize.height))
-        impactedTextView.isRichText = true
-        impactedTextView.allowsUndo = true
-        impactedTextView.isEditable = true
-        impactedTextView.font = NSFont.systemFont(ofSize: 13)
-        impactedScrollView.documentView = impactedTextView
+        let impactedEditor = RichTextEditorView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 115))
         if let existing = existingMarker {
-            impactedTextView.string = existing.impactedUsers.string
+            impactedEditor.setAttributedStringFixingColors(existing.impactedUsers)
         }
-        impactedScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_impacted")
-        contentView.addSubview(impactedScrollView)
-        yOffset += 90
+        impactedEditor.scrollView.identifier = NSUserInterfaceItemIdentifier("a11y_impacted")
+        contentView.addSubview(impactedEditor)
+        yOffset += 125
         
         let remediationLabel = NSTextField(labelWithString: "How to fix it?")
         remediationLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
@@ -3017,21 +3513,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         contentView.addSubview(remediationLabel)
         yOffset += 22
         
-        let remediationScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
-        remediationScrollView.hasVerticalScroller = true
-        remediationScrollView.borderType = .bezelBorder
-        let remediationTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: remediationScrollView.contentSize.width, height: remediationScrollView.contentSize.height))
-        remediationTextView.isRichText = true
-        remediationTextView.allowsUndo = true
-        remediationTextView.isEditable = true
-        remediationTextView.font = NSFont.systemFont(ofSize: 13)
-        remediationScrollView.documentView = remediationTextView
+        let remediationEditor = RichTextEditorView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 115))
         if let existing = existingMarker {
-            remediationTextView.string = existing.remediation.string
+            remediationEditor.setAttributedStringFixingColors(existing.remediation)
         }
-        remediationScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_remediation")
-        contentView.addSubview(remediationScrollView)
-        yOffset += 90
+        remediationEditor.scrollView.identifier = NSUserInterfaceItemIdentifier("a11y_remediation")
+        contentView.addSubview(remediationEditor)
+        yOffset += 125
         
         let wcagLabel = NSTextField(labelWithString: "WCAG Success Criteria at Risk:")
         wcagLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
@@ -3112,14 +3600,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         var remediationTextView: NSTextView?
         
         for subview in contentView.subviews {
-            if let scrollView = subview as? NSScrollView,
-               let textView = scrollView.documentView as? NSTextView,
-               let identifier = scrollView.identifier?.rawValue {
+            if let richEditor = subview as? RichTextEditorView,
+               let identifier = richEditor.scrollView.identifier?.rawValue {
                 switch identifier {
-                case "a11y_issue": issueTextView = textView
-                case "a11y_importance": importanceTextView = textView
-                case "a11y_impacted": impactedTextView = textView
-                case "a11y_remediation": remediationTextView = textView
+                case "a11y_issue": issueTextView = richEditor.textView
+                case "a11y_importance": importanceTextView = richEditor.textView
+                case "a11y_impacted": impactedTextView = richEditor.textView
+                case "a11y_remediation": remediationTextView = richEditor.textView
                 default: break
                 }
             }
