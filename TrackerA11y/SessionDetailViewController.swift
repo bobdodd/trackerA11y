@@ -4028,6 +4028,40 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         print("🗑️ Deleted accessibility marker: \(marker.title.string)")
     }
     
+    @objc private func editAnnotationFromEvent(_ sender: NSButton) {
+        guard let annotationId = sender.identifier?.rawValue,
+              let annotation = annotationManager?.getAllAnnotations().first(where: { $0.id == annotationId }) else { return }
+        selectedAnnotation = annotation
+        annotationOverlayView?.selectAnnotation(id: annotation.id)
+        seekVideoToTimestamp(annotation.startTime)
+        tabView?.selectTabViewItem(at: 0)
+    }
+    
+    @objc private func editA11yMarkerFromEvent(_ sender: NSButton) {
+        guard let markerId = sender.identifier?.rawValue else { return }
+        editAccessibilityMarkerById(markerId)
+    }
+    
+    @objc private func deleteA11yMarkerFromEvent(_ sender: NSButton) {
+        guard let markerId = sender.identifier?.rawValue,
+              let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) else { return }
+        
+        let marker = accessibilityMarkers[index]
+        let undoInfo: [String: Any] = [
+            "action": "deleteA11yMarker",
+            "marker": marker.toDictionary(),
+            "index": index
+        ]
+        addToUndoStack(undoInfo)
+        
+        accessibilityMarkers.remove(at: index)
+        saveAccessibilityMarkersToMetadata()
+        updateTimelineWithAccessibilityMarkers()
+        mergeAnnotationsAndMarkersIntoEvents()
+        eventsTableView?.reloadData()
+        clearEventsDetailPanel()
+    }
+    
     private func loadAccessibilityMarkersFromMetadata(_ metadata: [String: Any]) {
         guard let markersData = metadata["accessibilityMarkers"] as? [[String: Any]] else {
             print("📍 No accessibility markers found in metadata")
@@ -7614,6 +7648,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         loadingIndicator.isHidden = true
         
         processPendingMarkers()
+        mergeAnnotationsAndMarkersIntoEvents()
         
         filteredEvents = events
         populateTypeFilter()
@@ -7623,6 +7658,49 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         updateAllViews()
         
         print("✅ Loading complete - UI updated")
+    }
+    
+    private func mergeAnnotationsAndMarkersIntoEvents() {
+        events.removeAll { event in
+            let source = event["source"] as? String ?? ""
+            return source == "annotation" || source == "accessibility"
+        }
+        
+        if let manager = annotationManager {
+            for annotation in manager.getAllAnnotations() {
+                let annotationEvent: [String: Any] = [
+                    "source": "annotation",
+                    "type": annotation.type.rawValue,
+                    "timestamp": annotation.startTime,
+                    "data": [
+                        "id": annotation.id,
+                        "text": annotation.text,
+                        "duration": annotation.duration,
+                        "color": annotation.style.strokeColor.nsColor.hexString
+                    ] as [String: Any]
+                ]
+                events.append(annotationEvent)
+            }
+        }
+        
+        for marker in accessibilityMarkers {
+            let markerEvent: [String: Any] = [
+                "source": "accessibility",
+                "type": "a11y_marker",
+                "timestamp": marker.timestamp,
+                "data": [
+                    "id": marker.id,
+                    "title": marker.title.string,
+                    "duration": marker.duration,
+                    "impactScore": marker.impactScore.rawValue,
+                    "issue": marker.issue.string
+                ] as [String: Any]
+            ]
+            events.append(markerEvent)
+        }
+        
+        events.sort { ($0["timestamp"] as? Double ?? 0) < ($1["timestamp"] as? Double ?? 0) }
+        print("📋 Merged \(annotationManager?.getAllAnnotations().count ?? 0) annotations and \(accessibilityMarkers.count) a11y markers into events")
     }
     
     private func processPendingMarkers() {
@@ -9174,12 +9252,14 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         let event = sourceEvents[row]
         let cellView = NSTableCellView()
         
-        let textField = NSTextField()
+        let textField = NSTextField(labelWithString: "")
         textField.isBordered = false
         textField.isEditable = false
         textField.backgroundColor = .clear
         textField.font = NSFont.systemFont(ofSize: 16)
         textField.lineBreakMode = .byTruncatingTail
+        textField.usesSingleLineMode = true
+        textField.cell?.lineBreakMode = .byTruncatingTail
         
         switch tableColumn?.identifier.rawValue {
         case "index":
@@ -9214,6 +9294,14 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
                 } else {
                     textField.textColor = .systemPurple
                 }
+            case "annotation":
+                textField.stringValue = "Annotation"
+                textField.textColor = .systemGreen
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+            case "accessibility":
+                textField.stringValue = "A11y Issue"
+                textField.textColor = .systemRed
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
             default:
                 textField.textColor = .labelColor
             }
@@ -9232,9 +9320,24 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             
         case "details":
             let eventType = event["type"] as? String ?? ""
+            let source = event["source"] as? String ?? ""
             if eventType == "marker" {
                 let markerName = event["markerName"] as? String ?? ""
                 textField.stringValue = markerName
+                textField.textColor = .systemRed
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
+            } else if source == "annotation" {
+                let data = event["data"] as? [String: Any] ?? [:]
+                let text = data["text"] as? String ?? ""
+                textField.stringValue = text.isEmpty ? "(\(eventType))" : text
+                textField.textColor = .systemGreen
+                textField.font = NSFont.systemFont(ofSize: 16, weight: .medium)
+            } else if source == "accessibility" {
+                let data = event["data"] as? [String: Any] ?? [:]
+                let title = data["title"] as? String ?? ""
+                let impact = data["impactScore"] as? String ?? ""
+                let icon = impact == "High" ? "⚠️" : (impact == "Medium" ? "⚡" : "💡")
+                textField.stringValue = "\(icon) \(title.isEmpty ? "(Untitled)" : title)"
                 textField.textColor = .systemRed
                 textField.font = NSFont.systemFont(ofSize: 16, weight: .semibold)
             } else {
@@ -9247,11 +9350,13 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         }
         
         cellView.addSubview(textField)
+        cellView.textField = textField
         textField.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 8),
             textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -8),
-            textField.centerYAnchor.constraint(equalTo: cellView.centerYAnchor)
+            textField.topAnchor.constraint(equalTo: cellView.topAnchor),
+            textField.bottomAnchor.constraint(equalTo: cellView.bottomAnchor)
         ])
         
         return cellView
@@ -9401,6 +9506,175 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
             
             stackView.addArrangedSubview(markerCard)
             markerCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        } else if event["source"] as? String == "annotation" {
+            let data = event["data"] as? [String: Any] ?? [:]
+            let annotationType = event["type"] as? String ?? "annotation"
+            let text = data["text"] as? String ?? ""
+            let annotationId = data["id"] as? String ?? ""
+            
+            let (annotationCard, annotationContent) = createDetailCard(title: "Annotation", icon: "✏️")
+            
+            annotationContent.addArrangedSubview(createDetailRow(label: "Type", value: annotationType.capitalized, valueColor: .systemGreen))
+            
+            if let timestamp = event["timestamp"] as? Double {
+                annotationContent.addArrangedSubview(createDetailRow(label: "Start", value: formatTimestamp(timestamp), valueColor: .systemBlue))
+            }
+            
+            if let duration = data["duration"] as? Double {
+                let endTimestamp = (event["timestamp"] as? Double ?? 0) + duration
+                annotationContent.addArrangedSubview(createDetailRow(label: "End", value: formatTimestamp(endTimestamp), valueColor: .systemBlue))
+                annotationContent.addArrangedSubview(createDetailRow(label: "Duration", value: String(format: "%.1fs", duration / 1_000_000), valueColor: .systemOrange))
+            }
+            
+            if !text.isEmpty {
+                let textLabel = NSTextField(labelWithString: "Text:")
+                textLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+                textLabel.textColor = .secondaryLabelColor
+                annotationContent.addArrangedSubview(textLabel)
+                
+                let textValue = NSTextField(wrappingLabelWithString: text)
+                textValue.font = NSFont.systemFont(ofSize: 14)
+                textValue.textColor = .labelColor
+                annotationContent.addArrangedSubview(textValue)
+            }
+            
+            let editBtn = NSButton(title: "Edit Annotation", target: self, action: #selector(editAnnotationFromEvent(_:)))
+            editBtn.bezelStyle = .rounded
+            editBtn.identifier = NSUserInterfaceItemIdentifier(annotationId)
+            annotationContent.addArrangedSubview(editBtn)
+            
+            stackView.addArrangedSubview(annotationCard)
+            annotationCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        } else if event["source"] as? String == "accessibility" {
+            let data = event["data"] as? [String: Any] ?? [:]
+            let markerId = data["id"] as? String ?? ""
+            
+            guard let fullMarker = accessibilityMarkers.first(where: { $0.id == markerId }) else {
+                let (errorCard, errorContent) = createDetailCard(title: "Accessibility Issue", icon: "⚠️")
+                let errorLabel = NSTextField(labelWithString: "Marker not found")
+                errorLabel.textColor = .secondaryLabelColor
+                errorContent.addArrangedSubview(errorLabel)
+                stackView.addArrangedSubview(errorCard)
+                return
+            }
+            
+            let (a11yCard, a11yContent) = createDetailCard(title: "Accessibility Issue", icon: fullMarker.impactScore.icon)
+            
+            let titleText = fullMarker.title.string.isEmpty ? "(Untitled Issue)" : fullMarker.title.string
+            let titleLabel = NSTextField(wrappingLabelWithString: titleText)
+            titleLabel.font = NSFont.boldSystemFont(ofSize: 14)
+            titleLabel.textColor = .labelColor
+            titleLabel.maximumNumberOfLines = 0
+            titleLabel.preferredMaxLayoutWidth = 220
+            a11yContent.addArrangedSubview(titleLabel)
+            
+            let timeStack = NSStackView()
+            timeStack.orientation = .vertical
+            timeStack.alignment = .leading
+            timeStack.spacing = 4
+            
+            let startTime = formatTimestamp(fullMarker.timestamp)
+            let endTime = formatTimestamp(fullMarker.timestamp + fullMarker.duration)
+            let durationSecs = fullMarker.duration / 1_000_000
+            
+            let startLabel = NSTextField(labelWithString: "Start: \(startTime)")
+            startLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            startLabel.textColor = .systemBlue
+            timeStack.addArrangedSubview(startLabel)
+            
+            let endLabel = NSTextField(labelWithString: "End: \(endTime)")
+            endLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            endLabel.textColor = .systemBlue
+            timeStack.addArrangedSubview(endLabel)
+            
+            let metaStack = NSStackView()
+            metaStack.orientation = .horizontal
+            metaStack.spacing = 12
+            
+            let durationLabel = NSTextField(labelWithString: String(format: "%.1fs", durationSecs))
+            durationLabel.font = NSFont.systemFont(ofSize: 11)
+            durationLabel.textColor = .systemOrange
+            metaStack.addArrangedSubview(durationLabel)
+            
+            let impactLabel = NSTextField(labelWithString: "\(fullMarker.impactScore.icon) \(fullMarker.impactScore.rawValue)")
+            impactLabel.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+            impactLabel.textColor = fullMarker.impactScore.color
+            metaStack.addArrangedSubview(impactLabel)
+            
+            a11yContent.addArrangedSubview(timeStack)
+            a11yContent.addArrangedSubview(metaStack)
+            
+            a11yContent.addArrangedSubview(createA11ySeparator())
+            
+            if fullMarker.issue.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "What is the issue?", content: fullMarker.issue.string, icon: "⚠️"))
+            }
+            
+            if fullMarker.importance.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "Why is it important?", content: fullMarker.importance.string, icon: "💡"))
+            }
+            
+            if fullMarker.impactedUsers.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "Who is impacted?", content: fullMarker.impactedUsers.string, icon: "👥"))
+            }
+            
+            if !fullMarker.wcagCriteria.isEmpty {
+                let wcagContainer = NSStackView()
+                wcagContainer.orientation = .vertical
+                wcagContainer.alignment = .leading
+                wcagContainer.spacing = 6
+                
+                let wcagHeader = NSStackView()
+                wcagHeader.orientation = .horizontal
+                wcagHeader.spacing = 4
+                let wcagIcon = NSTextField(labelWithString: "📋")
+                wcagIcon.font = NSFont.systemFont(ofSize: 12)
+                wcagHeader.addArrangedSubview(wcagIcon)
+                let wcagLabel = NSTextField(labelWithString: "WCAG Criteria at Risk")
+                wcagLabel.font = NSFont.boldSystemFont(ofSize: 12)
+                wcagLabel.textColor = .secondaryLabelColor
+                wcagHeader.addArrangedSubview(wcagLabel)
+                wcagContainer.addArrangedSubview(wcagHeader)
+                
+                let sortedCriteria = fullMarker.wcagCriteria.sorted { a, b in
+                    let aId = a.components(separatedBy: " ").first ?? a
+                    let bId = b.components(separatedBy: " ").first ?? b
+                    return aId.compare(bId, options: .numeric) == .orderedAscending
+                }
+                
+                for criterion in sortedCriteria {
+                    let tag = createWCAGTag(criterion)
+                    wcagContainer.addArrangedSubview(tag)
+                }
+                a11yContent.addArrangedSubview(wcagContainer)
+            }
+            
+            if fullMarker.remediation.length > 0 {
+                a11yContent.addArrangedSubview(createA11ySection(title: "How to fix it?", content: fullMarker.remediation.string, icon: "🔧"))
+            }
+            
+            a11yContent.addArrangedSubview(createA11ySeparator())
+            
+            let buttonStack = NSStackView()
+            buttonStack.orientation = .horizontal
+            buttonStack.spacing = 8
+            buttonStack.distribution = .fillEqually
+            
+            let editButton = NSButton(title: "Edit", target: self, action: #selector(editA11yMarkerFromEvent(_:)))
+            editButton.bezelStyle = .rounded
+            editButton.identifier = NSUserInterfaceItemIdentifier(markerId)
+            buttonStack.addArrangedSubview(editButton)
+            
+            let deleteButton = NSButton(title: "Delete", target: self, action: #selector(deleteA11yMarkerFromEvent(_:)))
+            deleteButton.bezelStyle = .rounded
+            deleteButton.contentTintColor = .systemRed
+            deleteButton.identifier = NSUserInterfaceItemIdentifier(markerId)
+            buttonStack.addArrangedSubview(deleteButton)
+            
+            a11yContent.addArrangedSubview(buttonStack)
+            
+            stackView.addArrangedSubview(a11yCard)
+            a11yCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
         } else {
             let (headerCard, headerContent) = createDetailCard(title: "Event #\(index + 1)", icon: "📋")
             
