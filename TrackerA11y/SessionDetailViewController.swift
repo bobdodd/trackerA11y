@@ -71,6 +71,226 @@ struct TransitionData {
     }
 }
 
+enum ImpactScore: String, CaseIterable {
+    case high = "High"
+    case medium = "Medium"
+    case low = "Low"
+    
+    var color: NSColor {
+        switch self {
+        case .high: return .systemRed
+        case .medium: return .systemOrange
+        case .low: return .systemYellow
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .high: return "⚠️"
+        case .medium: return "⚡"
+        case .low: return "💡"
+        }
+    }
+}
+
+struct WCAGCriterion: Hashable {
+    let id: String
+    let title: String
+    let level: String
+    
+    var displayString: String {
+        return "\(id) - \(title) (\(level))"
+    }
+    
+    var shortString: String {
+        return "\(id) (\(level))"
+    }
+    
+    static let allCriteria: [WCAGCriterion] = [
+        WCAGCriterion(id: "1.1.1", title: "Non-text Content", level: "A"),
+        WCAGCriterion(id: "1.2.1", title: "Audio-only and Video-only (Prerecorded)", level: "A"),
+        WCAGCriterion(id: "1.2.2", title: "Captions (Prerecorded)", level: "A"),
+        WCAGCriterion(id: "1.2.3", title: "Audio Description or Media Alternative (Prerecorded)", level: "A"),
+        WCAGCriterion(id: "1.2.4", title: "Captions (Live)", level: "AA"),
+        WCAGCriterion(id: "1.2.5", title: "Audio Description (Prerecorded)", level: "AA"),
+        WCAGCriterion(id: "1.2.6", title: "Sign Language (Prerecorded)", level: "AAA"),
+        WCAGCriterion(id: "1.2.7", title: "Extended Audio Description (Prerecorded)", level: "AAA"),
+        WCAGCriterion(id: "1.2.8", title: "Media Alternative (Prerecorded)", level: "AAA"),
+        WCAGCriterion(id: "1.2.9", title: "Audio-only (Live)", level: "AAA"),
+        WCAGCriterion(id: "1.3.1", title: "Info and Relationships", level: "A"),
+        WCAGCriterion(id: "1.3.2", title: "Meaningful Sequence", level: "A"),
+        WCAGCriterion(id: "1.3.3", title: "Sensory Characteristics", level: "A"),
+        WCAGCriterion(id: "1.3.4", title: "Orientation", level: "AA"),
+        WCAGCriterion(id: "1.3.5", title: "Identify Input Purpose", level: "AA"),
+        WCAGCriterion(id: "1.3.6", title: "Identify Purpose", level: "AAA"),
+        WCAGCriterion(id: "1.4.1", title: "Use of Color", level: "A"),
+        WCAGCriterion(id: "1.4.2", title: "Audio Control", level: "A"),
+        WCAGCriterion(id: "1.4.3", title: "Contrast (Minimum)", level: "AA"),
+        WCAGCriterion(id: "1.4.4", title: "Resize Text", level: "AA"),
+        WCAGCriterion(id: "1.4.5", title: "Images of Text", level: "AA"),
+        WCAGCriterion(id: "1.4.6", title: "Contrast (Enhanced)", level: "AAA"),
+        WCAGCriterion(id: "1.4.7", title: "Low or No Background Audio", level: "AAA"),
+        WCAGCriterion(id: "1.4.8", title: "Visual Presentation", level: "AAA"),
+        WCAGCriterion(id: "1.4.9", title: "Images of Text (No Exception)", level: "AAA"),
+        WCAGCriterion(id: "1.4.10", title: "Reflow", level: "AA"),
+        WCAGCriterion(id: "1.4.11", title: "Non-text Contrast", level: "AA"),
+        WCAGCriterion(id: "1.4.12", title: "Text Spacing", level: "AA"),
+        WCAGCriterion(id: "1.4.13", title: "Content on Hover or Focus", level: "AA"),
+        WCAGCriterion(id: "2.1.1", title: "Keyboard", level: "A"),
+        WCAGCriterion(id: "2.1.2", title: "No Keyboard Trap", level: "A"),
+        WCAGCriterion(id: "2.1.3", title: "Keyboard (No Exception)", level: "AAA"),
+        WCAGCriterion(id: "2.1.4", title: "Character Key Shortcuts", level: "A"),
+        WCAGCriterion(id: "2.2.1", title: "Timing Adjustable", level: "A"),
+        WCAGCriterion(id: "2.2.2", title: "Pause, Stop, Hide", level: "A"),
+        WCAGCriterion(id: "2.2.3", title: "No Timing", level: "AAA"),
+        WCAGCriterion(id: "2.2.4", title: "Interruptions", level: "AAA"),
+        WCAGCriterion(id: "2.2.5", title: "Re-authenticating", level: "AAA"),
+        WCAGCriterion(id: "2.2.6", title: "Timeouts", level: "AAA"),
+        WCAGCriterion(id: "2.3.1", title: "Three Flashes or Below Threshold", level: "A"),
+        WCAGCriterion(id: "2.3.2", title: "Three Flashes", level: "AAA"),
+        WCAGCriterion(id: "2.3.3", title: "Animation from Interactions", level: "AAA"),
+        WCAGCriterion(id: "2.4.1", title: "Bypass Blocks", level: "A"),
+        WCAGCriterion(id: "2.4.2", title: "Page Titled", level: "A"),
+        WCAGCriterion(id: "2.4.3", title: "Focus Order", level: "A"),
+        WCAGCriterion(id: "2.4.4", title: "Link Purpose (In Context)", level: "A"),
+        WCAGCriterion(id: "2.4.5", title: "Multiple Ways", level: "AA"),
+        WCAGCriterion(id: "2.4.6", title: "Headings and Labels", level: "AA"),
+        WCAGCriterion(id: "2.4.7", title: "Focus Visible", level: "AA"),
+        WCAGCriterion(id: "2.4.8", title: "Location", level: "AAA"),
+        WCAGCriterion(id: "2.4.9", title: "Link Purpose (Link Only)", level: "AAA"),
+        WCAGCriterion(id: "2.4.10", title: "Section Headings", level: "AAA"),
+        WCAGCriterion(id: "2.4.11", title: "Focus Not Obscured (Minimum)", level: "AA"),
+        WCAGCriterion(id: "2.4.12", title: "Focus Not Obscured (Enhanced)", level: "AAA"),
+        WCAGCriterion(id: "2.4.13", title: "Focus Appearance", level: "AAA"),
+        WCAGCriterion(id: "2.5.1", title: "Pointer Gestures", level: "A"),
+        WCAGCriterion(id: "2.5.2", title: "Pointer Cancellation", level: "A"),
+        WCAGCriterion(id: "2.5.3", title: "Label in Name", level: "A"),
+        WCAGCriterion(id: "2.5.4", title: "Motion Actuation", level: "A"),
+        WCAGCriterion(id: "2.5.5", title: "Target Size (Enhanced)", level: "AAA"),
+        WCAGCriterion(id: "2.5.6", title: "Concurrent Input Mechanisms", level: "AAA"),
+        WCAGCriterion(id: "2.5.7", title: "Dragging Movements", level: "AA"),
+        WCAGCriterion(id: "2.5.8", title: "Target Size (Minimum)", level: "AA"),
+        WCAGCriterion(id: "3.1.1", title: "Language of Page", level: "A"),
+        WCAGCriterion(id: "3.1.2", title: "Language of Parts", level: "AA"),
+        WCAGCriterion(id: "3.1.3", title: "Unusual Words", level: "AAA"),
+        WCAGCriterion(id: "3.1.4", title: "Abbreviations", level: "AAA"),
+        WCAGCriterion(id: "3.1.5", title: "Reading Level", level: "AAA"),
+        WCAGCriterion(id: "3.1.6", title: "Pronunciation", level: "AAA"),
+        WCAGCriterion(id: "3.2.1", title: "On Focus", level: "A"),
+        WCAGCriterion(id: "3.2.2", title: "On Input", level: "A"),
+        WCAGCriterion(id: "3.2.3", title: "Consistent Navigation", level: "AA"),
+        WCAGCriterion(id: "3.2.4", title: "Consistent Identification", level: "AA"),
+        WCAGCriterion(id: "3.2.5", title: "Change on Request", level: "AAA"),
+        WCAGCriterion(id: "3.2.6", title: "Consistent Help", level: "A"),
+        WCAGCriterion(id: "3.3.1", title: "Error Identification", level: "A"),
+        WCAGCriterion(id: "3.3.2", title: "Labels or Instructions", level: "A"),
+        WCAGCriterion(id: "3.3.3", title: "Error Suggestion", level: "AA"),
+        WCAGCriterion(id: "3.3.4", title: "Error Prevention (Legal, Financial, Data)", level: "AA"),
+        WCAGCriterion(id: "3.3.5", title: "Help", level: "AAA"),
+        WCAGCriterion(id: "3.3.6", title: "Error Prevention (All)", level: "AAA"),
+        WCAGCriterion(id: "3.3.7", title: "Redundant Entry", level: "A"),
+        WCAGCriterion(id: "3.3.8", title: "Accessible Authentication (Minimum)", level: "AA"),
+        WCAGCriterion(id: "3.3.9", title: "Accessible Authentication (Enhanced)", level: "AAA"),
+        WCAGCriterion(id: "4.1.1", title: "Parsing", level: "A"),
+        WCAGCriterion(id: "4.1.2", title: "Name, Role, Value", level: "A"),
+        WCAGCriterion(id: "4.1.3", title: "Status Messages", level: "AA")
+    ]
+    
+    static func search(_ query: String) -> [WCAGCriterion] {
+        let lowercased = query.lowercased()
+        return allCriteria.filter { criterion in
+            criterion.id.lowercased().contains(lowercased) ||
+            criterion.title.lowercased().contains(lowercased) ||
+            criterion.level.lowercased().contains(lowercased)
+        }
+    }
+}
+
+struct AccessibilityMarkerData {
+    var id: String
+    var timestamp: Double
+    var duration: Double
+    var title: NSAttributedString
+    var issue: NSAttributedString
+    var importance: NSAttributedString
+    var impactedUsers: NSAttributedString
+    var remediation: NSAttributedString
+    var impactScore: ImpactScore
+    var wcagCriteria: [String]
+    
+    func toDictionary() -> [String: Any] {
+        return [
+            "id": id,
+            "timestamp": timestamp,
+            "duration": duration,
+            "title": attributedStringToHTML(title),
+            "issue": attributedStringToHTML(issue),
+            "importance": attributedStringToHTML(importance),
+            "impactedUsers": attributedStringToHTML(impactedUsers),
+            "remediation": attributedStringToHTML(remediation),
+            "impactScore": impactScore.rawValue,
+            "wcagCriteria": wcagCriteria
+        ]
+    }
+    
+    private func attributedStringToHTML(_ attrString: NSAttributedString) -> String {
+        do {
+            let data = try attrString.data(from: NSRange(location: 0, length: attrString.length),
+                                           documentAttributes: [.documentType: NSAttributedString.DocumentType.html])
+            return String(data: data, encoding: .utf8) ?? attrString.string
+        } catch {
+            return attrString.string
+        }
+    }
+    
+    static func from(dictionary: [String: Any]) -> AccessibilityMarkerData? {
+        guard let id = dictionary["id"] as? String,
+              let timestamp = dictionary["timestamp"] as? Double,
+              let duration = dictionary["duration"] as? Double else {
+            return nil
+        }
+        
+        let title = htmlToAttributedString(dictionary["title"] as? String ?? "")
+        let issue = htmlToAttributedString(dictionary["issue"] as? String ?? "")
+        let importance = htmlToAttributedString(dictionary["importance"] as? String ?? "")
+        let impactedUsers = htmlToAttributedString(dictionary["impactedUsers"] as? String ?? "")
+        let remediation = htmlToAttributedString(dictionary["remediation"] as? String ?? "")
+        
+        let impactScoreString = dictionary["impactScore"] as? String ?? "Medium"
+        let impactScore = ImpactScore(rawValue: impactScoreString) ?? .medium
+        
+        let wcagCriteria = dictionary["wcagCriteria"] as? [String] ?? []
+        
+        return AccessibilityMarkerData(
+            id: id,
+            timestamp: timestamp,
+            duration: duration,
+            title: title,
+            issue: issue,
+            importance: importance,
+            impactedUsers: impactedUsers,
+            remediation: remediation,
+            impactScore: impactScore,
+            wcagCriteria: wcagCriteria
+        )
+    }
+    
+    private static func htmlToAttributedString(_ html: String) -> NSAttributedString {
+        guard !html.isEmpty else {
+            return NSAttributedString(string: "")
+        }
+        do {
+            let data = html.data(using: .utf8) ?? Data()
+            return try NSAttributedString(data: data,
+                                         options: [.documentType: NSAttributedString.DocumentType.html,
+                                                  .characterEncoding: String.Encoding.utf8.rawValue],
+                                         documentAttributes: nil)
+        } catch {
+            return NSAttributedString(string: html)
+        }
+    }
+}
+
 class FlippedClipView: NSClipView {
     override var isFlipped: Bool { return true }
 }
@@ -104,7 +324,11 @@ class TagsNotesCellView: NSView {
     }
 }
 
-class SessionDetailViewController: NSViewController, NSTextViewDelegate {
+class FlippedView: NSView {
+    override var isFlipped: Bool { return true }
+}
+
+class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSTokenFieldDelegate {
     
     private let sessionId: String
     private let sessionData: [String: Any]
@@ -185,6 +409,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []  // Pause gaps for video/event time conversion
     private var cropGaps: [(start: Double, end: Double, duration: Double, eventBackup: [[String: Any]])] = []  // Cropped time ranges
     private var transitions: [TransitionData] = []  // Video transitions (stretches timeline)
+    private var accessibilityMarkers: [AccessibilityMarkerData] = []  // Accessibility issue markers
     private var screenshotWindows: [NSWindow] = []  // Keep references to screenshot viewer windows
     private var screenshotPaths: [Int: String] = [:]  // Map button tag to screenshot path
     private var scrollViewRefs: [Int: NSScrollView] = [:]  // Map button tag to scroll view
@@ -2279,6 +2504,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         addTransitionItem.representedObject = timestamp
         menu.addItem(addTransitionItem)
         
+        let addA11yMarkerItem = NSMenuItem(title: "Add Accessibility Marker...", action: #selector(addAccessibilityMarkerAction(_:)), keyEquivalent: "")
+        addA11yMarkerItem.target = self
+        addA11yMarkerItem.representedObject = timestamp
+        menu.addItem(addA11yMarkerItem)
+        
         let addMarkerItem = NSMenuItem(title: "Add Marker...", action: #selector(addMarkerAtTimestampAction(_:)), keyEquivalent: "")
         addMarkerItem.target = self
         addMarkerItem.representedObject = timestamp
@@ -2292,6 +2522,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     @objc private func addTransitionAction(_ sender: NSMenuItem) {
         guard let timestamp = sender.representedObject as? Double else { return }
         showTransitionEditor(at: timestamp, existingTransition: nil)
+    }
+    
+    @objc private func addAccessibilityMarkerAction(_ sender: NSMenuItem) {
+        guard let timestamp = sender.representedObject as? Double else { return }
+        showAccessibilityMarkerEditor(at: timestamp, existingMarker: nil)
     }
     
     private func showTransitionContextMenu(transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String), nsEvent: NSEvent) {
@@ -2501,6 +2736,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     private var currentTransitionId: String?
     private var currentTransitionPreviewContainer: NSView?
     private var selectedTransitionTimestamp: Double?
+    private var selectedA11yMarkerId: String?
     
     @objc private func transitionDurationStepperChanged(_ sender: NSStepper) {
         guard let window = currentTransitionEditorWindow,
@@ -2626,6 +2862,513 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         let simpleTransitions = transitions.map { (timestamp: $0.timestamp, duration: $0.duration, typeRaw: $0.type.rawValue, icon: $0.type.icon) }
         timelineView?.setTransitions(simpleTransitions)
         timelineView?.needsDisplay = true
+    }
+    
+    // MARK: - Accessibility Marker Editor
+    
+    private var currentA11yMarkerEditorWindow: NSWindow?
+    private var currentA11yMarkerTimestamp: Double = 0
+    private var currentA11yMarkerId: String?
+    private var wcagTokenField: NSTokenField?
+    private var wcagSuggestions: [WCAGCriterion] = []
+    
+    private func showAccessibilityMarkerEditor(at timestamp: Double, existingMarker: AccessibilityMarkerData?) {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 750),
+                              styleMask: [.titled, .closable, .resizable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = existingMarker != nil ? "Edit Accessibility Marker" : "Add Accessibility Marker"
+        window.isReleasedWhenClosed = false
+        window.minSize = NSSize(width: 600, height: 650)
+        window.center()
+        
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .noBorder
+        
+        let contentView = FlippedView()
+        let contentWidth: CGFloat = 660
+        
+        var yOffset: CGFloat = 20
+        
+        let titleLabel = NSTextField(labelWithString: "Title:")
+        titleLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        titleLabel.frame = NSRect(x: 20, y: yOffset, width: 100, height: 18)
+        contentView.addSubview(titleLabel)
+        yOffset += 22
+        
+        let titleField = NSTextField(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 24))
+        titleField.stringValue = existingMarker?.title.string ?? ""
+        titleField.placeholderString = "Brief title for this accessibility issue"
+        titleField.tag = 200
+        contentView.addSubview(titleField)
+        yOffset += 35
+        
+        let durationLabel = NSTextField(labelWithString: "Duration (seconds):")
+        durationLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        durationLabel.frame = NSRect(x: 20, y: yOffset, width: 140, height: 18)
+        contentView.addSubview(durationLabel)
+        
+        let durationField = NSTextField(frame: NSRect(x: 170, y: yOffset - 2, width: 80, height: 24))
+        durationField.stringValue = existingMarker != nil ? String(format: "%.1f", existingMarker!.duration / 1_000_000) : "3.0"
+        durationField.tag = 201
+        contentView.addSubview(durationField)
+        
+        let impactLabel = NSTextField(labelWithString: "Impact:")
+        impactLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        impactLabel.frame = NSRect(x: 280, y: yOffset, width: 60, height: 18)
+        contentView.addSubview(impactLabel)
+        
+        let impactPopup = NSPopUpButton(frame: NSRect(x: 345, y: yOffset - 4, width: 120, height: 28), pullsDown: false)
+        for impact in ImpactScore.allCases {
+            impactPopup.addItem(withTitle: "\(impact.icon) \(impact.rawValue)")
+        }
+        if let existing = existingMarker, let index = ImpactScore.allCases.firstIndex(of: existing.impactScore) {
+            impactPopup.selectItem(at: index)
+        } else {
+            impactPopup.selectItem(at: 1)
+        }
+        impactPopup.tag = 202
+        contentView.addSubview(impactPopup)
+        yOffset += 35
+        
+        let issueLabel = NSTextField(labelWithString: "What is the issue?")
+        issueLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        issueLabel.frame = NSRect(x: 20, y: yOffset, width: 200, height: 18)
+        contentView.addSubview(issueLabel)
+        yOffset += 22
+        
+        let issueScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
+        issueScrollView.hasVerticalScroller = true
+        issueScrollView.borderType = .bezelBorder
+        let issueTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: issueScrollView.contentSize.width, height: issueScrollView.contentSize.height))
+        issueTextView.isRichText = true
+        issueTextView.allowsUndo = true
+        issueTextView.isEditable = true
+        issueTextView.font = NSFont.systemFont(ofSize: 13)
+        if let existing = existingMarker {
+            issueTextView.textStorage?.setAttributedString(existing.issue)
+        }
+        issueScrollView.documentView = issueTextView
+        issueScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_issue")
+        contentView.addSubview(issueScrollView)
+        yOffset += 90
+        
+        let importanceLabel = NSTextField(labelWithString: "Why is it important?")
+        importanceLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        importanceLabel.frame = NSRect(x: 20, y: yOffset, width: 200, height: 18)
+        contentView.addSubview(importanceLabel)
+        yOffset += 22
+        
+        let importanceScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
+        importanceScrollView.hasVerticalScroller = true
+        importanceScrollView.borderType = .bezelBorder
+        let importanceTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: importanceScrollView.contentSize.width, height: importanceScrollView.contentSize.height))
+        importanceTextView.isRichText = true
+        importanceTextView.allowsUndo = true
+        importanceTextView.isEditable = true
+        importanceTextView.font = NSFont.systemFont(ofSize: 13)
+        if let existing = existingMarker {
+            importanceTextView.textStorage?.setAttributedString(existing.importance)
+        }
+        importanceScrollView.documentView = importanceTextView
+        importanceScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_importance")
+        contentView.addSubview(importanceScrollView)
+        yOffset += 90
+        
+        let impactedLabel = NSTextField(labelWithString: "Who is impacted?")
+        impactedLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        impactedLabel.frame = NSRect(x: 20, y: yOffset, width: 200, height: 18)
+        contentView.addSubview(impactedLabel)
+        yOffset += 22
+        
+        let impactedScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
+        impactedScrollView.hasVerticalScroller = true
+        impactedScrollView.borderType = .bezelBorder
+        let impactedTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: impactedScrollView.contentSize.width, height: impactedScrollView.contentSize.height))
+        impactedTextView.isRichText = true
+        impactedTextView.allowsUndo = true
+        impactedTextView.isEditable = true
+        impactedTextView.font = NSFont.systemFont(ofSize: 13)
+        if let existing = existingMarker {
+            impactedTextView.textStorage?.setAttributedString(existing.impactedUsers)
+        }
+        impactedScrollView.documentView = impactedTextView
+        impactedScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_impacted")
+        contentView.addSubview(impactedScrollView)
+        yOffset += 90
+        
+        let remediationLabel = NSTextField(labelWithString: "How to fix it?")
+        remediationLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        remediationLabel.frame = NSRect(x: 20, y: yOffset, width: 200, height: 18)
+        contentView.addSubview(remediationLabel)
+        yOffset += 22
+        
+        let remediationScrollView = NSScrollView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 80))
+        remediationScrollView.hasVerticalScroller = true
+        remediationScrollView.borderType = .bezelBorder
+        let remediationTextView = NSTextView(frame: NSRect(x: 0, y: 0, width: remediationScrollView.contentSize.width, height: remediationScrollView.contentSize.height))
+        remediationTextView.isRichText = true
+        remediationTextView.allowsUndo = true
+        remediationTextView.isEditable = true
+        remediationTextView.font = NSFont.systemFont(ofSize: 13)
+        if let existing = existingMarker {
+            remediationTextView.textStorage?.setAttributedString(existing.remediation)
+        }
+        remediationScrollView.documentView = remediationTextView
+        remediationScrollView.identifier = NSUserInterfaceItemIdentifier("a11y_remediation")
+        contentView.addSubview(remediationScrollView)
+        yOffset += 90
+        
+        let wcagLabel = NSTextField(labelWithString: "WCAG Success Criteria at Risk:")
+        wcagLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        wcagLabel.frame = NSRect(x: 20, y: yOffset, width: 250, height: 18)
+        contentView.addSubview(wcagLabel)
+        yOffset += 22
+        
+        let tokenField = NSTokenField(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 60))
+        tokenField.tokenStyle = .rounded
+        tokenField.placeholderString = "Type to search WCAG criteria (e.g., '2.4.1' or 'keyboard')"
+        tokenField.delegate = self
+        tokenField.tag = 207
+        if let existing = existingMarker {
+            tokenField.objectValue = existing.wcagCriteria as [AnyObject]
+        }
+        contentView.addSubview(tokenField)
+        wcagTokenField = tokenField
+        yOffset += 80
+        
+        let buttonStack = NSStackView(frame: NSRect(x: 20, y: yOffset, width: contentWidth - 40, height: 36))
+        buttonStack.orientation = .horizontal
+        buttonStack.distribution = .equalSpacing
+        
+        let cancelBtn = NSButton(title: "Cancel", target: self, action: #selector(cancelA11yMarkerAction(_:)))
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}"
+        
+        let saveBtn = NSButton(title: existingMarker != nil ? "Update" : "Add Marker", target: self, action: #selector(saveA11yMarkerAction(_:)))
+        saveBtn.bezelStyle = .rounded
+        saveBtn.keyEquivalent = "\r"
+        
+        buttonStack.addArrangedSubview(cancelBtn)
+        buttonStack.addArrangedSubview(NSView())
+        buttonStack.addArrangedSubview(saveBtn)
+        contentView.addSubview(buttonStack)
+        yOffset += 50
+        
+        contentView.frame = NSRect(x: 0, y: 0, width: contentWidth, height: yOffset)
+        
+        scrollView.documentView = contentView
+        window.contentView = scrollView
+        
+        scrollView.frame = window.contentView!.bounds
+        scrollView.autoresizingMask = [.width, .height]
+        
+        window.representedURL = URL(string: "a11ymarker://\(timestamp)")
+        if let existing = existingMarker {
+            window.subtitle = existing.id
+        }
+        
+        currentA11yMarkerEditorWindow = window
+        currentA11yMarkerTimestamp = timestamp
+        currentA11yMarkerId = existingMarker?.id
+        
+        window.makeKeyAndOrderFront(nil)
+    }
+    
+    @objc private func cancelA11yMarkerAction(_ sender: NSButton) {
+        currentA11yMarkerEditorWindow?.close()
+        currentA11yMarkerEditorWindow = nil
+        wcagTokenField = nil
+    }
+    
+    @objc private func saveA11yMarkerAction(_ sender: NSButton) {
+        guard let window = currentA11yMarkerEditorWindow,
+              let scrollView = window.contentView as? NSScrollView,
+              let contentView = scrollView.documentView else { return }
+        
+        guard let titleField = contentView.viewWithTag(200) as? NSTextField,
+              let durationField = contentView.viewWithTag(201) as? NSTextField,
+              let impactPopup = contentView.viewWithTag(202) as? NSPopUpButton,
+              let tokenField = contentView.viewWithTag(207) as? NSTokenField else { return }
+        
+        var issueTextView: NSTextView?
+        var importanceTextView: NSTextView?
+        var impactedTextView: NSTextView?
+        var remediationTextView: NSTextView?
+        
+        for subview in contentView.subviews {
+            if let scrollView = subview as? NSScrollView,
+               let textView = scrollView.documentView as? NSTextView,
+               let identifier = scrollView.identifier?.rawValue {
+                switch identifier {
+                case "a11y_issue": issueTextView = textView
+                case "a11y_importance": importanceTextView = textView
+                case "a11y_impacted": impactedTextView = textView
+                case "a11y_remediation": remediationTextView = textView
+                default: break
+                }
+            }
+        }
+        
+        let title = NSAttributedString(string: titleField.stringValue)
+        let issue = issueTextView?.attributedString() ?? NSAttributedString(string: "")
+        let importance = importanceTextView?.attributedString() ?? NSAttributedString(string: "")
+        let impactedUsers = impactedTextView?.attributedString() ?? NSAttributedString(string: "")
+        let remediation = remediationTextView?.attributedString() ?? NSAttributedString(string: "")
+        
+        let impactIndex = impactPopup.indexOfSelectedItem
+        let impactScore = impactIndex >= 0 && impactIndex < ImpactScore.allCases.count ? ImpactScore.allCases[impactIndex] : .medium
+        
+        let wcagCriteria = (tokenField.objectValue as? [String]) ?? []
+        
+        let durationSecs = Double(durationField.stringValue) ?? 3.0
+        let durationMicros = durationSecs * 1_000_000
+        
+        let markerId = currentA11yMarkerId ?? "a11ymarker_\(Date().timeIntervalSince1970)_\(Int.random(in: 1000...9999))"
+        
+        let marker = AccessibilityMarkerData(
+            id: markerId,
+            timestamp: currentA11yMarkerTimestamp,
+            duration: durationMicros,
+            title: title,
+            issue: issue,
+            importance: importance,
+            impactedUsers: impactedUsers,
+            remediation: remediation,
+            impactScore: impactScore,
+            wcagCriteria: wcagCriteria
+        )
+        
+        if let existingId = currentA11yMarkerId {
+            if let index = accessibilityMarkers.firstIndex(where: { $0.id == existingId }) {
+                let oldMarker = accessibilityMarkers[index]
+                let undoInfo: [String: Any] = [
+                    "action": "editA11yMarker",
+                    "markerId": existingId,
+                    "oldMarker": oldMarker.toDictionary(),
+                    "newMarker": marker.toDictionary()
+                ]
+                addToUndoStack(undoInfo)
+                accessibilityMarkers[index] = marker
+            }
+        } else {
+            let undoInfo: [String: Any] = [
+                "action": "addA11yMarker",
+                "marker": marker.toDictionary()
+            ]
+            addToUndoStack(undoInfo)
+            accessibilityMarkers.append(marker)
+        }
+        
+        accessibilityMarkers.sort { $0.timestamp < $1.timestamp }
+        
+        saveAccessibilityMarkersToMetadata()
+        updateTimelineWithAccessibilityMarkers()
+        
+        window.close()
+        currentA11yMarkerEditorWindow = nil
+        wcagTokenField = nil
+        
+        showAccessibilityMarkerDetails((id: marker.id, timestamp: marker.timestamp, duration: marker.duration, title: marker.title.string, impactScore: marker.impactScore.rawValue))
+        
+        print("✅ Added accessibility marker: \(marker.title.string) at \(formatTimestamp(currentA11yMarkerTimestamp))")
+    }
+    
+    private func saveAccessibilityMarkersToMetadata() {
+        let metadataPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/metadata.json"
+        
+        do {
+            var metadata: [String: Any] = [:]
+            if let data = FileManager.default.contents(atPath: metadataPath),
+               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                metadata = json
+            }
+            
+            let markersData = accessibilityMarkers.map { $0.toDictionary() }
+            metadata["accessibilityMarkers"] = markersData
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
+            try jsonData.write(to: URL(fileURLWithPath: metadataPath))
+            print("💾 Saved \(accessibilityMarkers.count) accessibility markers to metadata")
+        } catch {
+            print("❌ Failed to save accessibility markers: \(error)")
+        }
+    }
+    
+    private func updateTimelineWithAccessibilityMarkers() {
+        let simpleMarkers = accessibilityMarkers.map { (id: $0.id, timestamp: $0.timestamp, duration: $0.duration, title: $0.title.string, impactScore: $0.impactScore.rawValue) }
+        timelineView?.setAccessibilityMarkers(simpleMarkers)
+        timelineView?.needsDisplay = true
+    }
+    
+    private func showAccessibilityMarkerDetails(_ marker: (id: String, timestamp: Double, duration: Double, title: String, impactScore: String)) {
+        guard let fullMarker = accessibilityMarkers.first(where: { $0.id == marker.id }) else { return }
+        
+        selectedA11yMarkerId = marker.id
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+            
+            timelineDetailLabel?.isHidden = true
+            timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+            
+            let (a11yCard, a11yContent) = createDetailCard(title: "Accessibility Issue", icon: fullMarker.impactScore.icon)
+            
+            a11yContent.addArrangedSubview(createDetailRow(label: "Title", value: fullMarker.title.string.isEmpty ? "(No title)" : fullMarker.title.string))
+            a11yContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(fullMarker.timestamp), valueColor: .systemBlue))
+            
+            let durationSecs = fullMarker.duration / 1_000_000
+            a11yContent.addArrangedSubview(createDetailRow(label: "Duration", value: String(format: "%.1f seconds", durationSecs), valueColor: .systemOrange))
+            a11yContent.addArrangedSubview(createDetailRow(label: "Impact", value: fullMarker.impactScore.rawValue, valueColor: fullMarker.impactScore.color))
+            
+            if !fullMarker.wcagCriteria.isEmpty {
+                a11yContent.addArrangedSubview(createDetailRow(label: "WCAG", value: fullMarker.wcagCriteria.joined(separator: ", ")))
+            }
+            
+            if fullMarker.issue.length > 0 {
+                let issueLabel = NSTextField(labelWithString: "Issue:")
+                issueLabel.font = NSFont.boldSystemFont(ofSize: 11)
+                issueLabel.textColor = .secondaryLabelColor
+                a11yContent.addArrangedSubview(issueLabel)
+                let issueValue = NSTextField(labelWithString: fullMarker.issue.string)
+                issueValue.font = NSFont.systemFont(ofSize: 12)
+                issueValue.lineBreakMode = .byWordWrapping
+                issueValue.maximumNumberOfLines = 0
+                a11yContent.addArrangedSubview(issueValue)
+            }
+            
+            if fullMarker.remediation.length > 0 {
+                let remLabel = NSTextField(labelWithString: "How to Fix:")
+                remLabel.font = NSFont.boldSystemFont(ofSize: 11)
+                remLabel.textColor = .secondaryLabelColor
+                a11yContent.addArrangedSubview(remLabel)
+                let remValue = NSTextField(labelWithString: fullMarker.remediation.string)
+                remValue.font = NSFont.systemFont(ofSize: 12)
+                remValue.lineBreakMode = .byWordWrapping
+                remValue.maximumNumberOfLines = 0
+                a11yContent.addArrangedSubview(remValue)
+            }
+            
+            let editButton = NSButton(title: "Edit Marker", target: self, action: #selector(editSelectedA11yMarker(_:)))
+            editButton.bezelStyle = .rounded
+            a11yContent.addArrangedSubview(editButton)
+            
+            let deleteButton = NSButton(title: "Delete", target: self, action: #selector(deleteSelectedA11yMarker(_:)))
+            deleteButton.bezelStyle = .rounded
+            deleteButton.contentTintColor = .systemRed
+            a11yContent.addArrangedSubview(deleteButton)
+            
+            stackView.addArrangedSubview(a11yCard)
+            a11yCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        }
+    }
+    
+    @objc private func editSelectedA11yMarker(_ sender: NSButton) {
+        guard let markerId = selectedA11yMarkerId,
+              let marker = accessibilityMarkers.first(where: { $0.id == markerId }) else { return }
+        showAccessibilityMarkerEditor(at: marker.timestamp, existingMarker: marker)
+    }
+    
+    @objc private func deleteSelectedA11yMarker(_ sender: NSButton) {
+        guard let markerId = selectedA11yMarkerId,
+              let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) else { return }
+        
+        let marker = accessibilityMarkers[index]
+        let undoInfo: [String: Any] = [
+            "action": "deleteA11yMarker",
+            "marker": marker.toDictionary(),
+            "index": index
+        ]
+        addToUndoStack(undoInfo)
+        
+        accessibilityMarkers.remove(at: index)
+        saveAccessibilityMarkersToMetadata()
+        updateTimelineWithAccessibilityMarkers()
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        }
+        selectedA11yMarkerId = nil
+        print("🗑️ Deleted accessibility marker: \(marker.title.string)")
+    }
+    
+    private func showAccessibilityMarkerContextMenu(marker: (id: String, timestamp: Double, duration: Double, title: String, impactScore: String), nsEvent: NSEvent) {
+        let menu = NSMenu()
+        
+        let impactIcon: String
+        switch marker.impactScore {
+        case "High": impactIcon = "⚠️"
+        case "Medium": impactIcon = "⚡"
+        case "Low": impactIcon = "💡"
+        default: impactIcon = "⚡"
+        }
+        
+        let infoItem = NSMenuItem(title: "\(impactIcon) \(marker.title.isEmpty ? "Accessibility Issue" : marker.title)", action: nil, keyEquivalent: "")
+        infoItem.isEnabled = false
+        menu.addItem(infoItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let editItem = NSMenuItem(title: "Edit Marker...", action: #selector(editA11yMarkerFromMenu(_:)), keyEquivalent: "")
+        editItem.target = self
+        editItem.representedObject = marker.id
+        menu.addItem(editItem)
+        
+        let deleteItem = NSMenuItem(title: "Delete Marker", action: #selector(deleteA11yMarkerFromMenu(_:)), keyEquivalent: "")
+        deleteItem.target = self
+        deleteItem.representedObject = marker.id
+        menu.addItem(deleteItem)
+        
+        if let timelineView = self.timelineView {
+            NSMenu.popUpContextMenu(menu, with: nsEvent, for: timelineView)
+        }
+    }
+    
+    @objc private func editA11yMarkerFromMenu(_ sender: NSMenuItem) {
+        guard let markerId = sender.representedObject as? String,
+              let marker = accessibilityMarkers.first(where: { $0.id == markerId }) else { return }
+        showAccessibilityMarkerEditor(at: marker.timestamp, existingMarker: marker)
+    }
+    
+    @objc private func deleteA11yMarkerFromMenu(_ sender: NSMenuItem) {
+        guard let markerId = sender.representedObject as? String,
+              let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) else { return }
+        
+        let marker = accessibilityMarkers[index]
+        let undoInfo: [String: Any] = [
+            "action": "deleteA11yMarker",
+            "marker": marker.toDictionary(),
+            "index": index
+        ]
+        addToUndoStack(undoInfo)
+        
+        accessibilityMarkers.remove(at: index)
+        saveAccessibilityMarkersToMetadata()
+        updateTimelineWithAccessibilityMarkers()
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        }
+        selectedA11yMarkerId = nil
+        print("🗑️ Deleted accessibility marker: \(marker.title.string)")
+    }
+    
+    private func loadAccessibilityMarkersFromMetadata(_ metadata: [String: Any]) {
+        guard let markersData = metadata["accessibilityMarkers"] as? [[String: Any]] else {
+            print("📍 No accessibility markers found in metadata")
+            return
+        }
+        accessibilityMarkers.removeAll()
+        for markerDict in markersData {
+            if let marker = AccessibilityMarkerData.from(dictionary: markerDict) {
+                accessibilityMarkers.append(marker)
+            }
+        }
+        accessibilityMarkers.sort { $0.timestamp < $1.timestamp }
+        print("📍 Loaded \(accessibilityMarkers.count) accessibility markers from metadata")
+        updateTimelineWithAccessibilityMarkers()
     }
     
     private func cropTimeRange(start: Double, end: Double) {
@@ -4127,6 +4870,12 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         timeline.onTransitionRightClicked = { [weak self] transition, nsEvent in
             self?.showTransitionContextMenu(transition: transition, nsEvent: nsEvent)
         }
+        timeline.onAccessibilityMarkerSelected = { [weak self] marker in
+            self?.showAccessibilityMarkerDetails(marker)
+        }
+        timeline.onAccessibilityMarkerRightClicked = { [weak self] marker, nsEvent in
+            self?.showAccessibilityMarkerContextMenu(marker: marker, nsEvent: nsEvent)
+        }
         
         // Set video start timestamp as datum IMMEDIATELY
         print("🎬 VC videoStartTimestamp: \(videoStartTimestamp)")
@@ -5531,6 +6280,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
                     sessionMetadata = metadata
                     updateUIWithMetadata()
                     loadTransitionsFromMetadata(metadata)
+                    loadAccessibilityMarkersFromMetadata(metadata)
                 }
             } catch {
                 print("Failed to load metadata: \(error)")
@@ -5809,6 +6559,46 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
             
             print("↩️ Undid delete transition")
             
+        case "addA11yMarker":
+            guard let markerDict = undoInfo["marker"] as? [String: Any],
+                  let marker = AccessibilityMarkerData.from(dictionary: markerDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            accessibilityMarkers.removeAll { $0.id == marker.id }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↩️ Undid add accessibility marker")
+            
+        case "editA11yMarker":
+            guard let markerId = undoInfo["markerId"] as? String,
+                  let oldMarkerDict = undoInfo["oldMarker"] as? [String: Any],
+                  let oldMarker = AccessibilityMarkerData.from(dictionary: oldMarkerDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            if let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) {
+                accessibilityMarkers[index] = oldMarker
+            }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↩️ Undid edit accessibility marker")
+            
+        case "deleteA11yMarker":
+            guard let markerDict = undoInfo["marker"] as? [String: Any],
+                  let marker = AccessibilityMarkerData.from(dictionary: markerDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            accessibilityMarkers.append(marker)
+            accessibilityMarkers.sort { $0.timestamp < $1.timestamp }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↩️ Undid delete accessibility marker")
+            
         default:
             print("⚠️ Unknown undo action: \(action)")
         }
@@ -5958,6 +6748,46 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
             updateTimelineWithTransitions()
             
             print("↪️ Redid delete transition")
+            
+        case "addA11yMarker":
+            guard let markerDict = redoInfo["marker"] as? [String: Any],
+                  let marker = AccessibilityMarkerData.from(dictionary: markerDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            accessibilityMarkers.append(marker)
+            accessibilityMarkers.sort { $0.timestamp < $1.timestamp }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↪️ Redid add accessibility marker")
+            
+        case "editA11yMarker":
+            guard let markerId = redoInfo["markerId"] as? String,
+                  let newMarkerDict = redoInfo["newMarker"] as? [String: Any],
+                  let newMarker = AccessibilityMarkerData.from(dictionary: newMarkerDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            if let index = accessibilityMarkers.firstIndex(where: { $0.id == markerId }) {
+                accessibilityMarkers[index] = newMarker
+            }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↪️ Redid edit accessibility marker")
+            
+        case "deleteA11yMarker":
+            guard let markerDict = redoInfo["marker"] as? [String: Any],
+                  let marker = AccessibilityMarkerData.from(dictionary: markerDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            accessibilityMarkers.removeAll { $0.id == marker.id }
+            saveAccessibilityMarkersToMetadata()
+            updateTimelineWithAccessibilityMarkers()
+            
+            print("↪️ Redid delete accessibility marker")
             
         default:
             print("⚠️ Unknown redo action: \(action)")
@@ -9339,6 +10169,28 @@ extension SessionDetailViewController: VideoAnnotationOverlayDelegate {
         }
     }
     
+    func tokenField(_ tokenField: NSTokenField, completionsForSubstring substring: String, indexOfToken tokenIndex: Int, indexOfSelectedItem selectedIndex: UnsafeMutablePointer<Int>?) -> [Any]? {
+        let matches = WCAGCriterion.search(substring)
+        return matches.map { $0.displayString }
+    }
+    
+    func tokenField(_ tokenField: NSTokenField, displayStringForRepresentedObject representedObject: Any) -> String? {
+        if let string = representedObject as? String {
+            if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == string || $0.id == string }) {
+                return criterion.id
+            }
+            return string
+        }
+        return nil
+    }
+    
+    func tokenField(_ tokenField: NSTokenField, representedObjectForEditing editingString: String) -> Any? {
+        if let criterion = WCAGCriterion.allCriteria.first(where: { $0.displayString == editingString || $0.id == editingString || editingString.contains($0.id) }) {
+            return criterion.displayString
+        }
+        return editingString
+    }
+    
     private func parseTimeString(_ str: String) -> Double? {
         let parts = str.split(separator: ":")
         if parts.count == 2 {
@@ -9472,6 +10324,13 @@ class EnhancedTimelineView: NSView {
     var onTransitionRightClicked: (((timestamp: Double, duration: Double, typeRaw: String, icon: String), NSEvent) -> Void)?
     private let transitionMarkerWidth: CGFloat = 20  // Width of transition marker on timeline
     
+    // Accessibility markers - issues found during testing
+    private var accessibilityMarkers: [(id: String, timestamp: Double, duration: Double, title: String, impactScore: String)] = []
+    private var accessibilityMarkerRects: [(rect: NSRect, marker: (id: String, timestamp: Double, duration: Double, title: String, impactScore: String))] = []
+    private var hoveredAccessibilityMarkerIndex: Int? = nil
+    var onAccessibilityMarkerSelected: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String)) -> Void)?
+    var onAccessibilityMarkerRightClicked: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String), NSEvent) -> Void)?
+    
     // Folded timeline: collapses pause/crop gaps to small markers
     private var foldPauses: Bool = true
     private var foldCrops: Bool = true
@@ -9590,6 +10449,11 @@ class EnhancedTimelineView: NSView {
     
     func setTransitions(_ trans: [(timestamp: Double, duration: Double, typeRaw: String, icon: String)]) {
         self.transitions = trans
+        needsDisplay = true
+    }
+    
+    func setAccessibilityMarkers(_ markers: [(id: String, timestamp: Double, duration: Double, title: String, impactScore: String)]) {
+        self.accessibilityMarkers = markers
         needsDisplay = true
     }
     
@@ -9914,6 +10778,15 @@ class EnhancedTimelineView: NSView {
                 annotationOriginalDuration = annotationRect.annotation.duration
                 onAnnotationSelected?(annotationRect.annotation)
                 NSCursor.closedHand.push()
+                return
+            }
+        }
+        
+        // Check if clicking on an accessibility marker (takes priority over transitions)
+        for markerRect in accessibilityMarkerRects {
+            if markerRect.rect.contains(locationInView) {
+                onAccessibilityMarkerSelected?(markerRect.marker)
+                needsDisplay = true
                 return
             }
         }
@@ -10270,6 +11143,13 @@ class EnhancedTimelineView: NSView {
             }
         }
         
+        for markerRect in accessibilityMarkerRects {
+            if markerRect.rect.contains(locationInView) {
+                onAccessibilityMarkerRightClicked?(markerRect.marker, event)
+                return
+            }
+        }
+        
         for transitionRect in transitionRects {
             if transitionRect.rect.contains(locationInView) {
                 onTransitionRightClicked?(transitionRect.transition, event)
@@ -10310,15 +11190,25 @@ class EnhancedTimelineView: NSView {
         
         var newHoveredEventIndex: Int? = nil
         var newHoveredTransitionIndex: Int? = nil
+        var newHoveredAccessibilityMarkerIndex: Int? = nil
         
-        for (index, transitionRect) in transitionRects.enumerated() {
-            if transitionRect.rect.contains(locationInView) {
-                newHoveredTransitionIndex = index
+        for (index, markerRect) in accessibilityMarkerRects.enumerated() {
+            if markerRect.rect.contains(locationInView) {
+                newHoveredAccessibilityMarkerIndex = index
                 break
             }
         }
         
-        if newHoveredTransitionIndex == nil {
+        if newHoveredAccessibilityMarkerIndex == nil {
+            for (index, transitionRect) in transitionRects.enumerated() {
+                if transitionRect.rect.contains(locationInView) {
+                    newHoveredTransitionIndex = index
+                    break
+                }
+            }
+        }
+        
+        if newHoveredTransitionIndex == nil && newHoveredAccessibilityMarkerIndex == nil {
             for (index, eventRect) in eventRects.enumerated() {
                 if eventRect.rect.contains(locationInView) {
                     newHoveredEventIndex = index
@@ -10336,12 +11226,16 @@ class EnhancedTimelineView: NSView {
             hoveredTransitionIndex = newHoveredTransitionIndex
             needsRedraw = true
         }
+        if newHoveredAccessibilityMarkerIndex != hoveredAccessibilityMarkerIndex {
+            hoveredAccessibilityMarkerIndex = newHoveredAccessibilityMarkerIndex
+            needsRedraw = true
+        }
         
         if needsRedraw {
             needsDisplay = true
         }
         
-        if hoveredEventIndex != nil || hoveredTransitionIndex != nil {
+        if hoveredEventIndex != nil || hoveredTransitionIndex != nil || hoveredAccessibilityMarkerIndex != nil {
             NSCursor.pointingHand.set()
         } else {
             NSCursor.arrow.set()
@@ -10351,6 +11245,7 @@ class EnhancedTimelineView: NSView {
     override func mouseExited(with event: NSEvent) {
         hoveredEventIndex = nil
         hoveredTransitionIndex = nil
+        hoveredAccessibilityMarkerIndex = nil
         NSCursor.arrow.set()
         needsDisplay = true
     }
@@ -10360,6 +11255,7 @@ class EnhancedTimelineView: NSView {
         
         eventRects.removeAll()
         transitionRects.removeAll()
+        accessibilityMarkerRects.removeAll()
         
         guard !events.isEmpty else {
             drawEmptyState()
@@ -10606,6 +11502,7 @@ class EnhancedTimelineView: NSView {
         drawPauseGaps(in: timelineRect, duration: duration)
         drawCropGaps(in: timelineRect, duration: duration)
         drawTransitions(in: timelineRect)
+        drawAccessibilityMarkers(in: timelineRect)
         drawAnnotationBars(in: timelineRect)
     }
     
@@ -10834,6 +11731,94 @@ class EnhancedTimelineView: NSView {
             }
             
             transitionRects.append((rect: shadedRect, transition: transition))
+        }
+    }
+    
+    private func drawAccessibilityMarkers(in timelineRect: NSRect) {
+        guard !accessibilityMarkers.isEmpty else { return }
+        
+        accessibilityMarkerRects.removeAll()
+        
+        let effectiveDuration = getEffectiveDuration()
+        guard effectiveDuration > 0 else { return }
+        
+        let allGaps = getAllGaps()
+        let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
+        let availableWidth = timelineRect.width - totalMarkerWidth
+        
+        let trackY = timelineRect.minY + 4
+        let barHeight: CGFloat = 16
+        
+        let sortedMarkers = accessibilityMarkers.sorted { $0.timestamp < $1.timestamp }
+        
+        for (index, marker) in sortedMarkers.enumerated() {
+            let markerX = timestampToFoldedX(marker.timestamp, in: timelineRect)
+            let markerWidth = max(20, availableWidth * CGFloat(marker.duration / effectiveDuration))
+            
+            let impactColor: NSColor
+            switch marker.impactScore {
+            case "High": impactColor = .systemRed
+            case "Medium": impactColor = .systemOrange
+            case "Low": impactColor = .systemYellow
+            default: impactColor = .systemOrange
+            }
+            
+            let isHovered = hoveredAccessibilityMarkerIndex == index
+            
+            let barRect = NSRect(
+                x: markerX,
+                y: trackY,
+                width: markerWidth,
+                height: barHeight
+            )
+            
+            impactColor.withAlphaComponent(0.7).setFill()
+            NSBezierPath(roundedRect: barRect, xRadius: 3, yRadius: 3).fill()
+            
+            impactColor.setStroke()
+            let borderPath = NSBezierPath(roundedRect: barRect, xRadius: 3, yRadius: 3)
+            borderPath.lineWidth = 1.5
+            borderPath.stroke()
+            
+            let icon: String
+            switch marker.impactScore {
+            case "High": icon = "⚠️"
+            case "Medium": icon = "⚡"
+            case "Low": icon = "💡"
+            default: icon = "⚡"
+            }
+            
+            let iconAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 10)
+            ]
+            let iconSize = icon.size(withAttributes: iconAttrs)
+            if markerWidth > iconSize.width + 4 {
+                icon.draw(at: NSPoint(x: markerX + 3, y: trackY + (barHeight - iconSize.height) / 2), withAttributes: iconAttrs)
+            }
+            
+            if markerWidth > 60 {
+                let titleText = marker.title.isEmpty ? "Accessibility Issue" : marker.title
+                let truncatedTitle = titleText.count > 20 ? String(titleText.prefix(18)) + "..." : titleText
+                let titleAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 9, weight: .medium),
+                    .foregroundColor: NSColor.white
+                ]
+                let titleSize = truncatedTitle.size(withAttributes: titleAttrs)
+                let titleX = markerX + iconSize.width + 6
+                if titleX + titleSize.width < markerX + markerWidth - 4 {
+                    truncatedTitle.draw(at: NSPoint(x: titleX, y: trackY + (barHeight - titleSize.height) / 2), withAttributes: titleAttrs)
+                }
+            }
+            
+            if isHovered {
+                let hoverRect = barRect.insetBy(dx: -2, dy: -2)
+                NSColor.white.withAlphaComponent(0.9).setStroke()
+                let hoverPath = NSBezierPath(roundedRect: hoverRect, xRadius: 4, yRadius: 4)
+                hoverPath.lineWidth = 2
+                hoverPath.stroke()
+            }
+            
+            accessibilityMarkerRects.append((rect: barRect, marker: marker))
         }
     }
     
