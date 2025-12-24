@@ -3437,22 +3437,44 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         contentView.addSubview(titleField)
         yOffset += 35
         
-        let durationLabel = NSTextField(labelWithString: "Duration (seconds):")
-        durationLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        durationLabel.frame = NSRect(x: 20, y: yOffset, width: 140, height: 18)
-        contentView.addSubview(durationLabel)
+        let startTimeLabel = NSTextField(labelWithString: "Start Time:")
+        startTimeLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        startTimeLabel.frame = NSRect(x: 20, y: yOffset, width: 80, height: 18)
+        contentView.addSubview(startTimeLabel)
         
-        let durationField = NSTextField(frame: NSRect(x: 170, y: yOffset - 2, width: 80, height: 24))
-        durationField.stringValue = existingMarker != nil ? String(format: "%.1f", existingMarker!.duration / 1_000_000) : "3.0"
-        durationField.tag = 201
-        contentView.addSubview(durationField)
+        let existingTimestamp = existingMarker?.timestamp ?? timestamp
+        let startTimeField = NSTextField(frame: NSRect(x: 105, y: yOffset - 2, width: 120, height: 24))
+        startTimeField.stringValue = formatTimestamp(existingTimestamp)
+        startTimeField.tag = 208
+        startTimeField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        contentView.addSubview(startTimeField)
+        
+        let endTimeLabel = NSTextField(labelWithString: "End Time:")
+        endTimeLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        endTimeLabel.frame = NSRect(x: 240, y: yOffset, width: 70, height: 18)
+        contentView.addSubview(endTimeLabel)
+        
+        let existingDuration = existingMarker?.duration ?? 3_000_000
+        let endTimeField = NSTextField(frame: NSRect(x: 315, y: yOffset - 2, width: 120, height: 24))
+        endTimeField.stringValue = formatTimestamp(existingTimestamp + existingDuration)
+        endTimeField.tag = 209
+        endTimeField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        contentView.addSubview(endTimeField)
+        
+        let durationDisplay = NSTextField(labelWithString: String(format: "(%.1fs)", existingDuration / 1_000_000))
+        durationDisplay.font = NSFont.systemFont(ofSize: 11)
+        durationDisplay.textColor = .secondaryLabelColor
+        durationDisplay.frame = NSRect(x: 445, y: yOffset, width: 60, height: 18)
+        durationDisplay.tag = 210
+        contentView.addSubview(durationDisplay)
+        yOffset += 35
         
         let impactLabel = NSTextField(labelWithString: "Impact:")
         impactLabel.font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        impactLabel.frame = NSRect(x: 280, y: yOffset, width: 60, height: 18)
+        impactLabel.frame = NSRect(x: 20, y: yOffset, width: 60, height: 18)
         contentView.addSubview(impactLabel)
         
-        let impactPopup = NSPopUpButton(frame: NSRect(x: 345, y: yOffset - 4, width: 120, height: 28), pullsDown: false)
+        let impactPopup = NSPopUpButton(frame: NSRect(x: 85, y: yOffset - 4, width: 120, height: 28), pullsDown: false)
         for impact in ImpactScore.allCases {
             impactPopup.addItem(withTitle: "\(impact.icon) \(impact.rawValue)")
         }
@@ -3590,7 +3612,8 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
               let contentView = scrollView.documentView else { return }
         
         guard let titleField = contentView.viewWithTag(200) as? NSTextField,
-              let durationField = contentView.viewWithTag(201) as? NSTextField,
+              let startTimeField = contentView.viewWithTag(208) as? NSTextField,
+              let endTimeField = contentView.viewWithTag(209) as? NSTextField,
               let impactPopup = contentView.viewWithTag(202) as? NSPopUpButton,
               let tokenField = contentView.viewWithTag(207) as? NSTokenField else { return }
         
@@ -3628,14 +3651,15 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             return aId.compare(bId, options: .numeric) == .orderedAscending
         }
         
-        let durationSecs = Double(durationField.stringValue) ?? 3.0
-        let durationMicros = durationSecs * 1_000_000
+        let startTimestamp = parseTimestamp(startTimeField.stringValue) ?? currentA11yMarkerTimestamp
+        let endTimestamp = parseTimestamp(endTimeField.stringValue) ?? (startTimestamp + 3_000_000)
+        let durationMicros = max(100_000, endTimestamp - startTimestamp)
         
         let markerId = currentA11yMarkerId ?? "a11ymarker_\(Date().timeIntervalSince1970)_\(Int.random(in: 1000...9999))"
         
         let marker = AccessibilityMarkerData(
             id: markerId,
-            timestamp: currentA11yMarkerTimestamp,
+            timestamp: startTimestamp,
             duration: durationMicros,
             title: title,
             issue: issue,
@@ -3702,6 +3726,15 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         }
     }
     
+    private func updateAccessibilityMarkerTimestampAndDuration(id: String, timestamp: Double, duration: Double) {
+        guard let index = accessibilityMarkers.firstIndex(where: { $0.id == id }) else { return }
+        accessibilityMarkers[index].timestamp = timestamp
+        accessibilityMarkers[index].duration = duration
+        saveAccessibilityMarkersToMetadata()
+        updateTimelineWithAccessibilityMarkers()
+        showAccessibilityMarkerDetails((id: id, timestamp: timestamp, duration: duration, title: accessibilityMarkers[index].title.string, impactScore: accessibilityMarkers[index].impactScore.rawValue))
+    }
+    
     private func updateTimelineWithAccessibilityMarkers() {
         let simpleMarkers = accessibilityMarkers.map { (id: $0.id, timestamp: $0.timestamp, duration: $0.duration, title: $0.title.string, impactScore: $0.impactScore.rawValue) }
         timelineView?.setAccessibilityMarkers(simpleMarkers)
@@ -3729,16 +3762,29 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             titleLabel.preferredMaxLayoutWidth = 220
             a11yContent.addArrangedSubview(titleLabel)
             
+            let timeStack = NSStackView()
+            timeStack.orientation = .vertical
+            timeStack.alignment = .leading
+            timeStack.spacing = 4
+            
+            let startTime = formatTimestamp(fullMarker.timestamp)
+            let endTime = formatTimestamp(fullMarker.timestamp + fullMarker.duration)
+            let durationSecs = fullMarker.duration / 1_000_000
+            
+            let startLabel = NSTextField(labelWithString: "Start: \(startTime)")
+            startLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            startLabel.textColor = .systemBlue
+            timeStack.addArrangedSubview(startLabel)
+            
+            let endLabel = NSTextField(labelWithString: "End: \(endTime)")
+            endLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            endLabel.textColor = .systemBlue
+            timeStack.addArrangedSubview(endLabel)
+            
             let metaStack = NSStackView()
             metaStack.orientation = .horizontal
             metaStack.spacing = 12
             
-            let timeLabel = NSTextField(labelWithString: formatTimestamp(fullMarker.timestamp))
-            timeLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-            timeLabel.textColor = .systemBlue
-            metaStack.addArrangedSubview(timeLabel)
-            
-            let durationSecs = fullMarker.duration / 1_000_000
             let durationLabel = NSTextField(labelWithString: String(format: "%.1fs", durationSecs))
             durationLabel.font = NSFont.systemFont(ofSize: 11)
             durationLabel.textColor = .systemOrange
@@ -3749,6 +3795,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             impactLabel.textColor = fullMarker.impactScore.color
             metaStack.addArrangedSubview(impactLabel)
             
+            a11yContent.addArrangedSubview(timeStack)
             a11yContent.addArrangedSubview(metaStack)
             
             a11yContent.addArrangedSubview(createA11ySeparator())
@@ -3889,6 +3936,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     @objc private func editSelectedA11yMarker(_ sender: NSButton) {
         guard let markerId = selectedA11yMarkerId,
               let marker = accessibilityMarkers.first(where: { $0.id == markerId }) else { return }
+        showAccessibilityMarkerEditor(at: marker.timestamp, existingMarker: marker)
+    }
+    
+    private func editAccessibilityMarkerById(_ markerId: String) {
+        guard let marker = accessibilityMarkers.first(where: { $0.id == markerId }) else { return }
         showAccessibilityMarkerEditor(at: marker.timestamp, existingMarker: marker)
     }
     
@@ -5496,6 +5548,13 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         }
         timeline.onAccessibilityMarkerRightClicked = { [weak self] marker, nsEvent in
             self?.showAccessibilityMarkerContextMenu(marker: marker, nsEvent: nsEvent)
+        }
+        timeline.onAccessibilityMarkerDoubleClicked = { [weak self] marker in
+            self?.editAccessibilityMarkerById(marker.id)
+        }
+        timeline.onAccessibilityMarkerDurationChanged = { [weak self] marker, newStart, newDuration in
+            guard let self = self else { return }
+            self.updateAccessibilityMarkerTimestampAndDuration(id: marker.id, timestamp: newStart, duration: newDuration)
         }
         
         // Set video start timestamp as datum IMMEDIATELY
@@ -8650,6 +8709,21 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms)
     }
     
+    private func parseTimestamp(_ timeStr: String) -> Double? {
+        let parts = timeStr.components(separatedBy: ":")
+        guard parts.count == 3 else { return nil }
+        
+        guard let hours = Int(parts[0]),
+              let minutes = Int(parts[1]) else { return nil }
+        
+        let secParts = parts[2].components(separatedBy: ".")
+        guard let seconds = Int(secParts[0]) else { return nil }
+        let ms = secParts.count > 1 ? (Int(secParts[1]) ?? 0) : 0
+        
+        let relativeSeconds = Double(hours * 3600 + minutes * 60 + seconds) + Double(ms) / 1000.0
+        return videoStartTimestamp + (relativeSeconds * 1_000_000.0)
+    }
+    
     private func formatDuration(_ microseconds: Double) -> String {
         let totalSeconds = microseconds / 1_000_000.0
         let hours = Int(totalSeconds) / 3600
@@ -10961,6 +11035,14 @@ class EnhancedTimelineView: NSView {
     private var hoveredAccessibilityMarkerIndex: Int? = nil
     var onAccessibilityMarkerSelected: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String)) -> Void)?
     var onAccessibilityMarkerRightClicked: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String), NSEvent) -> Void)?
+    var onAccessibilityMarkerDoubleClicked: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String)) -> Void)?
+    var onAccessibilityMarkerDurationChanged: (((id: String, timestamp: Double, duration: Double, title: String, impactScore: String), Double, Double) -> Void)?
+    private var isDraggingA11yMarker: Bool = false
+    private var draggingA11yMarker: (id: String, timestamp: Double, duration: Double, title: String, impactScore: String)?
+    private var a11yMarkerDragMode: AnnotationDragMode = .none
+    private var a11yMarkerDragStartX: CGFloat = 0
+    private var a11yMarkerOriginalStart: Double = 0
+    private var a11yMarkerOriginalDuration: Double = 0
     
     // Folded timeline: collapses pause/crop gaps to small markers
     private var foldPauses: Bool = true
@@ -11340,8 +11422,15 @@ class EnhancedTimelineView: NSView {
     override func mouseDown(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
         
-        // Double-click anywhere on timeline moves playhead to that position
+        // Double-click on accessibility marker opens edit dialog
         if event.clickCount == 2 {
+            for markerRect in accessibilityMarkerRects {
+                if markerRect.rect.contains(locationInView) {
+                    onAccessibilityMarkerDoubleClicked?(markerRect.marker)
+                    return
+                }
+            }
+            // Double-click elsewhere on timeline moves playhead to that position
             clearRangeSelection()
             updatePlayheadFromMouseLocation(locationInView)
             return
@@ -11413,11 +11502,39 @@ class EnhancedTimelineView: NSView {
             }
         }
         
-        // Check if clicking on an accessibility marker (takes priority over transitions)
+        // Check if clicking on an accessibility marker for drag/resize (takes priority over transitions)
         for markerRect in accessibilityMarkerRects {
-            if markerRect.rect.contains(locationInView) {
+            let handleSize: CGFloat = 10
+            let leftHandleRect = NSRect(x: markerRect.rect.minX - handleSize/2, y: markerRect.rect.minY, width: handleSize, height: markerRect.rect.height)
+            let rightHandleRect = NSRect(x: markerRect.rect.maxX - handleSize/2, y: markerRect.rect.minY, width: handleSize, height: markerRect.rect.height)
+            
+            if leftHandleRect.contains(locationInView) {
+                isDraggingA11yMarker = true
+                draggingA11yMarker = markerRect.marker
+                a11yMarkerDragMode = .resizeStart
+                a11yMarkerDragStartX = locationInView.x
+                a11yMarkerOriginalStart = markerRect.marker.timestamp
+                a11yMarkerOriginalDuration = markerRect.marker.duration
+                NSCursor.resizeLeftRight.push()
+                return
+            } else if rightHandleRect.contains(locationInView) {
+                isDraggingA11yMarker = true
+                draggingA11yMarker = markerRect.marker
+                a11yMarkerDragMode = .resizeEnd
+                a11yMarkerDragStartX = locationInView.x
+                a11yMarkerOriginalStart = markerRect.marker.timestamp
+                a11yMarkerOriginalDuration = markerRect.marker.duration
+                NSCursor.resizeLeftRight.push()
+                return
+            } else if markerRect.rect.contains(locationInView) {
+                isDraggingA11yMarker = true
+                draggingA11yMarker = markerRect.marker
+                a11yMarkerDragMode = .move
+                a11yMarkerDragStartX = locationInView.x
+                a11yMarkerOriginalStart = markerRect.marker.timestamp
+                a11yMarkerOriginalDuration = markerRect.marker.duration
                 onAccessibilityMarkerSelected?(markerRect.marker)
-                needsDisplay = true
+                NSCursor.closedHand.push()
                 return
             }
         }
@@ -11515,6 +11632,53 @@ class EnhancedTimelineView: NSView {
             if let index = annotations.firstIndex(where: { $0.id == annotation.id }) {
                 annotations[index] = updatedAnnotation
                 draggingAnnotation = updatedAnnotation
+            }
+            needsDisplay = true
+            return
+        }
+        
+        if isDraggingA11yMarker, let marker = draggingA11yMarker {
+            let leftMargin: CGFloat = 20
+            let rightMargin: CGFloat = 20
+            let topMargin: CGFloat = 50
+            let bottomMargin: CGFloat = 20
+            
+            let timelineRect = NSRect(
+                x: leftMargin,
+                y: bottomMargin,
+                width: bounds.width - leftMargin - rightMargin,
+                height: bounds.height - topMargin - bottomMargin
+            )
+            
+            let deltaX = locationInView.x - a11yMarkerDragStartX
+            let currentTimestamp = foldedXToTimestamp(a11yMarkerDragStartX + deltaX, in: timelineRect)
+            let startTimestamp = foldedXToTimestamp(a11yMarkerDragStartX, in: timelineRect)
+            let deltaTime = currentTimestamp - startTimestamp
+            
+            var newTimestamp = marker.timestamp
+            var newDuration = marker.duration
+            
+            switch a11yMarkerDragMode {
+            case .move:
+                let newStart = a11yMarkerOriginalStart + deltaTime
+                newTimestamp = max(startTime, min(endTime - a11yMarkerOriginalDuration, newStart))
+            case .resizeStart:
+                let newStart = a11yMarkerOriginalStart + deltaTime
+                let maxStart = a11yMarkerOriginalStart + a11yMarkerOriginalDuration - 100_000
+                newTimestamp = max(startTime, min(maxStart, newStart))
+                newDuration = a11yMarkerOriginalDuration - (newTimestamp - a11yMarkerOriginalStart)
+            case .resizeEnd:
+                let delta = a11yMarkerOriginalDuration + deltaTime
+                newDuration = max(100_000, min(endTime - a11yMarkerOriginalStart, delta))
+            case .none:
+                break
+            }
+            
+            let updatedMarker = (id: marker.id, timestamp: newTimestamp, duration: newDuration, title: marker.title, impactScore: marker.impactScore)
+            
+            if let index = accessibilityMarkers.firstIndex(where: { $0.id == marker.id }) {
+                accessibilityMarkers[index] = updatedMarker
+                draggingA11yMarker = updatedMarker
             }
             needsDisplay = true
             return
@@ -11680,6 +11844,15 @@ class EnhancedTimelineView: NSView {
             isDraggingAnnotation = false
             draggingAnnotation = nil
             annotationDragMode = .none
+            return
+        }
+        
+        if isDraggingA11yMarker, let marker = draggingA11yMarker {
+            NSCursor.pop()
+            onAccessibilityMarkerDurationChanged?(marker, marker.timestamp, marker.duration)
+            isDraggingA11yMarker = false
+            draggingA11yMarker = nil
+            a11yMarkerDragMode = .none
             return
         }
         
@@ -12427,17 +12600,24 @@ class EnhancedTimelineView: NSView {
                 icon.draw(at: NSPoint(x: markerX + 3, y: trackY + (barHeight - iconSize.height) / 2), withAttributes: iconAttrs)
             }
             
-            if markerWidth > 60 {
+            let titleX = markerX + iconSize.width + 6
+            let availableTextWidth = markerWidth - iconSize.width - 10
+            if availableTextWidth > 20 {
                 let titleText = marker.title.isEmpty ? "Accessibility Issue" : marker.title
-                let truncatedTitle = titleText.count > 20 ? String(titleText.prefix(18)) + "..." : titleText
+                let titleFont = NSFont.systemFont(ofSize: 9, weight: .medium)
                 let titleAttrs: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: 9, weight: .medium),
+                    .font: titleFont,
                     .foregroundColor: NSColor.white
                 ]
-                let titleSize = truncatedTitle.size(withAttributes: titleAttrs)
-                let titleX = markerX + iconSize.width + 6
-                if titleX + titleSize.width < markerX + markerWidth - 4 {
-                    truncatedTitle.draw(at: NSPoint(x: titleX, y: trackY + (barHeight - titleSize.height) / 2), withAttributes: titleAttrs)
+                var displayTitle = titleText
+                var titleSize = displayTitle.size(withAttributes: titleAttrs)
+                while titleSize.width > availableTextWidth && displayTitle.count > 1 {
+                    displayTitle = String(displayTitle.dropLast(2)) + "…"
+                    titleSize = displayTitle.size(withAttributes: titleAttrs)
+                }
+                if titleSize.width <= availableTextWidth {
+                    let titleY = trackY + barHeight - titleSize.height - 3
+                    displayTitle.draw(at: NSPoint(x: titleX, y: titleY), withAttributes: titleAttrs)
                 }
             }
             
@@ -12447,6 +12627,14 @@ class EnhancedTimelineView: NSView {
                 let hoverPath = NSBezierPath(roundedRect: hoverRect, xRadius: 4, yRadius: 4)
                 hoverPath.lineWidth = 2
                 hoverPath.stroke()
+                
+                let handleWidth: CGFloat = 4
+                let handleHeight: CGFloat = barHeight + 4
+                NSColor.white.setFill()
+                let leftHandle = NSRect(x: barRect.minX - 2, y: trackY - 2, width: handleWidth, height: handleHeight)
+                NSBezierPath(roundedRect: leftHandle, xRadius: 2, yRadius: 2).fill()
+                let rightHandle = NSRect(x: barRect.maxX - 2, y: trackY - 2, width: handleWidth, height: handleHeight)
+                NSBezierPath(roundedRect: rightHandle, xRadius: 2, yRadius: 2).fill()
             }
             
             accessibilityMarkerRects.append((rect: barRect, marker: marker))
