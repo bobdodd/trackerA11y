@@ -2,6 +2,74 @@ import Cocoa
 import ObjectiveC
 import AVFoundation
 import AVKit
+import CoreImage
+
+enum TransitionType: String, CaseIterable {
+    case fadeIn = "Fade In"
+    case fadeOut = "Fade Out"
+    case crossDissolve = "Cross Dissolve"
+    case cubeRotate = "Cube Rotate"
+    case slideLeft = "Slide Left"
+    case slideRight = "Slide Right"
+    case slideUp = "Slide Up"
+    case slideDown = "Slide Down"
+    case blank = "Blank/Color"
+    case image = "Image"
+    
+    var icon: String {
+        switch self {
+        case .fadeIn: return "◐"
+        case .fadeOut: return "◑"
+        case .crossDissolve: return "◍"
+        case .cubeRotate: return "⬡"
+        case .slideLeft: return "◀"
+        case .slideRight: return "▶"
+        case .slideUp: return "▲"
+        case .slideDown: return "▼"
+        case .blank: return "▬"
+        case .image: return "🖼"
+        }
+    }
+}
+
+struct TransitionData {
+    var id: String
+    var timestamp: Double
+    var duration: Double
+    var type: TransitionType
+    var backgroundColor: NSColor
+    var imagePath: String?
+    
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "id": id,
+            "timestamp": timestamp,
+            "duration": duration,
+            "type": type.rawValue,
+            "backgroundColorHex": backgroundColor.hexString
+        ]
+        if let path = imagePath {
+            dict["imagePath"] = path
+        }
+        return dict
+    }
+    
+    static func from(dictionary: [String: Any]) -> TransitionData? {
+        guard let id = dictionary["id"] as? String,
+              let timestamp = dictionary["timestamp"] as? Double,
+              let duration = dictionary["duration"] as? Double,
+              let typeString = dictionary["type"] as? String,
+              let type = TransitionType(rawValue: typeString) else {
+            return nil
+        }
+        
+        let colorHex = dictionary["backgroundColorHex"] as? String ?? "#000000"
+        let color = NSColor(hex: colorHex) ?? .black
+        let imagePath = dictionary["imagePath"] as? String
+        
+        return TransitionData(id: id, timestamp: timestamp, duration: duration, type: type, backgroundColor: color, imagePath: imagePath)
+    }
+}
 
 class FlippedClipView: NSClipView {
     override var isFlipped: Bool { return true }
@@ -116,6 +184,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
     private var isSuppressingPlayheadUpdates: Bool = false  // Suppress playhead updates during video reload after crop
     private var pauseGaps: [(start: Double, end: Double, duration: Double)] = []  // Pause gaps for video/event time conversion
     private var cropGaps: [(start: Double, end: Double, duration: Double, eventBackup: [[String: Any]])] = []  // Cropped time ranges
+    private var transitions: [TransitionData] = []  // Video transitions (stretches timeline)
     private var screenshotWindows: [NSWindow] = []  // Keep references to screenshot viewer windows
     private var screenshotPaths: [Int: String] = [:]  // Map button tag to screenshot path
     private var scrollViewRefs: [Int: NSScrollView] = [:]  // Map button tag to scroll view
@@ -2195,6 +2264,370 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         timelineView?.clearRangeSelection()
     }
     
+    private func showTimelineContextMenu(at timestamp: Double, nsEvent: NSEvent) {
+        let menu = NSMenu()
+        
+        let timeStr = formatTimestamp(timestamp)
+        let infoItem = NSMenuItem(title: "At \(timeStr)", action: nil, keyEquivalent: "")
+        infoItem.isEnabled = false
+        menu.addItem(infoItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let addTransitionItem = NSMenuItem(title: "Add Transition...", action: #selector(addTransitionAction(_:)), keyEquivalent: "")
+        addTransitionItem.target = self
+        addTransitionItem.representedObject = timestamp
+        menu.addItem(addTransitionItem)
+        
+        let addMarkerItem = NSMenuItem(title: "Add Marker...", action: #selector(addMarkerAtTimestampAction(_:)), keyEquivalent: "")
+        addMarkerItem.target = self
+        addMarkerItem.representedObject = timestamp
+        menu.addItem(addMarkerItem)
+        
+        if let timelineView = self.timelineView {
+            NSMenu.popUpContextMenu(menu, with: nsEvent, for: timelineView)
+        }
+    }
+    
+    @objc private func addTransitionAction(_ sender: NSMenuItem) {
+        guard let timestamp = sender.representedObject as? Double else { return }
+        showTransitionEditor(at: timestamp, existingTransition: nil)
+    }
+    
+    private func showTransitionContextMenu(transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String), nsEvent: NSEvent) {
+        let menu = NSMenu()
+        
+        let infoItem = NSMenuItem(title: "\(transition.icon) \(transition.typeRaw)", action: nil, keyEquivalent: "")
+        infoItem.isEnabled = false
+        menu.addItem(infoItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        let editItem = NSMenuItem(title: "Edit Transition...", action: #selector(editTransitionFromMenu(_:)), keyEquivalent: "")
+        editItem.target = self
+        editItem.representedObject = transition.timestamp
+        menu.addItem(editItem)
+        
+        let deleteItem = NSMenuItem(title: "Delete Transition", action: #selector(deleteTransitionFromMenu(_:)), keyEquivalent: "")
+        deleteItem.target = self
+        deleteItem.representedObject = transition.timestamp
+        menu.addItem(deleteItem)
+        
+        if let timelineView = self.timelineView {
+            NSMenu.popUpContextMenu(menu, with: nsEvent, for: timelineView)
+        }
+    }
+    
+    @objc private func editTransitionFromMenu(_ sender: NSMenuItem) {
+        guard let timestamp = sender.representedObject as? Double,
+              let transition = transitions.first(where: { $0.timestamp == timestamp }) else { return }
+        showTransitionEditor(at: timestamp, existingTransition: transition)
+    }
+    
+    @objc private func deleteTransitionFromMenu(_ sender: NSMenuItem) {
+        guard let timestamp = sender.representedObject as? Double,
+              let index = transitions.firstIndex(where: { $0.timestamp == timestamp }) else { return }
+        
+        let transition = transitions[index]
+        let undoInfo: [String: Any] = [
+            "action": "deleteTransition",
+            "transition": transition.toDictionary()
+        ]
+        addToUndoStack(undoInfo)
+        
+        transitions.remove(at: index)
+        saveTransitionsToMetadata()
+        updateTimelineWithTransitions()
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        }
+        
+        print("🗑️ Deleted transition at \(formatTimestamp(timestamp))")
+    }
+    
+    @objc private func addMarkerAtTimestampAction(_ sender: NSMenuItem) {
+        guard let timestamp = sender.representedObject as? Double else { return }
+        
+        var closestIndex = 0
+        var closestDiff = Double.greatestFiniteMagnitude
+        
+        for (index, event) in events.enumerated() {
+            guard let eventTimestamp = event["timestamp"] as? Double else { continue }
+            let diff = abs(eventTimestamp - timestamp)
+            if diff < closestDiff {
+                closestDiff = diff
+                closestIndex = index
+            }
+        }
+        
+        showMarkerEditor(for: closestIndex, existingMarkerIndex: nil)
+    }
+    
+    private func showTransitionEditor(at timestamp: Double, existingTransition: TransitionData?) {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 450, height: 400),
+                              styleMask: [.titled, .closable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = existingTransition != nil ? "Edit Transition" : "Add Transition"
+        window.isReleasedWhenClosed = false
+        window.center()
+        
+        let contentView = NSView(frame: window.contentRect(forFrameRect: window.frame))
+        contentView.autoresizingMask = [.width, .height]
+        
+        var yOffset = contentView.bounds.height - 40
+        
+        let typeLabel = NSTextField(labelWithString: "Transition Type:")
+        typeLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        typeLabel.frame = NSRect(x: 20, y: yOffset, width: 120, height: 20)
+        contentView.addSubview(typeLabel)
+        
+        let typePopup = NSPopUpButton(frame: NSRect(x: 150, y: yOffset - 4, width: 280, height: 28), pullsDown: false)
+        for transitionType in TransitionType.allCases {
+            typePopup.addItem(withTitle: "\(transitionType.icon) \(transitionType.rawValue)")
+        }
+        if let existing = existingTransition, let index = TransitionType.allCases.firstIndex(of: existing.type) {
+            typePopup.selectItem(at: index)
+        }
+        typePopup.tag = 100
+        contentView.addSubview(typePopup)
+        
+        yOffset -= 50
+        
+        let durationLabel = NSTextField(labelWithString: "Duration (seconds):")
+        durationLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        durationLabel.frame = NSRect(x: 20, y: yOffset, width: 140, height: 20)
+        contentView.addSubview(durationLabel)
+        
+        let durationField = NSTextField(frame: NSRect(x: 170, y: yOffset - 2, width: 80, height: 24))
+        durationField.stringValue = existingTransition != nil ? String(format: "%.1f", existingTransition!.duration / 1_000_000) : "1.0"
+        durationField.tag = 101
+        contentView.addSubview(durationField)
+        
+        let durationStepper = NSStepper(frame: NSRect(x: 255, y: yOffset - 2, width: 20, height: 24))
+        durationStepper.minValue = 0.1
+        durationStepper.maxValue = 30.0
+        durationStepper.increment = 0.1
+        durationStepper.doubleValue = existingTransition != nil ? existingTransition!.duration / 1_000_000 : 1.0
+        durationStepper.valueWraps = false
+        durationStepper.target = self
+        durationStepper.action = #selector(transitionDurationStepperChanged(_:))
+        durationStepper.tag = 102
+        contentView.addSubview(durationStepper)
+        
+        yOffset -= 50
+        
+        let colorLabel = NSTextField(labelWithString: "Background Color:")
+        colorLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        colorLabel.frame = NSRect(x: 20, y: yOffset, width: 140, height: 20)
+        contentView.addSubview(colorLabel)
+        
+        let colorWell = NSColorWell(frame: NSRect(x: 170, y: yOffset - 4, width: 60, height: 28))
+        colorWell.color = existingTransition?.backgroundColor ?? .black
+        colorWell.tag = 103
+        contentView.addSubview(colorWell)
+        
+        yOffset -= 50
+        
+        let imageLabel = NSTextField(labelWithString: "Image (optional):")
+        imageLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        imageLabel.frame = NSRect(x: 20, y: yOffset, width: 140, height: 20)
+        contentView.addSubview(imageLabel)
+        
+        let imagePathField = NSTextField(frame: NSRect(x: 170, y: yOffset - 2, width: 180, height: 24))
+        imagePathField.stringValue = existingTransition?.imagePath ?? ""
+        imagePathField.placeholderString = "No image selected"
+        imagePathField.isEditable = false
+        imagePathField.tag = 104
+        contentView.addSubview(imagePathField)
+        
+        let browseBtn = NSButton(title: "Browse...", target: self, action: #selector(browseTransitionImage(_:)))
+        browseBtn.frame = NSRect(x: 355, y: yOffset - 4, width: 75, height: 28)
+        browseBtn.bezelStyle = .rounded
+        browseBtn.tag = 105
+        contentView.addSubview(browseBtn)
+        
+        yOffset -= 80
+        
+        let previewLabel = NSTextField(labelWithString: "Preview:")
+        previewLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        previewLabel.frame = NSRect(x: 20, y: yOffset + 60, width: 100, height: 20)
+        contentView.addSubview(previewLabel)
+        
+        let previewContainer = NSView(frame: NSRect(x: 20, y: yOffset - 60, width: 410, height: 120))
+        previewContainer.wantsLayer = true
+        previewContainer.layer?.backgroundColor = (existingTransition?.backgroundColor ?? .black).cgColor
+        previewContainer.layer?.borderWidth = 1
+        previewContainer.layer?.borderColor = NSColor.separatorColor.cgColor
+        contentView.addSubview(previewContainer)
+        currentTransitionPreviewContainer = previewContainer
+        
+        yOffset -= 100
+        
+        let buttonStack = NSStackView(frame: NSRect(x: 20, y: 20, width: 410, height: 36))
+        buttonStack.orientation = .horizontal
+        buttonStack.distribution = .equalSpacing
+        
+        let cancelBtn = NSButton(title: "Cancel", target: self, action: #selector(cancelTransitionAction(_:)))
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}"
+        
+        let saveBtn = NSButton(title: existingTransition != nil ? "Update" : "Add Transition", target: self, action: #selector(saveTransitionAction(_:)))
+        saveBtn.bezelStyle = .rounded
+        saveBtn.keyEquivalent = "\r"
+        
+        buttonStack.addArrangedSubview(cancelBtn)
+        buttonStack.addArrangedSubview(NSView())
+        buttonStack.addArrangedSubview(saveBtn)
+        contentView.addSubview(buttonStack)
+        
+        window.contentView = contentView
+        
+        window.representedURL = URL(string: "transition://\(timestamp)")
+        if let existing = existingTransition {
+            window.subtitle = existing.id
+        }
+        
+        currentTransitionEditorWindow = window
+        currentTransitionTimestamp = timestamp
+        currentTransitionId = existingTransition?.id
+        
+        window.makeKeyAndOrderFront(nil)
+    }
+    
+    private var currentTransitionEditorWindow: NSWindow?
+    private var currentTransitionTimestamp: Double = 0
+    private var currentTransitionId: String?
+    private var currentTransitionPreviewContainer: NSView?
+    private var selectedTransitionTimestamp: Double?
+    
+    @objc private func transitionDurationStepperChanged(_ sender: NSStepper) {
+        guard let window = currentTransitionEditorWindow,
+              let durationField = window.contentView?.viewWithTag(101) as? NSTextField else { return }
+        durationField.stringValue = String(format: "%.1f", sender.doubleValue)
+    }
+    
+    @objc private func browseTransitionImage(_ sender: NSButton) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            guard let window = currentTransitionEditorWindow,
+                  let imagePathField = window.contentView?.viewWithTag(104) as? NSTextField,
+                  let previewContainer = currentTransitionPreviewContainer else { return }
+            
+            imagePathField.stringValue = url.path
+            
+            if let image = NSImage(contentsOf: url) {
+                previewContainer.subviews.forEach { $0.removeFromSuperview() }
+                let imageView = NSImageView(frame: previewContainer.bounds.insetBy(dx: 2, dy: 2))
+                imageView.image = image
+                imageView.imageScaling = .scaleProportionallyUpOrDown
+                previewContainer.addSubview(imageView)
+            }
+        }
+    }
+    
+    @objc private func saveTransitionAction(_ sender: NSButton) {
+        guard let window = currentTransitionEditorWindow,
+              let typePopup = window.contentView?.viewWithTag(100) as? NSPopUpButton,
+              let durationField = window.contentView?.viewWithTag(101) as? NSTextField,
+              let colorWell = window.contentView?.viewWithTag(103) as? NSColorWell,
+              let imagePathField = window.contentView?.viewWithTag(104) as? NSTextField else { return }
+        
+        let selectedTypeIndex = typePopup.indexOfSelectedItem
+        guard selectedTypeIndex >= 0 && selectedTypeIndex < TransitionType.allCases.count else { return }
+        let transitionType = TransitionType.allCases[selectedTypeIndex]
+        
+        let durationSecs = Double(durationField.stringValue) ?? 1.0
+        let durationMicros = durationSecs * 1_000_000
+        
+        let imagePath: String? = imagePathField.stringValue.isEmpty ? nil : imagePathField.stringValue
+        
+        let transitionId = currentTransitionId ?? "transition_\(Date().timeIntervalSince1970)_\(Int.random(in: 1000...9999))"
+        
+        let transition = TransitionData(
+            id: transitionId,
+            timestamp: currentTransitionTimestamp,
+            duration: durationMicros,
+            type: transitionType,
+            backgroundColor: colorWell.color,
+            imagePath: imagePath
+        )
+        
+        if let existingId = currentTransitionId {
+            if let index = transitions.firstIndex(where: { $0.id == existingId }) {
+                let oldTransition = transitions[index]
+                let undoInfo: [String: Any] = [
+                    "action": "editTransition",
+                    "transitionId": existingId,
+                    "oldTransition": oldTransition.toDictionary(),
+                    "newTransition": transition.toDictionary()
+                ]
+                addToUndoStack(undoInfo)
+                transitions[index] = transition
+            }
+        } else {
+            let undoInfo: [String: Any] = [
+                "action": "addTransition",
+                "transition": transition.toDictionary()
+            ]
+            addToUndoStack(undoInfo)
+            transitions.append(transition)
+            
+            insertSilenceForTransition(transition)
+        }
+        
+        transitions.sort { $0.timestamp < $1.timestamp }
+        
+        saveTransitionsToMetadata()
+        updateTimelineWithTransitions()
+        
+        currentTransitionPreviewContainer = nil
+        window.close()
+        currentTransitionEditorWindow = nil
+        
+        showTransitionDetails((timestamp: transition.timestamp, duration: transition.duration, typeRaw: transition.type.rawValue, icon: transition.type.icon))
+        
+        print("✨ Added transition: \(transitionType.rawValue) at \(formatTimestamp(currentTransitionTimestamp)), duration: \(durationSecs)s")
+    }
+    
+    @objc private func cancelTransitionAction(_ sender: NSButton) {
+        currentTransitionPreviewContainer = nil
+        currentTransitionEditorWindow?.close()
+        currentTransitionEditorWindow = nil
+    }
+    
+    private func saveTransitionsToMetadata() {
+        let metadataPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/metadata.json"
+        
+        do {
+            var metadata: [String: Any] = [:]
+            if let data = FileManager.default.contents(atPath: metadataPath),
+               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                metadata = json
+            }
+            
+            let transitionsData = transitions.map { $0.toDictionary() }
+            metadata["transitions"] = transitionsData
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
+            try jsonData.write(to: URL(fileURLWithPath: metadataPath))
+            print("💾 Saved \(transitions.count) transitions to metadata")
+        } catch {
+            print("❌ Failed to save transitions: \(error)")
+        }
+    }
+    
+    private func updateTimelineWithTransitions() {
+        let simpleTransitions = transitions.map { (timestamp: $0.timestamp, duration: $0.duration, typeRaw: $0.type.rawValue, icon: $0.type.icon) }
+        timelineView?.setTransitions(simpleTransitions)
+        timelineView?.needsDisplay = true
+    }
+    
     private func cropTimeRange(start: Double, end: Double) {
         let duration = end - start
         
@@ -2351,6 +2784,118 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
                         try FileManager.default.removeItem(atPath: audioPath)
                         try FileManager.default.moveItem(atPath: m4aOutputPath, toPath: audioPath)
                         print("✅ VoiceOver audio cropped successfully")
+                        
+                        DispatchQueue.main.async {
+                            self.loadVoiceOverAudioTrack()
+                        }
+                    } catch {
+                        print("❌ Failed to replace VoiceOver audio: \(error)")
+                    }
+                case .failed:
+                    print("❌ VoiceOver export failed: \(String(describing: exportSession.error))")
+                case .cancelled:
+                    print("⚠️ VoiceOver export cancelled")
+                default:
+                    print("⚠️ VoiceOver export status: \(exportSession.status.rawValue)")
+                }
+            }
+            
+            semaphore.wait()
+        }
+    }
+    
+    private func insertSilenceForTransition(_ transition: TransitionData) {
+        let audioPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/voiceover_audio.caf"
+        guard FileManager.default.fileExists(atPath: audioPath) else {
+            print("⚠️ No VoiceOver audio to modify for transition")
+            return
+        }
+        
+        let silenceDurationSecs = transition.duration / 1_000_000
+        let insertPointSecs = (transition.timestamp - videoStartTimestamp) / 1_000_000
+        
+        print("🔊 Inserting \(silenceDurationSecs)s silence at \(insertPointSecs)s for transition...")
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let inputURL = URL(fileURLWithPath: audioPath)
+            let backupPath = audioPath.replacingOccurrences(of: ".caf", with: "_pretransition.caf")
+            
+            do {
+                if !FileManager.default.fileExists(atPath: backupPath) {
+                    try FileManager.default.copyItem(atPath: audioPath, toPath: backupPath)
+                    print("📦 VoiceOver audio backed up before transition")
+                }
+            } catch {
+                print("❌ Failed to backup VoiceOver audio: \(error)")
+                return
+            }
+            
+            let asset = AVURLAsset(url: inputURL)
+            let composition = AVMutableComposition()
+            
+            guard let audioTrack = asset.tracks(withMediaType: .audio).first,
+                  let compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                print("❌ Failed to get VoiceOver audio track")
+                return
+            }
+            
+            let audioDuration = asset.duration.seconds
+            let insertPoint = max(0, min(audioDuration, insertPointSecs))
+            
+            do {
+                if insertPoint > 0 {
+                    let beforeRange = CMTimeRange(
+                        start: .zero,
+                        duration: CMTime(seconds: insertPoint, preferredTimescale: 44100)
+                    )
+                    try compositionAudioTrack.insertTimeRange(beforeRange, of: audioTrack, at: .zero)
+                }
+                
+                let silenceDuration = CMTime(seconds: silenceDurationSecs, preferredTimescale: 44100)
+                compositionAudioTrack.insertEmptyTimeRange(CMTimeRange(
+                    start: CMTime(seconds: insertPoint, preferredTimescale: 44100),
+                    duration: silenceDuration
+                ))
+                
+                if insertPoint < audioDuration {
+                    let afterStart = CMTime(seconds: insertPoint, preferredTimescale: 44100)
+                    let afterDuration = CMTime(seconds: audioDuration - insertPoint, preferredTimescale: 44100)
+                    let insertAt = CMTime(seconds: insertPoint + silenceDurationSecs, preferredTimescale: 44100)
+                    
+                    try compositionAudioTrack.insertTimeRange(
+                        CMTimeRange(start: afterStart, duration: afterDuration),
+                        of: audioTrack,
+                        at: insertAt
+                    )
+                }
+            } catch {
+                print("❌ Failed to compose VoiceOver with silence: \(error)")
+                return
+            }
+            
+            guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A) else {
+                print("❌ Failed to create VoiceOver export session")
+                return
+            }
+            
+            let m4aOutputPath = audioPath.replacingOccurrences(of: ".caf", with: "_withtransition.m4a")
+            try? FileManager.default.removeItem(atPath: m4aOutputPath)
+            exportSession.outputURL = URL(fileURLWithPath: m4aOutputPath)
+            exportSession.outputFileType = .m4a
+            
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            exportSession.exportAsynchronously {
+                defer { semaphore.signal() }
+                
+                switch exportSession.status {
+                case .completed:
+                    do {
+                        try FileManager.default.removeItem(atPath: audioPath)
+                        try FileManager.default.moveItem(atPath: m4aOutputPath, toPath: audioPath)
+                        print("✅ VoiceOver audio updated with \(silenceDurationSecs)s silence for transition")
                         
                         DispatchQueue.main.async {
                             self.loadVoiceOverAudioTrack()
@@ -3572,6 +4117,15 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
         }
         timeline.onRangeRightClicked = { [weak self] start, end, nsEvent in
             self?.showRangeContextMenu(start: start, end: end, nsEvent: nsEvent)
+        }
+        timeline.onTimelineRightClicked = { [weak self] timestamp, nsEvent in
+            self?.showTimelineContextMenu(at: timestamp, nsEvent: nsEvent)
+        }
+        timeline.onTransitionSelected = { [weak self] transition in
+            self?.showTransitionDetails(transition)
+        }
+        timeline.onTransitionRightClicked = { [weak self] transition, nsEvent in
+            self?.showTransitionContextMenu(transition: transition, nsEvent: nsEvent)
         }
         
         // Set video start timestamp as datum IMMEDIATELY
@@ -4920,6 +5474,22 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
                         }
                     }
                     
+                    // Load transitions if present
+                    if let metadata = sessionJson["metadata"] as? [String: Any],
+                       let transitionsData = metadata["transitions"] as? [[String: Any]] {
+                        var transitionsArray: [TransitionData] = []
+                        for transDict in transitionsData {
+                            if let transition = TransitionData.from(dictionary: transDict) {
+                                transitionsArray.append(transition)
+                            }
+                        }
+                        self.transitions = transitionsArray
+                        if !transitionsArray.isEmpty {
+                            self.updateTimelineWithTransitions()
+                            print("✅ Loaded \(transitionsArray.count) transitions")
+                        }
+                    }
+                    
                     // Set initial playhead position
                     // If session is paused, start at beginning of last segment (where we left off)
                     // Otherwise start at the beginning
@@ -4960,12 +5530,30 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
                 if let metadata = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     sessionMetadata = metadata
                     updateUIWithMetadata()
+                    loadTransitionsFromMetadata(metadata)
                 }
             } catch {
                 print("Failed to load metadata: \(error)")
             }
         }
         loadTags()
+    }
+    
+    private func loadTransitionsFromMetadata(_ metadata: [String: Any]) {
+        guard let transitionsData = metadata["transitions"] as? [[String: Any]] else {
+            print("📍 No transitions found in metadata")
+            return
+        }
+        
+        transitions.removeAll()
+        for transDict in transitionsData {
+            if let transition = TransitionData.from(dictionary: transDict) {
+                transitions.append(transition)
+            }
+        }
+        transitions.sort { $0.timestamp < $1.timestamp }
+        print("📍 Loaded \(transitions.count) transitions from metadata")
+        updateTimelineWithTransitions()
     }
     
     private func loadTags() {
@@ -5181,6 +5769,46 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
             
             print("↩️ Undid crop (\(removedEvents.count) events restored)")
             
+        case "addTransition":
+            guard let transitionDict = undoInfo["transition"] as? [String: Any],
+                  let transition = TransitionData.from(dictionary: transitionDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            transitions.removeAll { $0.id == transition.id }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↩️ Undid add transition")
+            
+        case "editTransition":
+            guard let transitionId = undoInfo["transitionId"] as? String,
+                  let oldTransitionDict = undoInfo["oldTransition"] as? [String: Any],
+                  let oldTransition = TransitionData.from(dictionary: oldTransitionDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            if let index = transitions.firstIndex(where: { $0.id == transitionId }) {
+                transitions[index] = oldTransition
+            }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↩️ Undid edit transition")
+            
+        case "deleteTransition":
+            guard let transitionDict = undoInfo["transition"] as? [String: Any],
+                  let transition = TransitionData.from(dictionary: transitionDict) else { return }
+            
+            redoStack.append(undoInfo)
+            
+            transitions.append(transition)
+            transitions.sort { $0.timestamp < $1.timestamp }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↩️ Undid delete transition")
+            
         default:
             print("⚠️ Unknown undo action: \(action)")
         }
@@ -5290,6 +5918,46 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate {
             cropVideoAsync(gaps: simpleCropGaps, restorePlayhead: newPlayheadPosition)
             
             print("↪️ Redid crop (\(indicesToDelete.count) events)")
+            
+        case "addTransition":
+            guard let transitionDict = redoInfo["transition"] as? [String: Any],
+                  let transition = TransitionData.from(dictionary: transitionDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            transitions.append(transition)
+            transitions.sort { $0.timestamp < $1.timestamp }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↪️ Redid add transition")
+            
+        case "editTransition":
+            guard let transitionId = redoInfo["transitionId"] as? String,
+                  let newTransitionDict = redoInfo["newTransition"] as? [String: Any],
+                  let newTransition = TransitionData.from(dictionary: newTransitionDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            if let index = transitions.firstIndex(where: { $0.id == transitionId }) {
+                transitions[index] = newTransition
+            }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↪️ Redid edit transition")
+            
+        case "deleteTransition":
+            guard let transitionDict = redoInfo["transition"] as? [String: Any],
+                  let transition = TransitionData.from(dictionary: transitionDict) else { return }
+            
+            undoStack.append(redoInfo)
+            
+            transitions.removeAll { $0.id == transition.id }
+            saveTransitionsToMetadata()
+            updateTimelineWithTransitions()
+            
+            print("↪️ Redid delete transition")
             
         default:
             print("⚠️ Unknown redo action: \(action)")
@@ -7720,6 +8388,76 @@ extension SessionDetailViewController: NSTableViewDataSource, NSTableViewDelegat
         return result
     }
     
+    private func showTransitionDetails(_ transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String)) {
+        selectedTransitionTimestamp = transition.timestamp
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+            
+            timelineDetailLabel?.isHidden = true
+            timelineDetailLabel?.superview?.subviews.first(where: { $0 is NSScrollView })?.isHidden = false
+            
+            let (transitionCard, transitionContent) = createDetailCard(title: "Transition", icon: transition.icon)
+            
+            transitionContent.addArrangedSubview(createDetailRow(label: "Type", value: transition.typeRaw, valueColor: .systemPurple))
+            transitionContent.addArrangedSubview(createDetailRow(label: "Time", value: formatTimestamp(transition.timestamp), valueColor: .systemBlue))
+            
+            let durationSecs = transition.duration / 1_000_000
+            transitionContent.addArrangedSubview(createDetailRow(label: "Duration", value: String(format: "%.1f seconds", durationSecs), valueColor: .systemOrange))
+            
+            if let fullTransition = transitions.first(where: { $0.timestamp == transition.timestamp }) {
+                if let imagePath = fullTransition.imagePath, !imagePath.isEmpty {
+                    transitionContent.addArrangedSubview(createDetailRow(label: "Image", value: (imagePath as NSString).lastPathComponent))
+                }
+                
+                let colorHex = fullTransition.backgroundColor.hexString
+                let colorRow = createDetailRow(label: "Background", value: colorHex)
+                transitionContent.addArrangedSubview(colorRow)
+            }
+            
+            let editButton = NSButton(title: "Edit Transition", target: self, action: #selector(editSelectedTransition(_:)))
+            editButton.bezelStyle = .rounded
+            transitionContent.addArrangedSubview(editButton)
+            
+            let deleteButton = NSButton(title: "Delete", target: self, action: #selector(deleteSelectedTransition(_:)))
+            deleteButton.bezelStyle = .rounded
+            deleteButton.contentTintColor = .systemRed
+            transitionContent.addArrangedSubview(deleteButton)
+            
+            stackView.addArrangedSubview(transitionCard)
+            transitionCard.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+        }
+    }
+    
+    @objc private func editSelectedTransition(_ sender: NSButton) {
+        guard let timestamp = selectedTransitionTimestamp,
+              let transition = transitions.first(where: { $0.timestamp == timestamp }) else { return }
+        showTransitionEditor(at: timestamp, existingTransition: transition)
+    }
+    
+    @objc private func deleteSelectedTransition(_ sender: NSButton) {
+        guard let timestamp = selectedTransitionTimestamp,
+              let index = transitions.firstIndex(where: { $0.timestamp == timestamp }) else { return }
+        
+        let transition = transitions[index]
+        let undoInfo: [String: Any] = [
+            "action": "deleteTransition",
+            "transition": transition.toDictionary()
+        ]
+        addToUndoStack(undoInfo)
+        
+        transitions.remove(at: index)
+        saveTransitionsToMetadata()
+        updateTimelineWithTransitions()
+        
+        if let stackView = timelineDetailStackView {
+            stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        }
+        selectedTransitionTimestamp = nil
+        
+        print("🗑️ Deleted transition at \(formatTimestamp(timestamp))")
+    }
+    
     private func updateTimelineInfo(with event: [String: Any]) {
         selectedTimelineEvent = event
         
@@ -8726,6 +9464,14 @@ class EnhancedTimelineView: NSView {
     // Crop gaps - periods that have been cropped/removed from recording
     private var cropGaps: [(start: Double, end: Double, duration: Double)] = []
     
+    // Transitions - expand timeline at transition points
+    private var transitions: [(timestamp: Double, duration: Double, typeRaw: String, icon: String)] = []
+    private var transitionRects: [(rect: NSRect, transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String))] = []
+    private var hoveredTransitionIndex: Int? = nil
+    var onTransitionSelected: (((timestamp: Double, duration: Double, typeRaw: String, icon: String)) -> Void)?
+    var onTransitionRightClicked: (((timestamp: Double, duration: Double, typeRaw: String, icon: String), NSEvent) -> Void)?
+    private let transitionMarkerWidth: CGFloat = 20  // Width of transition marker on timeline
+    
     // Folded timeline: collapses pause/crop gaps to small markers
     private var foldPauses: Bool = true
     private var foldCrops: Bool = true
@@ -8739,6 +9485,7 @@ class EnhancedTimelineView: NSView {
     private var rangeSelectionStartX: CGFloat = 0
     var onRangeSelected: ((Double, Double) -> Void)?
     var onRangeRightClicked: ((Double, Double, NSEvent) -> Void)?
+    var onTimelineRightClicked: ((Double, NSEvent) -> Void)?
     
     var currentZoom: CGFloat {
         return zoomLevel
@@ -8841,6 +9588,11 @@ class EnhancedTimelineView: NSView {
         needsDisplay = true
     }
     
+    func setTransitions(_ trans: [(timestamp: Double, duration: Double, typeRaw: String, icon: String)]) {
+        self.transitions = trans
+        needsDisplay = true
+    }
+    
     private func getEffectiveDuration() -> Double {
         var totalGapDuration: Double = 0
         if foldPauses {
@@ -8849,7 +9601,8 @@ class EnhancedTimelineView: NSView {
         if foldCrops {
             totalGapDuration += cropGaps.reduce(0.0) { $0 + $1.duration }
         }
-        return max(1, (endTime - startTime) - totalGapDuration)
+        let totalTransitionDuration = transitions.reduce(0.0) { $0 + $1.duration }
+        return max(1, (endTime - startTime) - totalGapDuration + totalTransitionDuration)
     }
     
     private func getPauseDurationBefore(_ timestamp: Double) -> Double {
@@ -8898,38 +9651,59 @@ class EnhancedTimelineView: NSView {
         guard effectiveDuration > 0 else { return timelineRect.minX }
         
         let allGaps = getAllGaps()
+        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
         
-        if !allGaps.isEmpty {
+        if !allGaps.isEmpty || !sortedTransitions.isEmpty {
             let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
-            let contentWidth = timelineRect.width - totalMarkerWidth
+            let availableWidth = timelineRect.width - totalMarkerWidth
             
             var currentX = timelineRect.minX
-            var previousGapEnd = startTime
+            var previousEventTime = startTime
+            
+            var allBreakpoints: [(time: Double, type: String, gap: (start: Double, end: Double, duration: Double, isPause: Bool)?, transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String)?)] = []
             
             for gap in allGaps {
-                let segmentDuration = gap.start - previousGapEnd
-                let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
+                allBreakpoints.append((time: gap.start, type: "gap_start", gap: gap, transition: nil))
+            }
+            for trans in sortedTransitions {
+                allBreakpoints.append((time: trans.timestamp, type: "transition", gap: nil, transition: trans))
+            }
+            allBreakpoints.sort { $0.time < $1.time }
+            
+            for bp in allBreakpoints {
+                let segmentDuration = bp.time - previousEventTime
+                let segmentWidth = availableWidth * CGFloat(segmentDuration / effectiveDuration)
                 
-                if timestamp < gap.start {
+                if timestamp < bp.time {
                     if segmentDuration > 0 {
-                        let progressInSegment = (timestamp - previousGapEnd) / segmentDuration
+                        let progressInSegment = (timestamp - previousEventTime) / segmentDuration
                         return currentX + segmentWidth * CGFloat(progressInSegment)
                     }
                     return currentX
                 }
                 
-                if timestamp >= gap.start && timestamp < gap.end {
-                    return currentX + segmentWidth
-                }
+                currentX += segmentWidth
                 
-                currentX += segmentWidth + pauseMarkerWidth
-                previousGapEnd = gap.end
+                if bp.type == "gap_start", let gap = bp.gap {
+                    if timestamp >= gap.start && timestamp < gap.end {
+                        return currentX
+                    }
+                    currentX += pauseMarkerWidth
+                    previousEventTime = gap.end
+                } else if bp.type == "transition", let trans = bp.transition {
+                    if timestamp == bp.time {
+                        return currentX
+                    }
+                    let transWidth = availableWidth * CGFloat(trans.duration / effectiveDuration)
+                    currentX += transWidth
+                    previousEventTime = bp.time
+                }
             }
             
-            let finalSegmentDuration = endTime - previousGapEnd
-            if finalSegmentDuration > 0 {
-                let progressInFinal = (timestamp - previousGapEnd) / finalSegmentDuration
-                let finalSegmentWidth = contentWidth * CGFloat(finalSegmentDuration / effectiveDuration)
+            let finalSegmentDuration = endTime - previousEventTime
+            if finalSegmentDuration > 0 && timestamp >= previousEventTime {
+                let progressInFinal = (timestamp - previousEventTime) / finalSegmentDuration
+                let finalSegmentWidth = availableWidth * CGFloat(finalSegmentDuration / effectiveDuration)
                 return currentX + finalSegmentWidth * CGFloat(min(1.0, progressInFinal))
             }
             
@@ -8946,18 +9720,29 @@ class EnhancedTimelineView: NSView {
         guard effectiveDuration > 0 else { return startTime }
         
         let allGaps = getAllGaps()
+        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
         
-        if !allGaps.isEmpty {
+        if !allGaps.isEmpty || !sortedTransitions.isEmpty {
             let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
-            let contentWidth = timelineRect.width - totalMarkerWidth
+            let availableWidth = timelineRect.width - totalMarkerWidth
             
             var currentX = timelineRect.minX
             var currentEventTime = startTime
-            var previousGapEnd = startTime
+            var previousEventTime = startTime
+            
+            var allBreakpoints: [(time: Double, type: String, gap: (start: Double, end: Double, duration: Double, isPause: Bool)?, transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String)?)] = []
             
             for gap in allGaps {
-                let segmentDuration = gap.start - previousGapEnd
-                let segmentWidth = contentWidth * CGFloat(segmentDuration / effectiveDuration)
+                allBreakpoints.append((time: gap.start, type: "gap_start", gap: gap, transition: nil))
+            }
+            for trans in sortedTransitions {
+                allBreakpoints.append((time: trans.timestamp, type: "transition", gap: nil, transition: trans))
+            }
+            allBreakpoints.sort { $0.time < $1.time }
+            
+            for bp in allBreakpoints {
+                let segmentDuration = bp.time - previousEventTime
+                let segmentWidth = availableWidth * CGFloat(segmentDuration / effectiveDuration)
                 let segmentEndX = currentX + segmentWidth
                 
                 if x < segmentEndX {
@@ -8968,19 +9753,28 @@ class EnhancedTimelineView: NSView {
                     return currentEventTime
                 }
                 
-                currentEventTime = gap.start
+                currentX = segmentEndX
+                currentEventTime = bp.time
                 
-                if x < segmentEndX + pauseMarkerWidth {
-                    return gap.start
+                if bp.type == "gap_start", let gap = bp.gap {
+                    if x < currentX + pauseMarkerWidth {
+                        return gap.start
+                    }
+                    currentX += pauseMarkerWidth
+                    currentEventTime = gap.end
+                    previousEventTime = gap.end
+                } else if bp.type == "transition", let trans = bp.transition {
+                    let transWidth = availableWidth * CGFloat(trans.duration / effectiveDuration)
+                    if x < currentX + transWidth {
+                        return trans.timestamp
+                    }
+                    currentX += transWidth
+                    previousEventTime = bp.time
                 }
-                
-                currentX = segmentEndX + pauseMarkerWidth
-                currentEventTime = gap.end
-                previousGapEnd = gap.end
             }
             
-            let finalSegmentDuration = endTime - previousGapEnd
-            let finalSegmentWidth = contentWidth * CGFloat(finalSegmentDuration / effectiveDuration)
+            let finalSegmentDuration = endTime - previousEventTime
+            let finalSegmentWidth = availableWidth * CGFloat(finalSegmentDuration / effectiveDuration)
             
             if finalSegmentWidth > 0 {
                 let progressInFinal = min(1.0, max(0, (x - currentX) / finalSegmentWidth))
@@ -9120,6 +9914,15 @@ class EnhancedTimelineView: NSView {
                 annotationOriginalDuration = annotationRect.annotation.duration
                 onAnnotationSelected?(annotationRect.annotation)
                 NSCursor.closedHand.push()
+                return
+            }
+        }
+        
+        // Check if clicking on a transition (takes priority over events)
+        for transitionRect in transitionRects {
+            if transitionRect.rect.contains(locationInView) {
+                onTransitionSelected?(transitionRect.transition)
+                needsDisplay = true
                 return
             }
         }
@@ -9467,32 +10270,78 @@ class EnhancedTimelineView: NSView {
             }
         }
         
+        for transitionRect in transitionRects {
+            if transitionRect.rect.contains(locationInView) {
+                onTransitionRightClicked?(transitionRect.transition, event)
+                return
+            }
+        }
+        
         for eventRect in eventRects {
             if eventRect.rect.contains(locationInView) {
                 onEventRightClicked?(eventRect.event, eventRect.eventIndex, event)
                 return
             }
         }
+        
+        let leftMargin: CGFloat = 20
+        let rightMargin: CGFloat = 20
+        let topMargin: CGFloat = 50
+        let bottomMargin: CGFloat = 20
+        
+        let timelineRect = NSRect(
+            x: leftMargin,
+            y: bottomMargin,
+            width: bounds.width - leftMargin - rightMargin,
+            height: bounds.height - topMargin - bottomMargin
+        )
+        
+        if timelineRect.contains(locationInView) {
+            let clickTimestamp = foldedXToTimestamp(locationInView.x, in: timelineRect)
+            onTimelineRightClicked?(clickTimestamp, event)
+            return
+        }
+        
         super.rightMouseDown(with: event)
     }
     
     override func mouseMoved(with event: NSEvent) {
         let locationInView = convert(event.locationInWindow, from: nil)
         
-        var newHoveredIndex: Int? = nil
-        for (index, eventRect) in eventRects.enumerated() {
-            if eventRect.rect.contains(locationInView) {
-                newHoveredIndex = index
+        var newHoveredEventIndex: Int? = nil
+        var newHoveredTransitionIndex: Int? = nil
+        
+        for (index, transitionRect) in transitionRects.enumerated() {
+            if transitionRect.rect.contains(locationInView) {
+                newHoveredTransitionIndex = index
                 break
             }
         }
         
-        if newHoveredIndex != hoveredEventIndex {
-            hoveredEventIndex = newHoveredIndex
+        if newHoveredTransitionIndex == nil {
+            for (index, eventRect) in eventRects.enumerated() {
+                if eventRect.rect.contains(locationInView) {
+                    newHoveredEventIndex = index
+                    break
+                }
+            }
+        }
+        
+        var needsRedraw = false
+        if newHoveredEventIndex != hoveredEventIndex {
+            hoveredEventIndex = newHoveredEventIndex
+            needsRedraw = true
+        }
+        if newHoveredTransitionIndex != hoveredTransitionIndex {
+            hoveredTransitionIndex = newHoveredTransitionIndex
+            needsRedraw = true
+        }
+        
+        if needsRedraw {
             needsDisplay = true
         }
         
-        if hoveredEventIndex != nil {
+        if hoveredEventIndex != nil || hoveredTransitionIndex != nil {
             NSCursor.pointingHand.set()
         } else {
             NSCursor.arrow.set()
@@ -9501,6 +10350,7 @@ class EnhancedTimelineView: NSView {
     
     override func mouseExited(with event: NSEvent) {
         hoveredEventIndex = nil
+        hoveredTransitionIndex = nil
         NSCursor.arrow.set()
         needsDisplay = true
     }
@@ -9509,6 +10359,7 @@ class EnhancedTimelineView: NSView {
         super.draw(dirtyRect)
         
         eventRects.removeAll()
+        transitionRects.removeAll()
         
         guard !events.isEmpty else {
             drawEmptyState()
@@ -9754,6 +10605,7 @@ class EnhancedTimelineView: NSView {
         
         drawPauseGaps(in: timelineRect, duration: duration)
         drawCropGaps(in: timelineRect, duration: duration)
+        drawTransitions(in: timelineRect)
         drawAnnotationBars(in: timelineRect)
     }
     
@@ -9908,6 +10760,81 @@ class EnhancedTimelineView: NSView {
         ]
         let durationSize = durationText.size(withAttributes: durationAttrs)
         durationText.draw(at: NSPoint(x: markerX - durationSize.width / 2, y: markerRect.maxY + 2), withAttributes: durationAttrs)
+    }
+    
+    private func drawTransitions(in timelineRect: NSRect) {
+        guard !transitions.isEmpty else { return }
+        
+        let effectiveDuration = getEffectiveDuration()
+        guard effectiveDuration > 0 else { return }
+        
+        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
+        let allGaps = getAllGaps()
+        let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
+        let availableWidth = timelineRect.width - totalMarkerWidth
+        
+        let barWidth: CGFloat = 4
+        let barHeight = timelineRect.height * 0.5
+        let baselineY = timelineRect.minY + timelineRect.height * 0.5
+        
+        for (index, transition) in sortedTransitions.enumerated() {
+            let markerX = timestampToFoldedX(transition.timestamp, in: timelineRect)
+            let transitionWidth = availableWidth * CGFloat(transition.duration / effectiveDuration)
+            
+            let color = NSColor.systemPurple
+            let isHovered = hoveredTransitionIndex == index
+            
+            let shadedRect = NSRect(
+                x: markerX + barWidth / 2,
+                y: timelineRect.minY,
+                width: transitionWidth - barWidth / 2,
+                height: timelineRect.height
+            )
+            color.withAlphaComponent(0.15).setFill()
+            shadedRect.fill()
+            
+            color.withAlphaComponent(0.4).setStroke()
+            let borderPath = NSBezierPath(rect: shadedRect)
+            borderPath.lineWidth = 1
+            borderPath.stroke()
+            
+            let barRect = NSRect(
+                x: markerX - barWidth / 2,
+                y: baselineY - barHeight / 2,
+                width: barWidth,
+                height: barHeight
+            )
+            
+            color.setFill()
+            barRect.fill()
+            
+            let icon = transition.icon
+            let iconAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 12, weight: .medium),
+                .foregroundColor: color
+            ]
+            let iconSize = icon.size(withAttributes: iconAttrs)
+            icon.draw(at: NSPoint(x: markerX + transitionWidth / 2 - iconSize.width / 2, y: baselineY - iconSize.height / 2), withAttributes: iconAttrs)
+            
+            let durationSecs = transition.duration / 1_000_000
+            let durationText = String(format: "%.1fs", durationSecs)
+            let durationAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 9, weight: .regular),
+                .foregroundColor: color.withAlphaComponent(0.8)
+            ]
+            let durationSize = durationText.size(withAttributes: durationAttrs)
+            durationText.draw(at: NSPoint(x: markerX + transitionWidth / 2 - durationSize.width / 2, y: shadedRect.maxY - durationSize.height - 4), withAttributes: durationAttrs)
+            
+            if isHovered {
+                let hoverRect = shadedRect.insetBy(dx: -2, dy: -2)
+                NSColor.white.withAlphaComponent(0.9).setStroke()
+                let hoverPath = NSBezierPath(rect: hoverRect)
+                hoverPath.lineWidth = 2
+                hoverPath.stroke()
+            }
+            
+            transitionRects.append((rect: shadedRect, transition: transition))
+        }
     }
     
     private func drawPlayhead() {
