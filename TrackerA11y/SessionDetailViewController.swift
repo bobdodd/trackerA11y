@@ -71,6 +71,317 @@ struct TransitionData {
     }
 }
 
+class TransitionOverlayView: NSView {
+    private var transitions: [TransitionData] = []
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    func setTransitions(_ transitions: [TransitionData]) {
+        self.transitions = transitions
+        needsDisplay = true
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.clear.setFill()
+        dirtyRect.fill()
+    }
+}
+
+class TransitionOverlayViewOLD: NSView {
+    private var transitions: [TransitionData] = []
+    private var currentTimestamp: Double = 0
+    private var activeTransition: TransitionData?
+    private var transitionProgress: Double = 0
+    private var cachedImage: NSImage?
+    private var cachedImagePath: String?
+    
+    var onTransitionActive: ((Bool) -> Void)?
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    func setTransitions(_ transitions: [TransitionData]) {
+        self.transitions = transitions
+        needsDisplay = true
+    }
+    
+    func setCurrentTimestamp(_ timestamp: Double) {
+        self.currentTimestamp = timestamp
+        updateActiveTransition()
+        needsDisplay = true
+    }
+    
+    private func updateActiveTransition() {
+        var foundTransition: TransitionData? = nil
+        var progress: Double = 0
+        
+        for transition in transitions {
+            let endTimestamp = transition.timestamp + transition.duration
+            if currentTimestamp >= transition.timestamp && currentTimestamp < endTimestamp {
+                foundTransition = transition
+                progress = (currentTimestamp - transition.timestamp) / transition.duration
+                break
+            }
+        }
+        
+        let wasActive = activeTransition != nil
+        activeTransition = foundTransition
+        transitionProgress = progress
+        
+        let isActive = activeTransition != nil
+        if wasActive != isActive {
+            onTransitionActive?(isActive)
+        }
+    }
+    
+    func isInTransition() -> Bool {
+        return activeTransition != nil
+    }
+    
+    func getActiveTransition() -> TransitionData? {
+        return activeTransition
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        guard let transition = activeTransition else {
+            NSColor.clear.setFill()
+            dirtyRect.fill()
+            return
+        }
+        
+        switch transition.type {
+        case .fadeIn:
+            drawFadeIn(progress: transitionProgress)
+        case .fadeOut:
+            drawFadeOut(progress: transitionProgress, color: transition.backgroundColor)
+        case .crossDissolve:
+            drawCrossDissolve(progress: transitionProgress, color: transition.backgroundColor)
+        case .blank:
+            drawBlank(color: transition.backgroundColor)
+        case .image:
+            drawImage(imagePath: transition.imagePath, backgroundColor: transition.backgroundColor)
+        case .slideLeft:
+            drawSlide(direction: .left, progress: transitionProgress, color: transition.backgroundColor)
+        case .slideRight:
+            drawSlide(direction: .right, progress: transitionProgress, color: transition.backgroundColor)
+        case .slideUp:
+            drawSlide(direction: .up, progress: transitionProgress, color: transition.backgroundColor)
+        case .slideDown:
+            drawSlide(direction: .down, progress: transitionProgress, color: transition.backgroundColor)
+        case .cubeRotate:
+            drawCubeRotate(progress: transitionProgress, color: transition.backgroundColor)
+        }
+        
+        drawTransitionLabel(transition)
+    }
+    
+    private func drawFadeIn(progress: Double) {
+        let alpha = 1.0 - progress
+        NSColor.black.withAlphaComponent(alpha).setFill()
+        bounds.fill()
+    }
+    
+    private func drawFadeOut(progress: Double, color: NSColor) {
+        let alpha = progress
+        color.withAlphaComponent(alpha).setFill()
+        bounds.fill()
+    }
+    
+    private func drawCrossDissolve(progress: Double, color: NSColor) {
+        let centerX = bounds.midX
+        let centerY = bounds.midY
+        let maxRadius = sqrt(bounds.width * bounds.width + bounds.height * bounds.height) / 2
+        
+        let radius: CGFloat
+        if progress < 0.5 {
+            radius = maxRadius * CGFloat(progress * 2)
+        } else {
+            radius = maxRadius * CGFloat(1.0 - (progress - 0.5) * 2)
+        }
+        
+        let outerPath = NSBezierPath(rect: bounds)
+        let circlePath = NSBezierPath(ovalIn: NSRect(
+            x: centerX - radius,
+            y: centerY - radius,
+            width: radius * 2,
+            height: radius * 2
+        ))
+        outerPath.append(circlePath)
+        outerPath.windingRule = .evenOdd
+        
+        color.setFill()
+        outerPath.fill()
+    }
+    
+    private func drawBlank(color: NSColor) {
+        color.setFill()
+        bounds.fill()
+    }
+    
+    private func drawImage(imagePath: String?, backgroundColor: NSColor) {
+        backgroundColor.setFill()
+        bounds.fill()
+        
+        guard let path = imagePath, !path.isEmpty else { return }
+        
+        if cachedImagePath != path {
+            cachedImage = NSImage(contentsOfFile: path)
+            cachedImagePath = path
+        }
+        
+        if let image = cachedImage {
+            let imageSize = image.size
+            let viewSize = bounds.size
+            
+            let scale = min(viewSize.width / imageSize.width, viewSize.height / imageSize.height)
+            let scaledWidth = imageSize.width * scale
+            let scaledHeight = imageSize.height * scale
+            
+            let imageRect = NSRect(
+                x: (viewSize.width - scaledWidth) / 2,
+                y: (viewSize.height - scaledHeight) / 2,
+                width: scaledWidth,
+                height: scaledHeight
+            )
+            
+            image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+        }
+    }
+    
+    enum SlideDirection {
+        case left, right, up, down
+    }
+    
+    private func drawSlide(direction: SlideDirection, progress: Double, color: NSColor) {
+        color.setFill()
+        
+        var coverRect = bounds
+        let halfProgress = progress < 0.5 ? progress * 2 : (1.0 - progress) * 2
+        
+        switch direction {
+        case .left:
+            coverRect.size.width = bounds.width * (1.0 - halfProgress)
+            coverRect.origin.x = bounds.width * halfProgress
+        case .right:
+            coverRect.size.width = bounds.width * (1.0 - halfProgress)
+        case .up:
+            coverRect.size.height = bounds.height * (1.0 - halfProgress)
+            coverRect.origin.y = bounds.height * halfProgress
+        case .down:
+            coverRect.size.height = bounds.height * (1.0 - halfProgress)
+        }
+        
+        if progress < 0.5 {
+            switch direction {
+            case .left:
+                coverRect = NSRect(x: 0, y: 0, width: bounds.width * progress * 2, height: bounds.height)
+            case .right:
+                coverRect = NSRect(x: bounds.width * (1 - progress * 2), y: 0, width: bounds.width * progress * 2, height: bounds.height)
+            case .up:
+                coverRect = NSRect(x: 0, y: bounds.height * (1 - progress * 2), width: bounds.width, height: bounds.height * progress * 2)
+            case .down:
+                coverRect = NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height * progress * 2)
+            }
+        } else {
+            let reverseProgress = (progress - 0.5) * 2
+            switch direction {
+            case .left:
+                coverRect = NSRect(x: bounds.width * reverseProgress, y: 0, width: bounds.width * (1 - reverseProgress), height: bounds.height)
+            case .right:
+                coverRect = NSRect(x: 0, y: 0, width: bounds.width * (1 - reverseProgress), height: bounds.height)
+            case .up:
+                coverRect = NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height * (1 - reverseProgress))
+            case .down:
+                coverRect = NSRect(x: 0, y: bounds.height * reverseProgress, width: bounds.width, height: bounds.height * (1 - reverseProgress))
+            }
+        }
+        
+        coverRect.fill()
+    }
+    
+    private func drawCubeRotate(progress: Double, color: NSColor) {
+        let effectProgress = progress < 0.5 ? progress * 2 : (1.0 - progress) * 2
+        
+        color.setFill()
+        
+        let perspective = 1.0 - effectProgress * 0.5
+        let scaledWidth = bounds.width * CGFloat(perspective)
+        let xOffset = (bounds.width - scaledWidth) / 2
+        
+        let trapezoid = NSBezierPath()
+        let topInset = bounds.width * CGFloat(effectProgress) * 0.3
+        
+        trapezoid.move(to: NSPoint(x: topInset, y: bounds.maxY))
+        trapezoid.line(to: NSPoint(x: bounds.width - topInset, y: bounds.maxY))
+        trapezoid.line(to: NSPoint(x: bounds.width, y: bounds.minY))
+        trapezoid.line(to: NSPoint(x: 0, y: bounds.minY))
+        trapezoid.close()
+        
+        trapezoid.fill()
+    }
+    
+    private func drawTransitionLabel(_ transition: TransitionData) {
+        let labelText = "\(transition.type.icon) \(transition.type.rawValue)"
+        
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
+        shadow.shadowOffset = NSSize(width: 1, height: -1)
+        shadow.shadowBlurRadius = 3
+        
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.boldSystemFont(ofSize: 14),
+            .foregroundColor: NSColor.white,
+            .shadow: shadow
+        ]
+        
+        let textSize = labelText.size(withAttributes: attrs)
+        let padding: CGFloat = 10
+        
+        let bgRect = NSRect(
+            x: bounds.midX - textSize.width / 2 - padding,
+            y: bounds.maxY - textSize.height - padding * 3,
+            width: textSize.width + padding * 2,
+            height: textSize.height + padding
+        )
+        
+        NSColor.black.withAlphaComponent(0.6).setFill()
+        let bgPath = NSBezierPath(roundedRect: bgRect, xRadius: 6, yRadius: 6)
+        bgPath.fill()
+        
+        let textPoint = NSPoint(
+            x: bgRect.midX - textSize.width / 2,
+            y: bgRect.midY - textSize.height / 2
+        )
+        labelText.draw(at: textPoint, withAttributes: attrs)
+    }
+    
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return nil
+    }
+}
+
 enum ImpactScore: String, CaseIterable {
     case high = "High"
     case medium = "Medium"
@@ -1213,6 +1524,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     private var annotationManager: AnnotationManager?
     private var annotationOverlayView: VideoAnnotationOverlayView?
     private var a11yMarkerTitleOverlay: A11yMarkerTitleOverlayView?
+    private var transitionOverlay: TransitionOverlayView?
     private var selectedAnnotation: Annotation?
     private var isAddingAnnotation: Bool = false
     private var pendingAnnotationType: AnnotationType?
@@ -3605,6 +3917,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         
         saveTransitionsToMetadata()
         updateTimelineWithTransitions()
+        rebuildVideoCompositionWithTransitions()
         
         currentTransitionPreviewContainer = nil
         window.close()
@@ -3646,6 +3959,7 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         let simpleTransitions = transitions.map { (timestamp: $0.timestamp, duration: $0.duration, typeRaw: $0.type.rawValue, icon: $0.type.icon) }
         timelineView?.setTransitions(simpleTransitions)
         timelineView?.needsDisplay = true
+        transitionOverlay?.setTransitions(transitions)
     }
     
     // MARK: - Accessibility Marker Editor
@@ -5961,6 +6275,12 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         self.a11yMarkerTitleOverlay = a11yTitleOverlay
         container.addSubview(a11yTitleOverlay)
         
+        // Transition overlay (renders transition effects during playback)
+        let transOverlay = TransitionOverlayView(frame: .zero)
+        transOverlay.translatesAutoresizingMaskIntoConstraints = false
+        self.transitionOverlay = transOverlay
+        container.addSubview(transOverlay)
+        
         // VoiceOver audio controls bar
         let audioControlsBar = NSView()
         audioControlsBar.wantsLayer = true
@@ -6022,6 +6342,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
             a11yTitleOverlay.leadingAnchor.constraint(equalTo: playerView.leadingAnchor),
             a11yTitleOverlay.trailingAnchor.constraint(equalTo: playerView.trailingAnchor),
             a11yTitleOverlay.bottomAnchor.constraint(equalTo: playerView.bottomAnchor),
+            
+            transOverlay.topAnchor.constraint(equalTo: playerView.topAnchor),
+            transOverlay.leadingAnchor.constraint(equalTo: playerView.leadingAnchor),
+            transOverlay.trailingAnchor.constraint(equalTo: playerView.trailingAnchor),
+            transOverlay.bottomAnchor.constraint(equalTo: playerView.bottomAnchor),
             
             audioControlsBar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             audioControlsBar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
@@ -6091,6 +6416,115 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         loadAnnotations()
         
         print("📹 Screen recording loaded successfully")
+        
+        rebuildVideoCompositionWithTransitions()
+    }
+    
+    private func rebuildVideoCompositionWithTransitions() {
+        let videoPath = "/Users/bob3/Desktop/trackerA11y/recordings/\(sessionId)/screen_recording.mp4"
+        let videoURL = URL(fileURLWithPath: videoPath)
+        
+        guard FileManager.default.fileExists(atPath: videoPath) else { return }
+        guard !transitions.isEmpty else {
+            let player = AVPlayer(url: videoURL)
+            replaceVideoPlayer(with: player)
+            return
+        }
+        
+        let asset = AVURLAsset(url: videoURL)
+        let composition = AVMutableComposition()
+        
+        guard let videoTrack = asset.tracks(withMediaType: .video).first,
+              let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            print("❌ Failed to get video track")
+            return
+        }
+        
+        compositionVideoTrack.preferredTransform = videoTrack.preferredTransform
+        
+        var compositionAudioTrack: AVMutableCompositionTrack? = nil
+        let audioTrack = asset.tracks(withMediaType: .audio).first
+        if let audio = audioTrack {
+            compositionAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            compositionAudioTrack?.preferredTransform = audio.preferredTransform
+        }
+        
+        let videoDuration = asset.duration.seconds
+        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
+        
+        var currentSourceTime: Double = 0
+        var currentCompositionTime: CMTime = .zero
+        
+        do {
+            for transition in sortedTransitions {
+                let transitionVideoTime = (transition.timestamp - videoStartTimestamp) / 1_000_000
+                let transitionDurationSecs = transition.duration / 1_000_000
+                
+                guard transitionVideoTime >= 0 && transitionVideoTime <= videoDuration else { continue }
+                
+                let segmentDuration = transitionVideoTime - currentSourceTime
+                if segmentDuration > 0 {
+                    let sourceRange = CMTimeRange(
+                        start: CMTime(seconds: currentSourceTime, preferredTimescale: 600),
+                        duration: CMTime(seconds: segmentDuration, preferredTimescale: 600)
+                    )
+                    try compositionVideoTrack.insertTimeRange(sourceRange, of: videoTrack, at: currentCompositionTime)
+                    if let audio = audioTrack, let compAudio = compositionAudioTrack {
+                        try compAudio.insertTimeRange(sourceRange, of: audio, at: currentCompositionTime)
+                    }
+                    currentCompositionTime = CMTimeAdd(currentCompositionTime, CMTime(seconds: segmentDuration, preferredTimescale: 600))
+                }
+                
+                let blankDuration = CMTime(seconds: transitionDurationSecs, preferredTimescale: 600)
+                compositionVideoTrack.insertEmptyTimeRange(CMTimeRange(start: currentCompositionTime, duration: blankDuration))
+                if let compAudio = compositionAudioTrack {
+                    compAudio.insertEmptyTimeRange(CMTimeRange(start: currentCompositionTime, duration: blankDuration))
+                }
+                currentCompositionTime = CMTimeAdd(currentCompositionTime, blankDuration)
+                
+                currentSourceTime = transitionVideoTime
+                
+                print("📹 Inserted \(transitionDurationSecs)s blank at video time \(transitionVideoTime)s")
+            }
+            
+            let remainingDuration = videoDuration - currentSourceTime
+            if remainingDuration > 0 {
+                let sourceRange = CMTimeRange(
+                    start: CMTime(seconds: currentSourceTime, preferredTimescale: 600),
+                    duration: CMTime(seconds: remainingDuration, preferredTimescale: 600)
+                )
+                try compositionVideoTrack.insertTimeRange(sourceRange, of: videoTrack, at: currentCompositionTime)
+                if let audio = audioTrack, let compAudio = compositionAudioTrack {
+                    try compAudio.insertTimeRange(sourceRange, of: audio, at: currentCompositionTime)
+                }
+            }
+            
+            let playerItem = AVPlayerItem(asset: composition)
+            let player = AVPlayer(playerItem: playerItem)
+            replaceVideoPlayer(with: player)
+            
+            print("📹 Video composition rebuilt with \(transitions.count) transition(s), total duration: \(composition.duration.seconds)s")
+            
+        } catch {
+            print("❌ Failed to build video composition: \(error)")
+        }
+    }
+    
+    private func replaceVideoPlayer(with newPlayer: AVPlayer) {
+        if let observer = videoTimeObserver, let oldPlayer = videoPlayer {
+            oldPlayer.removeTimeObserver(observer)
+        }
+        videoPlayer?.removeObserver(self, forKeyPath: "rate")
+        
+        self.videoPlayer = newPlayer
+        videoPlayerView?.player = newPlayer
+        
+        let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        videoTimeObserver = newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            self?.videoTimeDidChange(time)
+        }
+        
+        newPlayer.addObserver(self, forKeyPath: "rate", options: [.new], context: nil)
     }
     
     private func loadVoiceOverAudioTrack() {
@@ -6191,33 +6625,25 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         
         let videoSeconds = time.seconds
         
-        // Calculate event timestamp from video time
-        // Must account for pause gaps: merged video is continuous, but events have gaps
         let eventTimestamp = videoTimeToEventTimestamp(videoSeconds)
         
-        // Determine playback direction
         let isMovingForward = eventTimestamp >= lastPlayheadTimestamp
         lastPlayheadTimestamp = eventTimestamp
         
-        // Always update playhead position
         timelineView?.setPlayheadTimestamp(eventTimestamp)
         
-        // Update annotation overlay with current timestamp
         annotationOverlayView?.setCurrentTimestamp(eventTimestamp)
         a11yMarkerTitleOverlay?.setCurrentTimestamp(eventTimestamp)
         
-        // Auto-show event details during playback (if not user-selected)
         if isVideoPlaying && !isUserSelectedEvent {
             autoShowEventAtTimestamp(eventTimestamp)
         }
         
-        // Only scroll if sync is enabled and we're not already syncing from timeline
         guard isVideoSyncEnabled, !isSyncingFromTimeline else { return }
         
         isSyncingFromVideo = true
         defer { isSyncingFromVideo = false }
         
-        // Scroll timeline to keep playhead visible at appropriate position
         scrollTimelineToKeepPlayheadVisible(timestamp: eventTimestamp, movingForward: isMovingForward)
     }
     
@@ -6360,7 +6786,6 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     private func seekVideoToTimestamp(_ timestamp: Double) {
         guard let player = videoPlayer else { return }
         
-        // Convert event timestamp to video time (accounting for pause gaps)
         let videoSeconds = eventTimestampToVideoTime(timestamp)
         
         guard videoSeconds >= 0 else { return }
@@ -6368,7 +6793,6 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
         let targetTime = CMTime(seconds: videoSeconds, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
         
-        // Sync VoiceOver audio position
         if let voiceOverPlayer = voiceOverAudioPlayer, isVoiceOverAudioEnabled {
             if videoSeconds >= 0 && videoSeconds < voiceOverPlayer.duration {
                 voiceOverPlayer.currentTime = videoSeconds
@@ -6377,45 +6801,11 @@ class SessionDetailViewController: NSViewController, NSTextViewDelegate, NSToken
     }
     
     private func videoTimeToEventTimestamp(_ videoSeconds: Double) -> Double {
-        let baseTimestamp = videoStartTimestamp + (videoSeconds * 1_000_000)
-        
-        guard !pauseGaps.isEmpty else { return baseTimestamp }
-        
-        let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
-        var adjustedTimestamp = baseTimestamp
-        var accumulatedPauseDuration: Double = 0
-        
-        for gap in sortedGaps {
-            let gapStartInVideoTime = (gap.start - videoStartTimestamp - accumulatedPauseDuration) / 1_000_000
-            
-            if videoSeconds >= gapStartInVideoTime {
-                adjustedTimestamp += gap.duration
-                accumulatedPauseDuration += gap.duration
-            } else {
-                break
-            }
-        }
-        
-        return adjustedTimestamp
+        return videoStartTimestamp + (videoSeconds * 1_000_000)
     }
     
     private func eventTimestampToVideoTime(_ timestamp: Double) -> Double {
-        guard !pauseGaps.isEmpty else {
-            return (timestamp - videoStartTimestamp) / 1_000_000
-        }
-        
-        let sortedGaps = pauseGaps.sorted { $0.start < $1.start }
-        var totalPauseBefore: Double = 0
-        
-        for gap in sortedGaps {
-            if gap.end <= timestamp {
-                totalPauseBefore += gap.duration
-            } else if gap.start < timestamp {
-                break
-            }
-        }
-        
-        return (timestamp - videoStartTimestamp - totalPauseBefore) / 1_000_000
+        return (timestamp - videoStartTimestamp) / 1_000_000
     }
     
     @objc private func toggleVideoSync(_ sender: NSButton) {
@@ -11559,6 +11949,7 @@ class EnhancedTimelineView: NSView {
     var onPlayheadDragged: ((Double) -> Void)?  // Callback when playhead is dragged (timestamp)
     var onZoomChanged: (() -> Void)?  // Callback when zoom changes
     
+    
     // Edge panning state for playhead dragging
     private var lastDragLocation: NSPoint?
     private var lastDragTime: Date?
@@ -11781,68 +12172,30 @@ class EnhancedTimelineView: NSView {
         guard effectiveDuration > 0 else { return timelineRect.minX }
         
         let allGaps = getAllGaps()
-        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
         
-        if !allGaps.isEmpty || !sortedTransitions.isEmpty {
-            let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
-            let availableWidth = timelineRect.width - totalMarkerWidth
-            
-            var currentX = timelineRect.minX
-            var previousEventTime = startTime
-            
-            var allBreakpoints: [(time: Double, type: String, gap: (start: Double, end: Double, duration: Double, isPause: Bool)?, transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String)?)] = []
-            
-            for gap in allGaps {
-                allBreakpoints.append((time: gap.start, type: "gap_start", gap: gap, transition: nil))
+        var adjustedTimestamp = timestamp
+        
+        for gap in allGaps {
+            if timestamp > gap.end {
+                adjustedTimestamp -= gap.duration
+            } else if timestamp > gap.start {
+                adjustedTimestamp -= (timestamp - gap.start)
             }
-            for trans in sortedTransitions {
-                allBreakpoints.append((time: trans.timestamp, type: "transition", gap: nil, transition: trans))
-            }
-            allBreakpoints.sort { $0.time < $1.time }
-            
-            for bp in allBreakpoints {
-                let segmentDuration = bp.time - previousEventTime
-                let segmentWidth = availableWidth * CGFloat(segmentDuration / effectiveDuration)
-                
-                if timestamp < bp.time {
-                    if segmentDuration > 0 {
-                        let progressInSegment = (timestamp - previousEventTime) / segmentDuration
-                        return currentX + segmentWidth * CGFloat(progressInSegment)
-                    }
-                    return currentX
-                }
-                
-                currentX += segmentWidth
-                
-                if bp.type == "gap_start", let gap = bp.gap {
-                    if timestamp >= gap.start && timestamp < gap.end {
-                        return currentX
-                    }
-                    currentX += pauseMarkerWidth
-                    previousEventTime = gap.end
-                } else if bp.type == "transition", let trans = bp.transition {
-                    if timestamp == bp.time {
-                        return currentX
-                    }
-                    let transWidth = availableWidth * CGFloat(trans.duration / effectiveDuration)
-                    currentX += transWidth
-                    previousEventTime = bp.time
-                }
-            }
-            
-            let finalSegmentDuration = endTime - previousEventTime
-            if finalSegmentDuration > 0 && timestamp >= previousEventTime {
-                let progressInFinal = (timestamp - previousEventTime) / finalSegmentDuration
-                let finalSegmentWidth = availableWidth * CGFloat(finalSegmentDuration / effectiveDuration)
-                return currentX + finalSegmentWidth * CGFloat(min(1.0, progressInFinal))
-            }
-            
-            return currentX
-        } else {
-            let duration = max(endTime - startTime, 1)
-            let relativeTime = (timestamp - startTime) / duration
-            return timelineRect.minX + CGFloat(relativeTime) * timelineRect.width
         }
+        
+        let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
+        let availableWidth = timelineRect.width - totalMarkerWidth
+        
+        let relativeTime = (adjustedTimestamp - startTime) / effectiveDuration
+        var x = timelineRect.minX + availableWidth * CGFloat(relativeTime)
+        
+        for gap in allGaps {
+            if timestamp > gap.end {
+                x += pauseMarkerWidth
+            }
+        }
+        
+        return x
     }
     
     private func foldedXToTimestamp(_ x: CGFloat, in timelineRect: NSRect) -> Double {
@@ -11850,73 +12203,29 @@ class EnhancedTimelineView: NSView {
         guard effectiveDuration > 0 else { return startTime }
         
         let allGaps = getAllGaps()
-        let sortedTransitions = transitions.sorted { $0.timestamp < $1.timestamp }
         
-        if !allGaps.isEmpty || !sortedTransitions.isEmpty {
-            let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
-            let availableWidth = timelineRect.width - totalMarkerWidth
-            
-            var currentX = timelineRect.minX
-            var currentEventTime = startTime
-            var previousEventTime = startTime
-            
-            var allBreakpoints: [(time: Double, type: String, gap: (start: Double, end: Double, duration: Double, isPause: Bool)?, transition: (timestamp: Double, duration: Double, typeRaw: String, icon: String)?)] = []
-            
-            for gap in allGaps {
-                allBreakpoints.append((time: gap.start, type: "gap_start", gap: gap, transition: nil))
+        let totalMarkerWidth = CGFloat(allGaps.count) * pauseMarkerWidth
+        let availableWidth = timelineRect.width - totalMarkerWidth
+        
+        var adjustedX = x - timelineRect.minX
+        
+        for gap in allGaps {
+            let gapX = timestampToFoldedX(gap.start, in: timelineRect) - timelineRect.minX
+            if adjustedX > gapX {
+                adjustedX -= pauseMarkerWidth
             }
-            for trans in sortedTransitions {
-                allBreakpoints.append((time: trans.timestamp, type: "transition", gap: nil, transition: trans))
-            }
-            allBreakpoints.sort { $0.time < $1.time }
-            
-            for bp in allBreakpoints {
-                let segmentDuration = bp.time - previousEventTime
-                let segmentWidth = availableWidth * CGFloat(segmentDuration / effectiveDuration)
-                let segmentEndX = currentX + segmentWidth
-                
-                if x < segmentEndX {
-                    if segmentWidth > 0 {
-                        let progressInSegment = (x - currentX) / segmentWidth
-                        return currentEventTime + segmentDuration * Double(progressInSegment)
-                    }
-                    return currentEventTime
-                }
-                
-                currentX = segmentEndX
-                currentEventTime = bp.time
-                
-                if bp.type == "gap_start", let gap = bp.gap {
-                    if x < currentX + pauseMarkerWidth {
-                        return gap.start
-                    }
-                    currentX += pauseMarkerWidth
-                    currentEventTime = gap.end
-                    previousEventTime = gap.end
-                } else if bp.type == "transition", let trans = bp.transition {
-                    let transWidth = availableWidth * CGFloat(trans.duration / effectiveDuration)
-                    if x < currentX + transWidth {
-                        return trans.timestamp
-                    }
-                    currentX += transWidth
-                    previousEventTime = bp.time
-                }
-            }
-            
-            let finalSegmentDuration = endTime - previousEventTime
-            let finalSegmentWidth = availableWidth * CGFloat(finalSegmentDuration / effectiveDuration)
-            
-            if finalSegmentWidth > 0 {
-                let progressInFinal = min(1.0, max(0, (x - currentX) / finalSegmentWidth))
-                return currentEventTime + finalSegmentDuration * Double(progressInFinal)
-            }
-            
-            return endTime
-        } else {
-            let duration = max(endTime - startTime, 1)
-            let relativeX = (x - timelineRect.minX) / timelineRect.width
-            return startTime + relativeX * duration
         }
+        
+        let relativeTime = Double(adjustedX / availableWidth)
+        var timestamp = startTime + relativeTime * effectiveDuration
+        
+        for gap in allGaps {
+            if timestamp > gap.start {
+                timestamp += gap.duration
+            }
+        }
+        
+        return timestamp
     }
     
     func zoomIn() {
